@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spectral-encoder-phase1"
+version = "1.0.0"
+description = "Universal data ingestion pipeline for audio, images with spectral canonicalization"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Quantumind Ltd.", email = "engineering@quantumind.io"}
+]
+keywords = [
+    "spectral-encoding",
+    "data-ingestion",
+    "audio-processing",
+    "image-processing",
+    "machine-learning"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Multimedia :: Graphics :: Graphics Conversion",
+]
+
+dependencies = [
+    "numpy>=1.20.0",
+    "scipy>=1.6.0",
+    "Pillow>=8.0.0",
+    "soundfile>=0.10.0",
+    "librosa>=0.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.12.0",
+    "black>=21.0",
+    "flake8>=3.9.0",
+    "mypy>=0.900",
+]
+
+[project.urls]
+Homepage = "https://github.com/quantumind/spectral-encoder-phase1"
+Documentation = "https://github.com/quantumind/spectral-encoder-phase1#readme"
+Repository = "https://github.com/quantumind/spectral-encoder-phase1.git"
+Issues = "https://github.com/quantumind/spectral-encoder-phase1/issues"
+
+[tool.setuptools]
+packages = ["spectral_encoder"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311']
+
+[tool.pytest.ini_options]
+testpaths = ["spectral_encoder/tests"]
+python_files = "test_*.py"
+addopts = "--cov=spectral_encoder --cov-report=html --cov-report=term-missing"
