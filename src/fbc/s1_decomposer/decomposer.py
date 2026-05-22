@@ -26,12 +26,13 @@ import torch.nn.functional as F
 from ..spectral_tensor import SpectralTensor
 from .selective_scan import S6SelectiveScan
 
-# Try to import real Mamba — used on CUDA if available
-try:
-    from mamba_ssm import Mamba as MambaSSM
-    MAMBA_AVAILABLE = True
-except ImportError:
-    MAMBA_AVAILABLE = False
+def _check_mamba_available() -> bool:
+    """Dynamic check for mamba-ssm (allows late installation)."""
+    try:
+        import mamba_ssm
+        return True
+    except ImportError:
+        return False
 
 
 class LearnableWaveletBank(nn.Module):
@@ -87,9 +88,10 @@ class MambaBlock(nn.Module):
         expand: int = 2,
     ) -> None:
         super().__init__()
-        self.use_cuda_mamba = MAMBA_AVAILABLE and torch.cuda.is_available()
+        self.use_cuda_mamba = _check_mamba_available() and torch.cuda.is_available()
 
         if self.use_cuda_mamba:
+            from mamba_ssm import Mamba as MambaSSM
             self.ssm = MambaSSM(
                 d_model=d_model, d_state=d_state, d_conv=d_conv, expand=expand
             )
