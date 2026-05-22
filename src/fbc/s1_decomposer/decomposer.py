@@ -29,7 +29,7 @@ from .selective_scan import S6SelectiveScan
 def _check_mamba_available() -> bool:
     """Dynamic check for mamba-ssm (allows late installation)."""
     try:
-        import mamba_ssm
+        from mamba_ssm.modules.mamba_simple import Mamba
         return True
     except ImportError:
         return False
@@ -91,7 +91,7 @@ class MambaBlock(nn.Module):
         self.use_cuda_mamba = _check_mamba_available() and torch.cuda.is_available()
 
         if self.use_cuda_mamba:
-            from mamba_ssm import Mamba as MambaSSM
+            from mamba_ssm.modules.mamba_simple import Mamba as MambaSSM
             self.ssm = MambaSSM(
                 d_model=d_model, d_state=d_state, d_conv=d_conv, expand=expand
             )
