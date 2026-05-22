@@ -67,3 +67,18 @@ sample_data/
 
 # Logs
 *.log
+
+# Development documents (separate from source)
+dev-docs/
+CHANGELOG.md
+benchmarks/
+
+# uv lockfile (regeneratable)
+uv.lock
+
+# Generated outputs
+*.pt
+*.pth
+demos/results_*.json
+benchmarks/results_*.json
+output/

@@ -1,8 +1,12 @@
-# FBC Phase 1: Spectral Encoder & Resonance Attention
+# Quantumind FBC Core
 
-**Quantumind QSSI Research Programme**
+**Frequency-Based Cognition (FBC) Framework**
 
-First-stage implementation of Frequency-Based Cognition (FBC) for artificial general intelligence.
+Phase-coherent neural computation for artificial general intelligence. Implements ResonanceAttention — an attention mechanism based on phase-locking rather than dot-product similarity.
+
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](./tests/)
+[![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
 
 ## Phase 1 Deliverables
 
@@ -66,38 +70,139 @@ Output
 ## Installation
 
 ```bash
-# Clone or navigate to fbc-phase1
-cd fbc-phase1
+# Clone the repository
+git clone https://github.com/quantumind/fbc-core.git
+cd fbc-core
 
 # Install with CPU support
 pip install -e .
 
-# Install with GPU + Mamba-3
-pip install -e ".[cuda]"
-
 # Development setup
-pip install -e ".[dev,cuda]"
+pip install -e ".[dev]"
 ```
 
 ## Quick Start
 
+### Option 1: Using Bundled Sample Data (Fastest)
+
+```python
+from fbc.data import quick_start_pipeline, list_samples
+
+# See what samples are available
+print(list_samples())
+# {'audio': ['mono_16khz', 'mono_8khz', 'stereo_44khz'],
+#  'image': ['gray', 'rgb', 'rgb_large']}
+
+# Run full pipeline on sample audio with one command
+s0_out, s1_out, s2_out, attention = quick_start_pipeline("mono_16khz")
+print(f"Spectral tensor: {s2_out.amplitude.shape}")
+print(f"Attention weights: {attention.shape}")
+```
+
+### Option 2: Manual Pipeline Setup
+
 ```python
 import torch
+from fbc.data import load_sample_audio
 from fbc.s0_canonicalizer import S0_Canonicalizer
 from fbc.s1_decomposer import S1_SpectralDecomposer
 from fbc.resonance_attention import ResonanceAttention
 
-# Initialize components
+# Load sample audio
+audio, sr = load_sample_audio("mono_16khz")  # Returns torch.Tensor
+
+# Or load your own audio
+# audio = torch.randn(1, 16000)  # Your data here
+
+# Initialize FBC pipeline
 s0 = S0_Canonicalizer(sample_rate=16000)
 s1 = S1_SpectralDecomposer(n_scales=32, mamba_dim=256)
 attn = ResonanceAttention(num_heads=8, hidden_dim=256)
 
-# Process input signal
-x = torch.randn(4, 16000)  # (batch=4, seq_len=16000)
-canonical = s0(x)  # SpectralTensor with amplitude, phase, scale, uncertainty
-spectral_embedding = s1(canonical)  # (batch, seq_len, embedding_dim)
-output = attn(spectral_embedding)  # (batch, seq_len, embedding_dim)
+# Process
+canonical = s0(audio)
+spectral = s1(canonical)
+output, weights = attn(spectral)
 ```
+
+## Command Line Interface
+
+After installation, use the `fbc` command:
+
+```bash
+# Run atomic demos
+fbc demo 1              # Anti-phase discrimination
+fbc demo 2              # Harmonic binding
+fbc demo 3              # Cross-modal retrieval
+fbc demo all            # Run all demos
+
+# Process audio through FBC pipeline (S0-S2)
+fbc process mono_16khz              # Process sample
+fbc process myfile.wav -o output.pt # Process file, save results
+
+# Extract FrequencyAttractors (S3)
+fbc attractors mono_16khz -o attractors.pt          # From sample
+fbc attractors myfile.wav -o att.pt --domain audio  # From file
+fbc attractors mono_16khz --n-bands 8 --max-display 5
+
+# Phase-Lock Bridge evaluation (S4)
+fbc bridge attractors_a.pt attractors_b.pt          # Evaluate cross-domain bridges
+fbc bridge src.pt tgt.pt -o bridges.pt --min-locked 3
+fbc bridge src.pt tgt.pt --activation-threshold 0.7 --band-threshold 0.5
+
+# List available sample data
+fbc samples
+
+# Run benchmarks
+fbc bench attention     # Attention comparison benchmark
+fbc bench realistic     # Realistic workload benchmark
+
+# Get help
+fbc --help
+fbc demo --help
+fbc attractors --help
+fbc bridge --help
+```
+
+### S3: Attractor Extraction
+
+Extract stable spectral patterns (FrequencyAttractors) from audio:
+
+```bash
+fbc attractors mono_16khz -o audio_attractors.pt
+```
+
+**Output:**
+- List of `FrequencyAttractor` objects with centroid, phase signature, and amplitude profile
+- Saved to `.pt` file for downstream S4 bridge evaluation
+
+**Options:**
+- `-n, --n-bands`: Number of spectral bands per attractor (default: 8)
+- `--domain`: Domain label for attractors (default: audio)
+- `--prefix`: ID prefix for attractor naming (default: att)
+
+### S4: Phase-Lock Bridge
+
+Evaluate phase-locked relationships between two attractor sets:
+
+```bash
+# Extract attractors from two different audio samples
+fbc attractors mono_16khz -o audio_16k.pt --domain audio
+fbc attractors mono_8khz -o audio_8k.pt --domain audio
+
+# Evaluate phase-lock bridge between them
+fbc bridge audio_16k.pt audio_8k.pt -o bridges.pt
+```
+
+**Output:**
+- List of activated bridge candidates with activation scores
+- Per-band coherence metrics
+- Configurable thresholds for bridge activation
+
+**Options:**
+- `--min-locked`: Minimum bands required for activation (default: 3)
+- `--band-threshold`: Per-band coherence threshold (default: 0.5)
+- `--activation-threshold`: Overall activation threshold (default: 0.6)
 
 ## Testing
 
@@ -132,40 +237,46 @@ python benchmarks/attention_comparison.py \
 ## Project Structure
 
 ```
-fbc-phase1/
-├── fbc/
+fbc-core/
+├── src/fbc/                    # Core source code
 │   ├── __init__.py
+│   ├── cli/                    # Command line interface
+│   │   ├── __init__.py
+│   │   └── main.py             # fbc command implementation
+│   ├── data/                   # Sample data utilities
+│   │   ├── __init__.py
+│   │   └── loader.py           # quick_start_pipeline, load_sample_audio
 │   ├── s0_canonicalizer/       # Signal canonicalization
 │   │   ├── __init__.py
-│   │   ├── spectral_tensor.py  # SpectralTensor dataclass
-│   │   └── canonicalizer.py    # S0_Canonicalizer module
-│   ├── s1_decomposer/          # Spectral decomposition + Mamba-3
+│   │   └── canonicalizer.py
+│   ├── s1_decomposer/          # Spectral decomposition
 │   │   ├── __init__.py
-│   │   ├── fft_bank.py         # FFT processing
-│   │   ├── wavelet_bank.py     # Wavelet decomposition
-│   │   └── decomposer.py       # S1_SpectralDecomposer + Mamba-3
-│   └── resonance_attention/    # Phase-coherence attention
-│       ├── __init__.py
-│       ├── coherence.py        # Phase coherence computation
-│       └── attention.py        # ResonanceAttention layer
-├── tests/
-│   ├── test_s0_canonicalizer.py
-│   ├── test_s1_decomposer.py
-│   ├── test_resonance_attention.py
-│   └── test_integration.py
-├── benchmarks/
-│   ├── attention_comparison.py
-│   ├── throughput.py
-│   └── memory_profile.py
-├── configs/
-│   ├── s0_default.yaml
-│   ├── s1_default.yaml
-│   └── attention_default.yaml
-├── data/
-│   └── sample_signals/         # Example data for testing
-├── pyproject.toml
+│   │   └── decomposer.py
+│   ├── resonance_attention/    # Phase-coherence attention
+│   │   ├── __init__.py
+│   │   ├── attention.py
+│   │   └── binding.py
+│   ├── phase_lock_bridge/     # Cross-modal transfer
+│   │   ├── __init__.py
+│   │   ├── bridge.py
+│   │   └── attractor.py
+│   ├── spectral_tensor/        # Data structures
+│   │   ├── __init__.py
+│   │   └── spectral_tensor.py
+│   ├── bridge.py               # Pipeline bridge
+│   └── pipeline.py             # End-to-end pipeline
+├── tests/                      # Unit tests
+├── benchmarks/                 # Performance benchmarks
+├── demos/                      # Atomic demos (Demo 1-3)
+├── docs/                       # Documentation
+│   ├── guides/
+│   ├── design/
+│   └── api/
+├── sample_data/                # Bundled audio/image samples
+├── configs/                    # Configuration files
+├── pyproject.toml              # Package config
 ├── README.md
-└── requirements.txt
+└── LICENSE
 ```
 
 ## Research References
@@ -178,10 +289,13 @@ fbc-phase1/
 
 ## Licensing
 
-MIT License. See LICENSE file for details.
+MIT License. See [LICENSE](./LICENSE) file for details.
 
 ## Contact
 
 **Quantumind Ltd**  
-Research Division  
-April 2026
+engineering@quantumind.io
+
+---
+
+*Phase 1 validated. Three atomic demos pass. Ready for Phase 2 integration.*

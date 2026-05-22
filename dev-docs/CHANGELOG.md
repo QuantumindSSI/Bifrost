@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-05-17
+
+### Added — FBC Core Pipeline (S0 → S1 → S2)
+
+- **`SpectralTensor`** dataclass: canonical spectral container with
+  `amplitude`, `phase`, `scale`, `uncertainty`, plus utility methods
+  (`validate`, `to`, `complex_spectrum`, `energy`, `detach`).
+- **`S0Canonicalizer`** (`fbc/s0_canonicalizer/`): converts raw signals
+  to `SpectralTensor` via windowed FFT + z-score normalisation; supports
+  1-D / 2-D / batched inputs.
+- **`S1SpectralDecomposer`** (`fbc/s1_decomposer/`): multi-resolution
+  decomposition via learnable wavelet bank + selective scan block
+  (Mamba stand-in for Phase 1).
+- **`ResonanceAttention`** (`fbc/resonance_attention/attention.py`):
+  multi-head phase-coherence attention replacing dot-product attention,
+  with learnable temperature `tau` and band weights.
+- **`S2SpectralBinding`**: wraps `ResonanceAttention` for `SpectralTensor`
+  input/output; coherence-weighted uncertainty refinement.
+- **`FBCPipeline`** (`fbc/pipeline.py`): end-to-end S0 → S1 → S2
+  orchestrator with cross-stage projection bridges.
+- **Ingest → S0 Bridge** (`fbc/bridge.py`): adapter that normalises
+  channel-axis layout (handles scipy `(samples, channels)` vs librosa
+  `(channels, samples)`), flattens images to `(C, H*W)`, and rejects
+  non-numeric inputs early.
+- **`PhaseLockBridge`** (`fbc/phase_lock_bridge/`): Phase 1 initial
+  implementation of cross-domain attractor matching with multi-band
+  coherence gating (≥ 3 bands per Engineering Script §3).
+- **`FrequencyAttractor`**: data structure for stable spectral patterns
+  consumed by the Phase-Lock Bridge.
+
+### Added — Benchmarks & Tests
+
+- **`benchmarks/bench_attention.py`**: ResonanceAttention vs vanilla
+  dot-product attention (latency, memory, coherence quality).
+- **86 tests** total across all FBC modules (was 30+):
+  - 10 SpectralTensor, 10 S0, 6 S1, 10 S2 / ResonanceAttention
+  - 7 end-to-end pipeline, 19 ingest bridge, 16 phase-lock bridge
+  - Real sample data integration (audio + images)
+  - Edge cases: silent / single-sample / very-short signals,
+    high-channel inputs.
+
+### Fixed
+- Coherence-score → uncertainty broadcasting in `S2SpectralBinding`
+  for both 2-D `(channels, n_freq)` and 3-D `(batch, channels, n_freq)`
+  inputs.
+
 ## [1.0.0] - 2026-05-15
 
 ### Added
