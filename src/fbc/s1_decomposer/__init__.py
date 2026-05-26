@@ -1,5 +1,7 @@
-"""S1 — Spectral Decomposition stage."""
+"""Backward-compatibility shim — import from fbc.decomposer instead."""
 
-from .decomposer import S1SpectralDecomposer
+from fbc.decomposer import SpectralDecomposer
 
-__all__ = ["S1SpectralDecomposer"]
+S1SpectralDecomposer = SpectralDecomposer
+
+__all__ = ["SpectralDecomposer", "S1SpectralDecomposer"]

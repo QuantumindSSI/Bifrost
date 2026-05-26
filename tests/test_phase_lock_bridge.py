@@ -143,7 +143,7 @@ class TestExtractAttractorsFromS2:
             phase=torch.rand(4, 64) * 6.28 - 3.14,
             scale=torch.linspace(0, 8000, 64).unsqueeze(0).expand(4, -1),
             uncertainty=torch.ones(4, 64),
-            metadata={"stage": "S2"},
+            metadata={"stage": "bind"},
         )
         attractors = PhaseLockBridge.extract_attractors_from_s2(
             st, n_bands=8, domain="audio", prefix="aud"
@@ -160,7 +160,7 @@ class TestExtractAttractorsFromS2:
             phase=torch.rand(2, 3, 32),
             scale=torch.rand(2, 3, 32),
             uncertainty=torch.ones(2, 3, 32),
-            metadata={"stage": "S2"},
+            metadata={"stage": "bind"},
         )
         attractors = PhaseLockBridge.extract_attractors_from_s2(st, n_bands=4)
         assert len(attractors) == 6  # 2 * 3
@@ -171,7 +171,7 @@ class TestExtractAttractorsFromS2:
             phase=torch.rand(64),
             scale=torch.rand(64),
             uncertainty=torch.ones(64),
-            metadata={"stage": "S2"},
+            metadata={"stage": "bind"},
         )
         attractors = PhaseLockBridge.extract_attractors_from_s2(st, n_bands=8)
         assert len(attractors) == 1

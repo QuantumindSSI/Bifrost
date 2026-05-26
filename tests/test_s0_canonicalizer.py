@@ -4,13 +4,13 @@ import pytest
 import numpy as np
 import torch
 
-from fbc.s0_canonicalizer import S0Canonicalizer
+from fbc.canonicalizer import SpectralCanonicalizer
 from fbc.spectral_tensor import SpectralTensor
 
 
 @pytest.fixture
 def canonicalizer():
-    return S0Canonicalizer(n_fft=256, normalize_input=True)
+    return SpectralCanonicalizer(n_fft=256, normalize_input=True)
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def sine_signal():
     return torch.sin(2 * 3.14159 * 440 * t), {"sample_rate": sr}
 
 
-class TestS0Canonicalizer:
+class TestSpectralCanonicalizer:
     def test_output_is_spectral_tensor(self, canonicalizer, sine_signal):
         signal, meta = sine_signal
         st = canonicalizer(signal, meta)
@@ -47,7 +47,7 @@ class TestS0Canonicalizer:
     def test_metadata_propagated(self, canonicalizer, sine_signal):
         signal, meta = sine_signal
         st = canonicalizer(signal, meta)
-        assert st.metadata["stage"] == "S0"
+        assert st.metadata["stage"] == "canonicalize"
         assert st.metadata["sample_rate"] == 16000
 
     def test_validate_passes(self, canonicalizer, sine_signal):

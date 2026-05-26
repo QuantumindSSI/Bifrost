@@ -10,7 +10,7 @@ import torch
 
 from fbc.ingest import IngestPipeline, Modality, TextTokenizer
 from fbc.ingest.decoders.text import TextDecoder, TensorDecoder
-from fbc.bridge import bridge_to_s0
+from fbc.bridge import bridge_to_canonicalizer
 from fbc.pipeline import FBCPipeline
 
 
@@ -128,7 +128,7 @@ class TestTensorDecoder:
 
 
 class TestTextBridge:
-    """Test text data through bridge_to_s0."""
+    """Test text data through bridge_to_canonicalizer."""
 
     def test_text_array_bridge(self):
         """Test bridge with text-decoded array."""
@@ -143,7 +143,7 @@ class TestTextBridge:
 
         # Bridge should handle text arrays
         meta['format'] = 'csv'
-        signal, enriched_meta = bridge_to_s0(array, meta)
+        signal, enriched_meta = bridge_to_canonicalizer(array, meta)
 
         assert isinstance(signal, torch.Tensor)
         assert signal.dtype == torch.float32
@@ -153,7 +153,7 @@ class TestTextBridge:
     def test_raw_text_bridge(self):
         """Test bridge with raw string."""
         meta = {'format': 'txt'}
-        signal, enriched_meta = bridge_to_s0("hello world test text", meta)
+        signal, enriched_meta = bridge_to_canonicalizer("hello world test text", meta)
 
         assert isinstance(signal, torch.Tensor)
         assert signal.dtype == torch.float32
@@ -174,9 +174,9 @@ class TestTextPipeline:
         csv_bytes = df.to_csv(index=False).encode('utf-8')
         array, meta = decoder.decode(csv_bytes, 'csv', embedding_dim=64)
 
-        # Bridge to S0
+        # Bridge to canonicalizer
         meta['format'] = 'csv'
-        signal, enriched_meta = bridge_to_s0(array, meta)
+        signal, enriched_meta = bridge_to_canonicalizer(array, meta)
 
         # Run through FBC pipeline
         pipeline = FBCPipeline(

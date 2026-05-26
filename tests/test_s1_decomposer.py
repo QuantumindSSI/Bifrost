@@ -4,19 +4,19 @@ import pytest
 import torch
 
 from fbc.spectral_tensor import SpectralTensor
-from fbc.s0_canonicalizer import S0Canonicalizer
-from fbc.s1_decomposer import S1SpectralDecomposer
+from fbc.canonicalizer import SpectralCanonicalizer
+from fbc.decomposer import SpectralDecomposer
 
 
 @pytest.fixture
 def s0():
-    return S0Canonicalizer(n_fft=256, normalize_input=True)
+    return SpectralCanonicalizer(n_fft=256, normalize_input=True)
 
 
 @pytest.fixture
 def s1():
-    # n_freq from S0 with n_fft=256 is 129; use same for S1 d_model
-    return S1SpectralDecomposer(n_fft=256, n_scales=4, d_model=129, wavelet_kernel=15)
+    # n_freq from canonicalizer with n_fft=256 is 129; use same for decomposer d_model
+    return SpectralDecomposer(n_fft=256, n_scales=4, d_model=129, wavelet_kernel=15)
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def s0_output(s0):
     return s0(signal, {"sample_rate": sr})
 
 
-class TestS1SpectralDecomposer:
+class TestSpectralDecomposer:
     def test_output_is_spectral_tensor(self, s1, s0_output):
         st = s1(s0_output)
         assert isinstance(st, SpectralTensor)
@@ -39,7 +39,7 @@ class TestS1SpectralDecomposer:
 
     def test_metadata_stage(self, s1, s0_output):
         st = s1(s0_output)
-        assert st.metadata["stage"] == "S1"
+        assert st.metadata["stage"] == "decompose"
         assert st.metadata["n_scales"] == 4
 
     def test_uncertainty_reduced(self, s1, s0_output):

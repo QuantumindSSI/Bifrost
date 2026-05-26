@@ -8,10 +8,10 @@ import pytest
 import numpy as np
 import torch
 
-from fbc.bridge import bridge_to_s0
-from fbc.s0_canonicalizer import S0Canonicalizer
-from fbc.s1_decomposer import S1SpectralDecomposer
-from fbc.resonance_attention import S2SpectralBinding
+from fbc.bridge import bridge_to_canonicalizer
+from fbc.canonicalizer import SpectralCanonicalizer
+from fbc.decomposer import SpectralDecomposer
+from fbc.resonance_attention import SpectralBinding
 from fbc.phase_lock_bridge import PhaseLockBridge, FrequencyAttractor
 from fbc.spectral_tensor import SpectralTensor
 
@@ -22,18 +22,18 @@ D_MODEL = 64
 
 @pytest.fixture
 def s0():
-    return S0Canonicalizer(n_fft=N_FFT)
+    return SpectralCanonicalizer(n_fft=N_FFT)
 
 
 @pytest.fixture
 def s1():
     n_freq = N_FFT // 2 + 1  # 129
-    return S1SpectralDecomposer(n_fft=N_FFT, n_scales=4, d_model=n_freq)
+    return SpectralDecomposer(n_fft=N_FFT, n_scales=4, d_model=n_freq)
 
 
 @pytest.fixture
 def s2():
-    return S2SpectralBinding(d_model=D_MODEL, n_heads=4, n_bands=8, dropout=0.0)
+    return SpectralBinding(d_model=D_MODEL, n_heads=4, n_bands=8, dropout=0.0)
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def plb():
 
 
 def _run_s0_s1(s0, s1, signal, meta):
-    sig, enriched = bridge_to_s0(signal, meta)
+    sig, enriched = bridge_to_canonicalizer(signal, meta)
     st0 = s0(sig, enriched)
     st1 = s1(st0)
     return st1, enriched
@@ -117,7 +117,7 @@ class TestEdgeCases:
     def test_high_channel_count(self, s0, s1):
         """8-channel input."""
         data = np.random.randn(8, 2000).astype(np.float32)
-        sig, meta = bridge_to_s0(data, {"format": "npy", "shape": data.shape, "channel_axis": 0})
+        sig, meta = bridge_to_canonicalizer(data, {"format": "npy", "shape": data.shape, "channel_axis": 0})
         st0 = s0(sig, meta)
         st1 = s1(st0)
         st1.validate()
@@ -133,13 +133,13 @@ class TestPhaseLockIntegration:
         signal = np.sin(2 * np.pi * 440 * np.linspace(0, 0.5, 4000)).astype(np.float32)
 
         # Process as "audio"
-        sig_a, meta_a = bridge_to_s0(signal, {"format": "wav", "channels": 1, "sample_rate": 8000})
+        sig_a, meta_a = bridge_to_canonicalizer(signal, {"format": "wav", "channels": 1, "sample_rate": 8000})
         st0_a = s0(sig_a, meta_a)
         st1_a = s1(st0_a)
         attractors_a = PhaseLockBridge.extract_attractors_from_s2(st1_a, n_bands=8, domain="audio")
 
         # Process same signal as "vision" (simulating cross-domain analogy)
-        sig_b, meta_b = bridge_to_s0(signal, {"format": "wav", "channels": 1, "sample_rate": 8000})
+        sig_b, meta_b = bridge_to_canonicalizer(signal, {"format": "wav", "channels": 1, "sample_rate": 8000})
         st0_b = s0(sig_b, meta_b)
         st1_b = s1(st0_b)
         attractors_b = PhaseLockBridge.extract_attractors_from_s2(st1_b, n_bands=8, domain="vision")
@@ -154,12 +154,12 @@ class TestPhaseLockIntegration:
         sig_a_raw = np.sin(2 * np.pi * 440 * np.linspace(0, 0.5, 4000)).astype(np.float32)
         sig_b_raw = np.random.randn(4000).astype(np.float32)
 
-        sig_a, meta_a = bridge_to_s0(sig_a_raw, {"format": "wav", "channels": 1, "sample_rate": 8000})
+        sig_a, meta_a = bridge_to_canonicalizer(sig_a_raw, {"format": "wav", "channels": 1, "sample_rate": 8000})
         st0_a = s0(sig_a, meta_a)
         st1_a = s1(st0_a)
         att_a = PhaseLockBridge.extract_attractors_from_s2(st1_a, n_bands=8, domain="audio")
 
-        sig_b, meta_b = bridge_to_s0(sig_b_raw, {"format": "wav", "channels": 1, "sample_rate": 8000})
+        sig_b, meta_b = bridge_to_canonicalizer(sig_b_raw, {"format": "wav", "channels": 1, "sample_rate": 8000})
         st0_b = s0(sig_b, meta_b)
         st1_b = s1(st0_b)
         att_b = PhaseLockBridge.extract_attractors_from_s2(st1_b, n_bands=8, domain="noise")

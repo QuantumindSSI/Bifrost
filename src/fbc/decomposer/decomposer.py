@@ -1,16 +1,16 @@
 """
-S1_SpectralDecomposer — multi-resolution spectral decomposition.
+SpectralDecomposer — multi-resolution spectral decomposition.
 
-Responsibilities (per Engineering Script §1, Stage S1):
+Responsibilities:
     1. Frame time-domain signal into T overlapping windows.
     2. Per-frame: wavelet bank + FFT → sub-band spectral features.
-    3. S6 selective scan over T frames (pure-PyTorch on CPU/MPS,
+    3. Selective scan over T frames (pure-PyTorch on CPU/MPS,
        real mamba-ssm on CUDA when available).
     4. Return SpectralTensor with temporal shape (B, T, n_freq).
 
 Phase 2 changes vs Phase 1:
     - Multi-frame output: (B, T, n_freq) instead of (B, n_freq)
-    - Real S6SelectiveScan replaces SelectiveScanBlock stand-in
+    - Real SelectiveScan replaces SelectiveScanBlock stand-in
     - Auto-uses mamba-ssm.Mamba on CUDA if installed
 """
 
@@ -108,7 +108,7 @@ class MambaBlock(nn.Module):
 
 
 class SpectralDecomposer(nn.Module):
-    """Stage S1: SpectralTensor → temporal multi-resolution spectral embedding.
+    """Decomposition stage: SpectralTensor → temporal multi-resolution spectral embedding.
 
     Pipeline (Phase 2):
         1. iFFT SpectralTensor → time-domain signal.
@@ -124,7 +124,7 @@ class SpectralDecomposer(nn.Module):
         d_model:        SSM hidden dimension.
         wavelet_kernel: Kernel size for wavelet convolutions.
         n_frames:       Number of time frames T (default 32).
-        use_mamba:      If False, forces S6SelectiveScan regardless of CUDA.
+        use_mamba:      If False, forces SelectiveScan regardless of CUDA.
         d_state:        SSM state size (default 16).
         expand:         SSM expansion factor (default 2).
         d_conv:         SSM conv kernel size (default 4).
@@ -184,7 +184,7 @@ class SpectralDecomposer(nn.Module):
     def forward(self, st: SpectralTensor) -> SpectralTensor:
         """
         Args:
-            st: SpectralTensor from S0. amplitude shape: (B, n_freq_in)
+            st: SpectralTensor from canonicalization. amplitude shape: (B, n_freq_in)
 
         Returns:
             SpectralTensor with amplitude/phase shape: (B, T, n_freq)
@@ -245,7 +245,7 @@ class SpectralDecomposer(nn.Module):
             uncertainty=out_uncertainty,
             metadata={
                 **st.metadata,
-                "stage": "S1",
+                "stage": "decompose",
                 "n_scales": self.n_scales,
                 "n_fft_s1": self.n_fft,
                 "d_model": self.d_model,
@@ -333,6 +333,3 @@ def _frame_signal(
         frames = torch.cat([frames, pad_frames], dim=1)
 
     return frames, frame_size
-
-
-S1SpectralDecomposer = SpectralDecomposer

@@ -82,9 +82,9 @@ def cmd_process(args: argparse.Namespace) -> int:
 
     from fbc.data import load_sample_audio
     from fbc.data.loader import SAMPLES
-    from fbc.s0_canonicalizer import S0Canonicalizer
-    from fbc.s1_decomposer import S1SpectralDecomposer
-    from fbc.resonance_attention import S2SpectralBinding
+    from fbc.canonicalizer import SpectralCanonicalizer
+    from fbc.decomposer import SpectralDecomposer
+    from fbc.resonance_attention import SpectralBinding
 
     # Load audio
     if args.input in SAMPLES["audio"]:
@@ -110,32 +110,32 @@ def cmd_process(args: argparse.Namespace) -> int:
     expand = args.expand
     d_conv = args.d_conv
 
-    s0 = S0Canonicalizer(n_fft=n_fft)
-    s1 = S1SpectralDecomposer(
+    canonicalizer = SpectralCanonicalizer(n_fft=n_fft)
+    decomposer = SpectralDecomposer(
         n_fft=n_fft, n_scales=4, d_model=d_model, n_frames=n_frames,
         d_state=d_state, expand=expand, d_conv=d_conv
     )
-    s2 = S2SpectralBinding(d_model=d_model, n_heads=4, n_bands=8, dropout=0.0, n_freq_in=n_freq)
-    s0.eval(); s1.eval(); s2.eval()
+    binding = SpectralBinding(d_model=d_model, n_heads=4, n_bands=8, dropout=0.0, n_freq_in=n_freq)
+    canonicalizer.eval(); decomposer.eval(); binding.eval()
 
     if audio.dim() == 1:
         audio = audio.unsqueeze(0)
     elif audio.dim() == 2 and audio.shape[1] <= 2:
         audio = audio.unsqueeze(0)
 
-    print(f"Processing through FBC pipeline (SSM: {s1.ssm_type})...")
+    print(f"Processing through FBC pipeline (SSM: {decomposer.ssm_type})...")
     with torch.no_grad():
-        st0 = s0(audio, metadata={"sample_rate": float(sr)})
-        st1 = s1(st0)
-        st2, coherence = s2(st1)
+        canonical = canonicalizer(audio, metadata={"sample_rate": float(sr)})
+        decomposed = decomposer(canonical)
+        bound, coherence = binding(decomposed)
 
-    B, T, D = st2.amplitude.shape if st2.amplitude.dim() == 3 else (1, 1, st2.amplitude.shape[-1])
+    B, T, D = bound.amplitude.shape if bound.amplitude.dim() == 3 else (1, 1, bound.amplitude.shape[-1])
     attn_entropy = -(coherence * coherence.clamp(min=1e-8).log()).sum(dim=-1).mean()
 
     print(f"\nPipeline output:")
-    print(f"  SSM type              : {s1.ssm_type}")
+    print(f"  SSM type              : {decomposer.ssm_type}")
     print(f"  Time frames (T)       : {T}")
-    print(f"  Spectral tensor shape : {st2.amplitude.shape}  (B, T, d_model)")
+    print(f"  Spectral tensor shape : {bound.amplitude.shape}  (B, T, d_model)")
     print(f"  Attention map shape   : {coherence.shape}  (B, heads, T, T)")
     print(f"  Mean attention        : {coherence.mean():.4f}")
     print(f"  Max attention         : {coherence.max():.4f}")
@@ -143,7 +143,7 @@ def cmd_process(args: argparse.Namespace) -> int:
 
     if args.output:
         torch.save({
-            "spectral": st2,
+            "spectral": bound,
             "attention": coherence,
             "sample_rate": sr,
         }, args.output)
@@ -197,9 +197,9 @@ def cmd_attractors(args: argparse.Namespace) -> int:
     import torch
 
     from fbc.data import load_sample_audio
-    from fbc.s0_canonicalizer import S0Canonicalizer
-    from fbc.s1_decomposer import S1SpectralDecomposer
-    from fbc.resonance_attention import S2SpectralBinding
+    from fbc.canonicalizer import SpectralCanonicalizer
+    from fbc.decomposer import SpectralDecomposer
+    from fbc.resonance_attention import SpectralBinding
     from fbc.phase_lock_bridge import PhaseLockBridge
 
     from fbc.data.loader import SAMPLES
@@ -220,33 +220,33 @@ def cmd_attractors(args: argparse.Namespace) -> int:
             print(f"Error loading audio: {e}")
             return 1
 
-    # Build pipeline S0→S1→S2
+    # Build pipeline
     n_fft = args.n_fft
     n_freq = n_fft // 2 + 1
     d_model = args.d_model
 
-    s0 = S0Canonicalizer(n_fft=n_fft)
-    s1 = S1SpectralDecomposer(n_fft=n_fft, n_scales=4, d_model=n_freq)
-    s2 = S2SpectralBinding(d_model=d_model, n_heads=4, n_bands=args.n_bands, dropout=0.0)
+    canonicalizer = SpectralCanonicalizer(n_fft=n_fft)
+    decomposer = SpectralDecomposer(n_fft=n_fft, n_scales=4, d_model=n_freq)
+    binding = SpectralBinding(d_model=d_model, n_heads=4, n_bands=args.n_bands, dropout=0.0)
 
-    s0.eval()
-    s1.eval()
-    s2.eval()
+    canonicalizer.eval()
+    decomposer.eval()
+    binding.eval()
 
     if audio.dim() == 1:
         audio = audio.unsqueeze(0)
     elif audio.dim() == 2 and audio.shape[1] <= 2:
         audio = audio.unsqueeze(0)
 
-    print(f"\nExtracting attractors (S3)...")
+    print(f"\nExtracting attractors...")
     with torch.no_grad():
-        st0 = s0(audio, metadata={"sample_rate": float(sr)})
-        st1 = s1(st0)
-        st2, coherence = s2(st1)
+        canonical = canonicalizer(audio, metadata={"sample_rate": float(sr)})
+        decomposed = decomposer(canonical)
+        bound, coherence = binding(decomposed)
 
-        # Extract attractors from S2 output
+        # Extract attractors from binding output
         attractors = PhaseLockBridge.extract_attractors_from_s2(
-            st2, n_bands=args.n_bands, domain=args.domain, prefix=args.prefix
+            bound, n_bands=args.n_bands, domain=args.domain, prefix=args.prefix
         )
 
     print(f"\nExtracted {len(attractors)} attractors:")
@@ -265,7 +265,7 @@ def cmd_attractors(args: argparse.Namespace) -> int:
     if args.output:
         torch.save({
             "attractors": attractors,
-            "spectral": st2,
+            "spectral": bound,
             "sample_rate": sr,
             "n_bands": args.n_bands,
             "domain": args.domain,

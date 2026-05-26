@@ -189,7 +189,7 @@ def quick_start_pipeline(audio_name: str = "mono_16khz"):
     """Complete quick-start: load sample + run through FBC pipeline.
     
     Returns:
-        Tuple of (s0_output, s1_output, s2_output, attention_weights)
+        Tuple of (canonical, decomposed, bound, attention_weights)
     
     This is the fastest way to verify your installation and see FBC in action.
     
@@ -197,17 +197,17 @@ def quick_start_pipeline(audio_name: str = "mono_16khz"):
         audio_name: Which audio sample to use
         
     Returns:
-        Tuple of (s0_output, s1_output, s2_output, attention_weights)
+        Tuple of (canonical, decomposed, bound, attention_weights)
         
     Example:
         >>> from fbc.data import quick_start_pipeline
-        >>> s0, s1, s2, attn = quick_start_pipeline("mono_16khz")
+        >>> canonical, decomposed, bound, attn = quick_start_pipeline("mono_16khz")
         >>> print(f"Attention shape: {attn.shape}")
         Pipeline complete. Spectral tensor shape: torch.Size([1, 513, 8])
     """
-    from fbc.s0_canonicalizer import S0Canonicalizer
-    from fbc.s1_decomposer import S1SpectralDecomposer
-    from fbc.resonance_attention import S2SpectralBinding
+    from fbc.canonicalizer import SpectralCanonicalizer
+    from fbc.decomposer import SpectralDecomposer
+    from fbc.resonance_attention import SpectralBinding
     
     # Load sample
     audio, sr = load_sample_audio(audio_name)
@@ -223,19 +223,19 @@ def quick_start_pipeline(audio_name: str = "mono_16khz"):
     n_freq = n_fft // 2 + 1
     d_model = 128
     
-    s0 = S0Canonicalizer(n_fft=n_fft)
-    s1 = S1SpectralDecomposer(n_fft=n_fft, n_scales=4, d_model=n_freq)
-    s2 = S2SpectralBinding(d_model=d_model, n_heads=4, n_bands=8, dropout=0.0)
+    canonicalizer = SpectralCanonicalizer(n_fft=n_fft)
+    decomposer = SpectralDecomposer(n_fft=n_fft, n_scales=4, d_model=n_freq)
+    binding = SpectralBinding(d_model=d_model, n_heads=4, n_bands=8, dropout=0.0)
     
     # Run pipeline
-    s0.eval()
-    s1.eval()
-    s2.eval()
+    canonicalizer.eval()
+    decomposer.eval()
+    binding.eval()
     
     with torch.no_grad():
-        st0 = s0(audio, sample_rate=sr)
-        st1, x, phase = s1(st0)
-        st2, coherence = s2(st1, x, phase)
+        canonical = canonicalizer(audio, metadata={"sample_rate": float(sr)})
+        decomposed = decomposer(canonical)
+        bound, coherence = binding(decomposed)
     
-    print(f"✓ Pipeline complete. Spectral tensor shape: {st2.amplitude.shape}")
-    return st0, st1, st2, coherence
+    print(f"✓ Pipeline complete. Spectral tensor shape: {bound.amplitude.shape}")
+    return canonical, decomposed, bound, coherence

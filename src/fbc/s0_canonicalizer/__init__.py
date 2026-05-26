@@ -1,5 +1,7 @@
-"""S0 — Signal Canonicalisation stage."""
+"""Backward-compatibility shim — import from fbc.canonicalizer instead."""
 
-from .canonicalizer import S0Canonicalizer
+from fbc.canonicalizer import SpectralCanonicalizer
 
-__all__ = ["S0Canonicalizer"]
+S0Canonicalizer = SpectralCanonicalizer
+
+__all__ = ["SpectralCanonicalizer", "S0Canonicalizer"]

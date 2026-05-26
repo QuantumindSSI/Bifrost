@@ -201,6 +201,3 @@ def _selective_scan(
     y = y + D.unsqueeze(0).unsqueeze(0) * u      # (B, L, E)
 
     return y
-
-
-S6SelectiveScan = SelectiveScan

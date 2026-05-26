@@ -1,6 +1,6 @@
-"""S2 — Resonance Attention and Spectral Binding stage."""
+"""Resonance Attention and Spectral Binding stage."""
 
 from .attention import ResonanceAttention
-from .binding import S2SpectralBinding
+from .binding import SpectralBinding, S2SpectralBinding
 
-__all__ = ["ResonanceAttention", "S2SpectralBinding"]
+__all__ = ["ResonanceAttention", "SpectralBinding", "S2SpectralBinding"]

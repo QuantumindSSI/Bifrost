@@ -22,9 +22,9 @@ from ..spectral_tensor import SpectralTensor
 from .attention import ResonanceAttention
 
 
-class S2SpectralBinding(nn.Module):
+class SpectralBinding(nn.Module):
     """
-    Stage S2: SpectralTensor → bound spectral embedding + coherence map.
+    Binding stage: SpectralTensor → bound spectral embedding + coherence map.
 
     Parameters
     ----------
@@ -71,7 +71,7 @@ class S2SpectralBinding(nn.Module):
         Parameters
         ----------
         st : SpectralTensor
-            Output of S1.  ``st.amplitude`` shape: ``(batch, channels, n_freq)``.
+            Output of decomposition.  ``st.amplitude`` shape: ``(batch, channels, n_freq)``.
         input_proj : nn.Linear, optional
             External projection layer if n_freq != d_model.
 
@@ -149,10 +149,13 @@ class S2SpectralBinding(nn.Module):
             uncertainty=unc_out * (1.0 - coh_score),
             metadata={
                 **st.metadata,
-                "stage": "S2",
+                "stage": "bind",
                 "n_heads": self.resonance.n_heads,
                 "n_bands": self.resonance.n_bands,
             },
         )
 
         return bound_st, coherence
+
+
+S2SpectralBinding = SpectralBinding

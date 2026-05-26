@@ -1,8 +1,8 @@
 """
-Ingest → S0 Bridge Adapter.
+Ingest → Canonicalizer Bridge Adapter.
 
-Converts the output of ``spectral_encoder.ingest.pipeline.IngestPipeline``
-into the canonical format expected by ``fbc.s0_canonicalizer.S0Canonicalizer``:
+Converts the output of ``fbc.ingest.pipeline.IngestPipeline``
+into the canonical format expected by ``fbc.canonicalizer.SpectralCanonicalizer``:
     - np.ndarray → torch.Tensor (float32)
     - Channel axis normalised to channels-first: (channels, samples)
     - Metadata enriched with ``channel_axis`` field.
@@ -19,12 +19,12 @@ import torch
 from fbc.ingest.decoders.text import TextTokenizer
 
 
-def bridge_to_s0(
+def bridge_to_canonicalizer(
     data: Any,
     metadata: Dict[str, Any],
 ) -> Tuple[torch.Tensor, Dict[str, Any]]:
     """
-    Adapt ingest output for S0 consumption.
+    Adapt ingest output for canonicalization.
 
     Parameters
     ----------
@@ -72,12 +72,15 @@ def bridge_to_s0(
     # ---- reject truly unsupported data ------------------------------------
     else:
         raise TypeError(
-            f"bridge_to_s0 requires NumPy array or text input, got {type(data).__name__}. "
+            f"bridge_to_canonicalizer requires NumPy array or text input, got {type(data).__name__}. "
             f"Text / structured data must be embedded into a numeric array "
             f"before entering the FBC pipeline."
         )
 
     return signal, meta
+
+
+bridge_to_s0 = bridge_to_canonicalizer
 
 
 # ---------------------------------------------------------------------------

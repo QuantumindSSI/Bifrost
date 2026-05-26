@@ -1,30 +1,30 @@
 """
 FBC — Frequency-Based Cognition core modules.
 
-Implements the S0–S4 pipeline stages from the FBC Engineering Script.
+Implements the FBC pipeline: canonicalize → decompose → bind.
 """
 
 __version__ = "0.1.1"
 
 from .spectral_tensor import SpectralTensor
-from .s0_canonicalizer import S0Canonicalizer
-from .s1_decomposer import S1SpectralDecomposer
-from .resonance_attention import ResonanceAttention, S2SpectralBinding
+from .canonicalizer import SpectralCanonicalizer
+from .decomposer import SpectralDecomposer
+from .resonance_attention import ResonanceAttention, SpectralBinding
 from .phase_lock_bridge import PhaseLockBridge, FrequencyAttractor
 from .pipeline import FBCPipeline
-from .bridge import bridge_to_s0
+from .bridge import bridge_to_canonicalizer
 from .ingest import IngestPipeline, Modality
 
 __all__ = [
     "SpectralTensor",
-    "S0Canonicalizer",
-    "S1SpectralDecomposer",
+    "SpectralCanonicalizer",
+    "SpectralDecomposer",
     "ResonanceAttention",
-    "S2SpectralBinding",
+    "SpectralBinding",
     "PhaseLockBridge",
     "FrequencyAttractor",
     "FBCPipeline",
-    "bridge_to_s0",
+    "bridge_to_canonicalizer",
     "IngestPipeline",
     "Modality",
 ]

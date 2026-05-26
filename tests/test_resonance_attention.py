@@ -4,7 +4,7 @@ import pytest
 import torch
 
 from fbc.resonance_attention.attention import ResonanceAttention
-from fbc.resonance_attention.binding import S2SpectralBinding
+from fbc.resonance_attention.binding import SpectralBinding
 from fbc.spectral_tensor import SpectralTensor
 
 
@@ -15,7 +15,7 @@ def attn():
 
 @pytest.fixture
 def binding():
-    return S2SpectralBinding(d_model=64, n_heads=4, n_bands=8, dropout=0.0)
+    return SpectralBinding(d_model=64, n_heads=4, n_bands=8, dropout=0.0)
 
 
 class TestResonanceAttention:
@@ -72,7 +72,7 @@ class TestResonanceAttention:
         assert off_diag.std().item() < 0.2
 
 
-class TestS2SpectralBinding:
+class TestSpectralBinding:
     def test_with_spectral_tensor(self, binding):
         n_freq = 64
         st = SpectralTensor(
@@ -83,7 +83,7 @@ class TestS2SpectralBinding:
         )
         bound_st, coh = binding(st)
         assert isinstance(bound_st, SpectralTensor)
-        assert bound_st.metadata["stage"] == "S2"
+        assert bound_st.metadata["stage"] == "bind"
         assert coh.shape[1] == 4  # n_heads
 
     def test_2d_input(self, binding):

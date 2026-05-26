@@ -1,4 +1,4 @@
-"""End-to-end integration tests for the FBC S0→S1→S2 pipeline."""
+"""End-to-end integration tests for the FBC pipeline."""
 
 import pytest
 import numpy as np
@@ -28,7 +28,7 @@ class TestFBCPipelineE2E:
         signal = torch.sin(2 * 3.14159 * 440 * t)
         bound_st, coh = pipeline(signal, {"sample_rate": sr})
         assert isinstance(bound_st, SpectralTensor)
-        assert bound_st.metadata["stage"] == "S2"
+        assert bound_st.metadata["stage"] == "bind"
 
     def test_stereo_signal(self, pipeline):
         signal = torch.randn(2, 16000)
@@ -58,13 +58,13 @@ class TestFBCPipelineE2E:
         signal = torch.randn(8000)
         bound_st, _ = pipeline(signal, {"sample_rate": 8000, "source": "test"})
         assert bound_st.metadata["source"] == "test"
-        assert "n_fft" in bound_st.metadata  # from S0
-        assert "n_scales" in bound_st.metadata  # from S1
-        assert "n_heads" in bound_st.metadata  # from S2
+        assert "n_fft" in bound_st.metadata  # from canonicalizer
+        assert "n_scales" in bound_st.metadata  # from decomposer
+        assert "n_heads" in bound_st.metadata  # from binding
 
     def test_coherence_shape(self, pipeline):
         signal = torch.randn(2, 8000)
         _, coh = pipeline(signal, {"sample_rate": 8000})
-        # coherence: (batch, n_heads, seq, seq) — batch was added by S2
+        # coherence: (batch, n_heads, seq, seq) — batch was added by binding
         assert coh.dim() == 4
         assert coh.shape[1] == 4  # n_heads

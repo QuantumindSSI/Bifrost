@@ -1,7 +1,7 @@
 """
 SpectralTensor — canonical data container for the FBC pipeline.
 
-Every stage from S0 onward operates on SpectralTensor instances.
+Every pipeline stage operates on SpectralTensor instances.
 Fields follow the Engineering Script specification:
     amplitude : torch.Tensor   — magnitude spectrum
     phase     : torch.Tensor   — phase spectrum (radians, [-π, π])
