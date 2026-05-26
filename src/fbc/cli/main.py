@@ -106,9 +106,15 @@ def cmd_process(args: argparse.Namespace) -> int:
     n_freq = n_fft // 2 + 1
     d_model = args.d_model
     n_frames = args.n_frames
+    d_state = args.d_state
+    expand = args.expand
+    d_conv = args.d_conv
 
     s0 = S0Canonicalizer(n_fft=n_fft)
-    s1 = S1SpectralDecomposer(n_fft=n_fft, n_scales=4, d_model=d_model, n_frames=n_frames)
+    s1 = S1SpectralDecomposer(
+        n_fft=n_fft, n_scales=4, d_model=d_model, n_frames=n_frames,
+        d_state=d_state, expand=expand, d_conv=d_conv
+    )
     s2 = S2SpectralBinding(d_model=d_model, n_heads=4, n_bands=8, dropout=0.0, n_freq_in=n_freq)
     s0.eval(); s1.eval(); s2.eval()
 
@@ -388,6 +394,9 @@ Examples:
     process_parser.add_argument("--n-fft", type=int, default=1024, help="FFT size (default: 1024)")
     process_parser.add_argument("--d-model", type=int, default=128, help="Model dimension (default: 128)")
     process_parser.add_argument("--n-frames", type=int, default=32, help="Number of time frames for SSM (default: 32)")
+    process_parser.add_argument("--d-state", type=int, default=16, help="SSM state size (default: 16)")
+    process_parser.add_argument("--expand", type=int, default=2, help="SSM expansion factor (default: 2)")
+    process_parser.add_argument("--d-conv", type=int, default=4, help="SSM conv kernel size (default: 4)")
     process_parser.set_defaults(func=cmd_process)
     
     # Samples command

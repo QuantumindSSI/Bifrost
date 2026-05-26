@@ -125,6 +125,9 @@ class S1SpectralDecomposer(nn.Module):
         wavelet_kernel: Kernel size for wavelet convolutions.
         n_frames:       Number of time frames T (default 32).
         use_mamba:      If False, forces S6SelectiveScan regardless of CUDA.
+        d_state:        SSM state size (default 16).
+        expand:         SSM expansion factor (default 2).
+        d_conv:         SSM conv kernel size (default 4).
     """
 
     def __init__(
@@ -135,6 +138,9 @@ class S1SpectralDecomposer(nn.Module):
         wavelet_kernel: int = 31,
         n_frames: int = 32,
         use_mamba: bool = True,
+        d_state: int = 16,
+        expand: int = 2,
+        d_conv: int = 4,
     ) -> None:
         super().__init__()
         self.n_fft = n_fft
@@ -154,9 +160,14 @@ class S1SpectralDecomposer(nn.Module):
         self.input_proj = nn.Linear(self.n_freq, d_model)
 
         # Temporal SSM over T frames
-        self.ssm = MambaBlock(d_model=d_model) if use_mamba else nn.Sequential(
-            S6SelectiveScan(d_model=d_model)
-        )
+        if use_mamba:
+            self.ssm = MambaBlock(
+                d_model=d_model, d_state=d_state, d_conv=d_conv, expand=expand
+            )
+        else:
+            self.ssm = nn.Sequential(
+                S6SelectiveScan(d_model=d_model, d_state=d_state, d_conv=d_conv, expand=expand)
+            )
 
         # d_model → n_freq per frame
         self.output_proj = nn.Linear(d_model, self.n_freq)
