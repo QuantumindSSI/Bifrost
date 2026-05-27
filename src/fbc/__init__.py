@@ -28,6 +28,12 @@ from .s1_decomposer.complex_decomposer import (
     ComplexSelectiveScan,
     ComplexLinear,
 )
+from .complex_training import (
+    ComplexFBCTrainer,
+    ComplexNextStepLoss,
+    PhaseCoherenceMetrics,
+    train_complex_fbc_simple,
+)
 
 __all__ = [
     "SpectralTensor",
@@ -53,4 +59,8 @@ __all__ = [
     "ComplexSpectralDecomposer",
     "ComplexSelectiveScan",
     "ComplexLinear",
+    "ComplexFBCTrainer",
+    "ComplexNextStepLoss",
+    "PhaseCoherenceMetrics",
+    "train_complex_fbc_simple",
 ]
