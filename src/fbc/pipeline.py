@@ -23,6 +23,7 @@ import torch.nn as nn
 from .spectral_tensor import SpectralTensor
 from .canonicalizer import SpectralCanonicalizer
 from .decomposer import SpectralDecomposer
+from .s1_decomposer.complex_decomposer import ComplexSpectralDecomposer
 from .resonance_attention import ResonanceAttention, SpectralBinding
 
 
@@ -60,8 +61,10 @@ class FBCPipeline(nn.Module):
         preserve_frames: bool = True,  # Enable meaningful attention
         use_mamba: bool = True,  # Use real Mamba-3 when CUDA available
         use_2d_fft: bool = False,  # Use 2D FFT for spatial data
+        use_complex_ssm: bool = False,  # Use complex-valued SSM for true phase coherence
     ) -> None:
         super().__init__()
+        self.use_complex_ssm = use_complex_ssm
 
         self.canonicalizer = SpectralCanonicalizer(
             n_fft=n_fft_s0,
@@ -71,12 +74,23 @@ class FBCPipeline(nn.Module):
 
         # decomposer output n_freq = n_fft_s1 // 2 + 1
         n_freq_decomp = n_fft_s1 // 2 + 1
-        self.decomposer = SpectralDecomposer(
-            n_fft=n_fft_s1,
-            n_scales=n_scales,
-            d_model=n_freq_decomp,
-            use_mamba=use_mamba,
-        )
+
+        if use_complex_ssm:
+            # Complex SSM processes amplitude+phase jointly for true coherence learning
+            # Input n_freq, internal d_model, output d_model (matches binding expectation)
+            self.decomposer = ComplexSpectralDecomposer(
+                n_fft=n_fft_s1,
+                d_model=d_model,
+                n_frames=32,
+            )
+        else:
+            # Dual-stream SSM (default, backward compatible)
+            self.decomposer = SpectralDecomposer(
+                n_fft=n_fft_s1,
+                n_scales=n_scales,
+                d_model=n_freq_decomp,
+                use_mamba=use_mamba,
+            )
 
         self.binding = SpectralBinding(
             d_model=d_model,
@@ -86,7 +100,10 @@ class FBCPipeline(nn.Module):
         )
 
         # Bridge projection if decomposer output dim != binding d_model
-        if n_freq_decomp != d_model:
+        # Complex SSM already outputs d_model features, no projection needed
+        if use_complex_ssm:
+            self._decomp_to_bind_proj = None  # Complex decomposer outputs d_model directly
+        elif n_freq_decomp != d_model:
             self._decomp_to_bind_proj = nn.Linear(n_freq_decomp, d_model)
         else:
             self._decomp_to_bind_proj = None
@@ -117,6 +134,15 @@ class FBCPipeline(nn.Module):
         decomposed = self.decomposer(canonical)
         bound_st, coherence = self.binding(decomposed, input_proj=self._decomp_to_bind_proj)
         return bound_st, coherence
+
+    @property
+    def ssm_type(self) -> str:
+        """Return the SSM architecture being used."""
+        if self.use_complex_ssm:
+            return "ComplexSpectralDecomposer (phase coherence learned)"
+        elif hasattr(self.decomposer, 'ssm_type'):
+            return self.decomposer.ssm_type
+        return "Standard SpectralDecomposer"
 
     def process_numpy(
         self,

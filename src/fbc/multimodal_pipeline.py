@@ -255,49 +255,216 @@ class ImageSpectralDecomposer(nn.Module):
 
 class TensorSpectralAdapter(nn.Module):
     """
-    Adapter for arbitrary tensors to spectral pipeline.
+    Smart adapter for arbitrary tensors to spectral pipeline.
 
-    Flattens tensor and treats as 1D signal, then applies FFT.
+    Auto-detects common tensor structures and applies appropriate spectral
+    transformation to preserve spatial/temporal relationships:
+
+    - 2D/3D spatial (H, W) or (C, H, W): 2D FFT with radial averaging
+    - 1D temporal (T,) or (C, T): 1D FFT preserving time structure
+    - Feature vectors: Flatten with warning
+
+    Falls back to flattening only for truly unstructured data.
+
+    Parameters
+    ----------
+    n_fft : int
+        FFT size for 1D and 2D transforms
+    max_elements : int
+        Maximum elements for unstructured tensors
+    auto_detect : bool
+        If True, auto-detect structure; if False, always flatten
     """
 
     def __init__(
         self,
         n_fft: int = 1024,
         max_elements: int = 10000,
+        auto_detect: bool = True,
     ) -> None:
         super().__init__()
         self.n_fft = n_fft
         self.max_elements = max_elements
+        self.auto_detect = auto_detect
 
-    def forward(
+    def _detect_structure(self, shape: Tuple[int, ...]) -> str:
+        """
+        Detect tensor structure from shape.
+
+        Returns one of: "2d_spatial", "1d_temporal", "features", "unstructured"
+        """
+        if len(shape) == 0:
+            return "unstructured"
+
+        # Remove batch dimension for analysis
+        dims = list(shape[1:]) if len(shape) > 1 else [shape[0]]
+
+        if len(dims) == 0:
+            return "unstructured"
+
+        # 2D spatial: (H, W) or (C, H, W) where H ≈ W and both > 16
+        if len(dims) >= 2:
+            h, w = dims[-2], dims[-1]
+            if h >= 16 and w >= 16 and 0.5 <= h / w <= 2.0:
+                return "2d_spatial"
+
+        # 1D temporal: single large dimension (>100) or (C, T) where T >> C
+        if len(dims) == 1 and dims[0] >= 100:
+            return "1d_temporal"
+        if len(dims) == 2 and dims[1] >= 100 and dims[1] / dims[0] >= 10:
+            return "1d_temporal"
+
+        # Feature vector: reasonable size for feature representation
+        total = 1
+        for d in dims:
+            total *= d
+        if total <= self.max_elements and len(dims) <= 3:
+            return "features"
+
+        return "unstructured"
+
+    def _process_2d_spatial(
         self,
         tensor: torch.Tensor,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]],
     ) -> SpectralTensor:
-        """
-        Convert arbitrary tensor to SpectralTensor.
+        """Process 2D spatial data with 2D FFT and radial averaging."""
+        B = tensor.shape[0]
 
-        Args:
-            tensor: Any shape tensor
-            metadata: Optional metadata
+        # Handle (B, H, W) or (B, C, H, W)
+        if tensor.ndim == 3:
+            # (B, H, W) - grayscale
+            spatial = tensor
+        elif tensor.ndim == 4:
+            # (B, C, H, W) - convert to grayscale by averaging channels
+            spatial = tensor.mean(dim=1)
+        else:
+            # Higher dims - flatten to (B, -1) and treat as 1D
+            return self._process_unstructured(tensor, metadata)
 
-        Returns:
-            SpectralTensor
-        """
+        H, W = spatial.shape[-2:]
+
+        # Apply 2D FFT
+        spectrum_2d = torch.fft.fft2(spatial, s=(self.n_fft, self.n_fft), dim=(-2, -1))
+        spectrum_2d = torch.fft.fftshift(spectrum_2d, dim=(-2, -1))
+
+        # Compute magnitude
+        amplitude_2d = spectrum_2d.abs()
+
+        # Radial averaging
+        h_bins = torch.arange(self.n_fft, device=tensor.device) - self.n_fft // 2
+        w_bins = torch.arange(self.n_fft, device=tensor.device) - self.n_fft // 2
+        yy, xx = torch.meshgrid(h_bins, w_bins, indexing='ij')
+        radius = torch.sqrt(xx**2 + yy**2).long()
+
+        n_freq = self.n_fft // 2 + 1
+        radial_amplitude = torch.zeros(B, n_freq, device=tensor.device)
+
+        for r in range(n_freq):
+            mask = (radius == r)
+            if mask.any():
+                radial_amplitude[:, r] = amplitude_2d[:, mask].mean(dim=-1)
+
+        # Phase: use DC component
+        phase_dc = spectrum_2d[:, self.n_fft//2, self.n_fft//2].angle()
+        phase = phase_dc.unsqueeze(-1).expand_as(radial_amplitude)
+
+        # Normalize
+        amp_max = radial_amplitude.amax(dim=-1, keepdim=True).clamp(min=1e-8)
+        amplitude = radial_amplitude / amp_max
+
+        scale = torch.linspace(0.0, 1.0, n_freq, device=tensor.device).expand_as(amplitude)
+        uncertainty = torch.full_like(amplitude, 0.5)
+
+        return SpectralTensor(
+            amplitude=amplitude,
+            phase=phase,
+            scale=scale,
+            uncertainty=uncertainty,
+            metadata={
+                **(metadata or {}),
+                "stage": "canonicalize",
+                "modality": "tensor",
+                "detected_structure": "2d_spatial",
+                "original_shape": list(tensor.shape),
+                "spatial_size": (H, W),
+                "n_fft": self.n_fft,
+            },
+        )
+
+    def _process_1d_temporal(
+        self,
+        tensor: torch.Tensor,
+        metadata: Optional[Dict[str, Any]],
+    ) -> SpectralTensor:
+        """Process 1D temporal data with 1D FFT preserving structure."""
+        B = tensor.shape[0]
+
+        # Handle (B, T) or (B, C, T)
+        if tensor.ndim == 2:
+            # (B, T) - already 1D temporal
+            signal = tensor
+        elif tensor.ndim == 3:
+            # (B, C, T) - average over channels
+            signal = tensor.mean(dim=1)
+        else:
+            return self._process_unstructured(tensor, metadata)
+
+        T = signal.shape[-1]
+
+        # Pad/truncate to n_fft
+        if T < self.n_fft:
+            signal = F.pad(signal, (0, self.n_fft - T))
+        else:
+            signal = signal[:, :self.n_fft]
+
+        # 1D FFT
+        spectrum = torch.fft.rfft(signal, n=self.n_fft, dim=-1)
+        amplitude = spectrum.abs()
+        phase = spectrum.angle()
+
+        # Normalize
+        amp_max = amplitude.amax(dim=-1, keepdim=True).clamp(min=1e-8)
+        amplitude = amplitude / amp_max
+
+        n_freq = amplitude.shape[-1]
+        scale = torch.linspace(0.0, 1.0, n_freq, device=tensor.device).expand_as(amplitude)
+        uncertainty = torch.full_like(amplitude, 1.0)
+
+        return SpectralTensor(
+            amplitude=amplitude,
+            phase=phase,
+            scale=scale,
+            uncertainty=uncertainty,
+            metadata={
+                **(metadata or {}),
+                "stage": "canonicalize",
+                "modality": "tensor",
+                "detected_structure": "1d_temporal",
+                "original_shape": list(tensor.shape),
+                "temporal_length": T,
+                "n_fft": self.n_fft,
+            },
+        )
+
+    def _process_unstructured(
+        self,
+        tensor: torch.Tensor,
+        metadata: Optional[Dict[str, Any]],
+    ) -> SpectralTensor:
+        """Process unstructured data by flattening (with warning)."""
         B = tensor.shape[0] if tensor.ndim > 0 else 1
 
-        # Flatten each sample
+        # Flatten
         flat = tensor.view(B, -1) if tensor.ndim > 0 else tensor.view(1, -1)
 
-        # Truncate or pad to max_elements
+        # Truncate or pad
         n_elements = min(flat.shape[-1], self.max_elements)
         flat = flat[:, :n_elements]
 
-        # Pad to n_fft if needed
         if n_elements < self.n_fft:
             flat = F.pad(flat, (0, self.n_fft - n_elements))
         else:
-            # Use first n_fft elements or downsample
             flat = flat[:, :self.n_fft]
 
         # FFT
@@ -310,9 +477,7 @@ class TensorSpectralAdapter(nn.Module):
         amplitude = amplitude / amp_max
 
         n_freq = amplitude.shape[-1]
-        scale = torch.linspace(0.0, 1.0, n_freq, device=amplitude.device)
-        scale = scale.expand_as(amplitude)
-
+        scale = torch.linspace(0.0, 1.0, n_freq, device=tensor.device).expand_as(amplitude)
         uncertainty = torch.full_like(amplitude, 1.0)
 
         return SpectralTensor(
@@ -324,11 +489,40 @@ class TensorSpectralAdapter(nn.Module):
                 **(metadata or {}),
                 "stage": "canonicalize",
                 "modality": "tensor",
+                "detected_structure": "unstructured_flattened",
                 "original_shape": list(tensor.shape),
+                "warning": "Structure lost during flattening",
                 "n_elements": n_elements,
                 "n_fft": self.n_fft,
             },
         )
+
+    def forward(
+        self,
+        tensor: torch.Tensor,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> SpectralTensor:
+        """
+        Convert tensor to SpectralTensor with structure detection.
+
+        Args:
+            tensor: Input tensor of any shape
+            metadata: Optional metadata
+
+        Returns:
+            SpectralTensor with structure preserved where possible
+        """
+        if not self.auto_detect:
+            return self._process_unstructured(tensor, metadata)
+
+        structure = self._detect_structure(tensor.shape)
+
+        if structure == "2d_spatial":
+            return self._process_2d_spatial(tensor, metadata)
+        elif structure == "1d_temporal":
+            return self._process_1d_temporal(tensor, metadata)
+        else:
+            return self._process_unstructured(tensor, metadata)
 
 
 class MultiModalSpectralPipeline(nn.Module):

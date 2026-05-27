@@ -23,6 +23,11 @@ from .multimodal_pipeline import (
     TensorSpectralAdapter,
     create_multimodal_pipeline,
 )
+from .s1_decomposer.complex_decomposer import (
+    ComplexSpectralDecomposer,
+    ComplexSelectiveScan,
+    ComplexLinear,
+)
 
 __all__ = [
     "SpectralTensor",
@@ -45,4 +50,7 @@ __all__ = [
     "ImageSpectralDecomposer",
     "TensorSpectralAdapter",
     "create_multimodal_pipeline",
+    "ComplexSpectralDecomposer",
+    "ComplexSelectiveScan",
+    "ComplexLinear",
 ]
