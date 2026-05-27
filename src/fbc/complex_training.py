@@ -188,12 +188,23 @@ class ComplexFBCTrainer:
         self.decomposer = decomposer.to(device)
         self.binding = binding.to(device) if binding else None
         self.device = device
+        self.n_freq = decomposer.n_freq
+        self.d_model = decomposer.d_model
+
+        # Projection layer: d_model -> n_freq for loss computation
+        # This handles the dimension mismatch between decomposer output and target
+        if self.d_model != self.n_freq:
+            self.output_proj = nn.Linear(self.d_model, self.n_freq).to(device)
+        else:
+            self.output_proj = None
 
         # Complex-valued loss
         self.criterion = ComplexNextStepLoss(amplitude_weight, phase_weight)
 
-        # Optimizer (only decomposer parameters - binding has no params or uses pretrained)
+        # Optimizer (decomposer + projection if needed)
         params = list(decomposer.parameters())
+        if self.output_proj:
+            params.extend(self.output_proj.parameters())
         if binding:
             params.extend(binding.parameters())
 
@@ -279,11 +290,18 @@ class ComplexFBCTrainer:
             ).transpose(-2, -1)
             target_z = torch.complex(target_z_real, target_z_imag)
 
-        # Convert amplitude/phase back to complex for loss
+        # Convert decomposed output to complex
         pred_z_complex = torch.complex(
-            decomposed.amplitude[:, :-1, :].real,
-            decomposed.phase[:, :-1, :].real
+            decomposed.amplitude[:, :-1, :],
+            decomposed.phase[:, :-1, :]
         )
+
+        # Project to n_freq if needed (d_model -> n_freq)
+        if self.output_proj:
+            # Project real and imaginary parts separately
+            pred_real = self.output_proj(pred_z_complex.real)
+            pred_imag = self.output_proj(pred_z_complex.imag)
+            pred_z_complex = torch.complex(pred_real, pred_imag)
 
         # Complex loss
         loss = self.criterion(pred_z_complex, target_z)
@@ -291,10 +309,13 @@ class ComplexFBCTrainer:
         # Backward pass
         self.optimizer.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(
-            list(self.decomposer.parameters()),
-            max_norm=1.0
-        )
+
+        # Gradient clipping for all parameters
+        all_params = list(self.decomposer.parameters())
+        if self.output_proj:
+            all_params.extend(self.output_proj.parameters())
+        torch.nn.utils.clip_grad_norm_(all_params, max_norm=1.0)
+
         self.optimizer.step()
 
         # Compute metrics
