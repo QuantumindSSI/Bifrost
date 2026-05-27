@@ -171,9 +171,8 @@ class ResonanceAttention(nn.Module):
         Final coherence:
             C(i, j) = Σ_b  w_b * C_b(i, j)
 
-        Vectorised path: routes through complex matmul / BLAS GEMM by
-        forming unit phasors exp(i·phase) and using
-            cos(Δφ) = Re(z_q · conj(z_k)).
+        Correct temporal coherence formula:
+            coherence[i, j] = mean_f(cos(phase_q[i, f] - phase_k[j, f]))
 
         Returns shape (B, H, S_q, S_k).
         """
@@ -182,30 +181,31 @@ class ResonanceAttention(nn.Module):
         band_size = max(1, d // n_bands)
         usable = n_bands * band_size  # truncate any remainder
 
-        # Reshape last dim → (n_bands, band_size) and form unit phasors
+        # Reshape last dim → (n_bands, band_size)
         # phase_*: (B, H, S, d) → (B, H, S, n_bands, band_size)
         pq = phase_q[..., :usable].view(*phase_q.shape[:-1], n_bands, band_size)
         pk = phase_k[..., :usable].view(*phase_k.shape[:-1], n_bands, band_size)
 
-        z_q = torch.complex(pq.cos(), pq.sin())            # (B, H, S, n_bands, band_size)
-        z_k = torch.complex(pk.cos(), pk.sin())
+        # CORRECT: Compute temporal coherence across frames
+        # For each band, compute cos(Δφ) between all frame pairs
+        # pq: (B, H, S_q, n_bands, band_size)
+        # pk: (B, H, S_k, n_bands, band_size)
 
-        # Per-band coherence via complex GEMM: einsum over band_size
-        # contracts the band dim, producing (B, H, S_q, S_k, n_bands).
-        # cos(Δφ) = Re(z_q · conj(z_k)) summed over band_size, ÷ band_size
-        # Move n_bands to position before S to use batched matmul efficiently.
-        # z_q: (B, H, n_bands, S_q, band_size)
-        # z_k: (B, H, n_bands, S_k, band_size)
-        z_q_b = z_q.transpose(-3, -2)
-        z_k_b = z_k.transpose(-3, -2)
+        # Expand to compute all pairs: (B, H, S_q, 1, n_bands, band_size) - (B, H, 1, S_k, n_bands, band_size)
+        pq_exp = pq.unsqueeze(-4)  # (B, H, S_q, 1, n_bands, band_size)
+        pk_exp = pk.unsqueeze(-5)  # (B, H, 1, S_k, n_bands, band_size)
 
-        # Complex matmul: (..., S_q, band_size) @ (..., band_size, S_k)
-        coh_complex = torch.matmul(z_q_b, z_k_b.conj().transpose(-1, -2))
-        coh_per_band = coh_complex.real / band_size  # (B, H, n_bands, S_q, S_k)
+        # Phase difference across time frames
+        phase_diff = pq_exp - pk_exp  # (B, H, S_q, S_k, n_bands, band_size)
 
-        # Weighted sum over bands using softmax-normalised weights
-        w = F.softmax(self.band_weights[:n_bands], dim=0)
-        # Broadcast w over (B, H, n_bands, S_q, S_k)
-        coherence = (coh_per_band * w.view(1, 1, n_bands, 1, 1)).sum(dim=2)
+        # Cosine of phase difference
+        cos_diff = torch.cos(phase_diff)  # (B, H, S_q, S_k, n_bands, band_size)
+
+        # Average over band_size first
+        cos_per_band = cos_diff.mean(dim=-1)  # (B, H, S_q, S_k, n_bands)
+
+        # Weighted sum over bands
+        w = F.softmax(self.band_weights[:n_bands], dim=0)  # (n_bands,)
+        coherence = (cos_per_band * w.view(1, 1, 1, 1, n_bands)).sum(dim=-1)  # (B, H, S_q, S_k)
 
         return coherence
