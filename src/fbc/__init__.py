@@ -14,6 +14,7 @@ from .phase_lock_bridge import PhaseLockBridge, FrequencyAttractor
 from .pipeline import FBCPipeline
 from .bridge import bridge_to_canonicalizer
 from .ingest import IngestPipeline, Modality
+from .training import FBCTrainer, NextFramePredictionLoss, train_fbc_simple
 
 __all__ = [
     "SpectralTensor",
@@ -27,4 +28,7 @@ __all__ = [
     "bridge_to_canonicalizer",
     "IngestPipeline",
     "Modality",
+    "FBCTrainer",
+    "NextFramePredictionLoss",
+    "train_fbc_simple",
 ]
