@@ -111,16 +111,18 @@ class SpectralBinding(nn.Module):
             phase = phase.unsqueeze(1)
             needs_squeeze = True
 
+        # Store original amplitude and phase before any projection (needed for harmonic coherence)
+        amp_orig = amp
+        phase_orig = phase
+
         # Apply external projection if provided (S1→S2 bridge)
         if input_proj is not None:
             amp = input_proj(amp)
-            # Phase stays in original space for coherence computation
-
-        # Store original phase before any projection
-        phase_orig = phase
-
-        # Project amplitude to d_model for values
-        amp_proj = self.amp_proj(amp)
+            # When input_proj is provided, amp is already in d_model space — skip self.amp_proj
+            amp_proj = amp
+        else:
+            # Project amplitude to d_model for values
+            amp_proj = self.amp_proj(amp)
 
         # Project phase for the main resonance attention
         phase_proj = torch.nn.functional.linear(
@@ -153,6 +155,8 @@ class SpectralBinding(nn.Module):
             coherence = 0.7 * coherence_orig_expanded + 0.3 * coherence
 
             # Re-normalise blended weights and re-aggregate V so bound reflects harmonics
+            # Clamp to prevent -inf from propagating through softmax (produces NaN)
+            coherence = torch.clamp(coherence, min=-50, max=50)
             blended_weights = F.softmax(coherence, dim=-1)
             blended_weights = self.resonance.attn_dropout(blended_weights)
             # (B, n_heads, T, d_head)

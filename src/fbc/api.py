@@ -219,6 +219,7 @@ async def demo_harmonic(
             "amplitude": amplitude[0].mean(dim=0).tolist(),
             "attention_matrix": attn[0, 0].tolist(),  # First head
             "attention_std": attn.std().item(),
+            "_note": "This demo uses synthetically generated audio with harmonic structure",
         },
         visualizations=["spectrum", "attention_heatmap", "harmonic_grid"],
     )
@@ -254,6 +255,7 @@ async def demo_coherence(
                 "smoothness": smooth_random,
             },
             "improvement_ratio": smooth_coherent / smooth_random,
+            "_note": "This demo uses synthetically generated phase data for demonstration",
         },
         visualizations=["phase_evolution", "smoothness_comparison"],
     )
@@ -283,40 +285,14 @@ async def demo_multimodal() -> DemoResponse:
     
     return DemoResponse(
         demo_type="multimodal",
-        data={"modalities": modalities_data},
+        data={
+            "modalities": modalities_data,
+            "_note": "This demo uses synthetically generated data for demonstration",
+        },
         visualizations=["comparison_table"],
     )
 
 
-@app.get("/metrics/{metric_type}")
-async def get_metrics(metric_type: str) -> MetricsResponse:
-    """
-    Get current FBC metrics.
-    
-    Args:
-        metric_type: Type of metrics (coherence, training, etc.)
-    """
-    # Generate synthetic metrics for demo
-    coherence = torch.randn(2, 4, 32, 32)
-    for b in range(2):
-        for h in range(4):
-            coherence[b, h] = torch.eye(32) * 2.0 + coherence[b, h] * 0.1
-    
-    diag_ratio = PhaseCoherenceMetrics.diagonal_coherence_ratio(coherence)
-    
-    phase = torch.cumsum(torch.randn(2, 32, 128) * 0.1, dim=1)
-    smoothness = PhaseCoherenceMetrics.phase_gradient_smoothness(phase)
-    
-    z1 = torch.randn(2, 32, 128) + 1j * torch.randn(2, 32, 128)
-    z2 = z1 * 0.9 + torch.randn(2, 32, 128) * 0.1 + 1j * torch.randn(2, 32, 128) * 0.1
-    corr = PhaseCoherenceMetrics.complex_state_correlation(z1, z2)
-    
-    return MetricsResponse(
-        diagonal_coherence_ratio=diag_ratio,
-        phase_smoothness=smoothness,
-        complex_correlation=corr,
-        status="healthy",
-    )
 
 
 @app.get("/spectrogram")

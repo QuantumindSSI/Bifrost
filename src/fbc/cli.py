@@ -90,82 +90,9 @@ def cmd_process(args: argparse.Namespace) -> int:
     else:
         print(json.dumps(results, indent=2))
     
-    # Visualization
-    if args.visualize:
-        print("📊 Generating visualizations...")
-        # TODO: Generate matplotlib plots
-        print("   - Spectrogram")
-        print("   - Attention heatmap")
-        print("   - Phase coherence plot")
-    
     return 0
 
 
-def cmd_train(args: argparse.Namespace) -> int:
-    """Train complex SSM on dataset."""
-    print(f"🚀 Training Complex SSM")
-    print(f"   Data: {args.data}")
-    print(f"   Epochs: {args.epochs}")
-    print(f"   Device: {args.device}")
-    
-    from torch.utils.data import DataLoader, TensorDataset
-    
-    # Create synthetic dataset for demo (replace with real data loading)
-    print("📦 Loading dataset...")
-    
-    # Example: Create random spectral data
-    n_samples = 100
-    n_freq = 257
-    dataset = TensorDataset(
-        torch.randn(n_samples, n_freq),  # Amplitude
-        torch.randn(n_samples, n_freq),  # Phase
-    )
-    
-    loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
-    
-    # Create decomposer and trainer
-    from .s1_decomposer.complex_decomposer import ComplexSpectralDecomposer
-    
-    decomposer = ComplexSpectralDecomposer(
-        n_fft=512,
-        d_model=args.d_model,
-        n_frames=32,
-    )
-    
-    trainer = ComplexFBCTrainer(
-        decomposer=decomposer,
-        lr=args.lr,
-        device=args.device,
-    )
-    
-    # Training loop
-    print("\n📈 Training...")
-    for epoch in range(args.epochs):
-        epoch_loss = 0.0
-        for batch_idx, (amp, phase) in enumerate(loader):
-            # Create SpectralTensor
-            batch = SpectralTensor(
-                amplitude=amp,
-                phase=phase,
-                scale=torch.linspace(0, 8000, n_freq).expand(amp.shape[0], -1),
-                uncertainty=torch.ones_like(amp) * 0.1,
-            ).to(args.device)
-            
-            metrics = trainer.train_step(batch)
-            epoch_loss += metrics['loss']
-            
-            if batch_idx % 10 == 0:
-                print(f"  Epoch {epoch+1}/{args.epochs} Batch {batch_idx}: loss={metrics['loss']:.4f}")
-        
-        avg_loss = epoch_loss / len(loader)
-        print(f"  Epoch {epoch+1} complete: avg_loss={avg_loss:.4f}")
-    
-    # Save checkpoint
-    if args.output:
-        trainer.save_checkpoint(args.output)
-        print(f"✅ Model saved to: {args.output}")
-    
-    return 0
 
 
 def cmd_demo(args: argparse.Namespace) -> int:
@@ -177,6 +104,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
         # Demo harmonic binding
         print(f"\n🎼 Harmonic Binding Demo")
         print(f"   Chord: {args.chord}")
+        print(f"   (Note: This demo uses synthetically generated audio with harmonic structure)")
         
         # Parse frequencies
         freqs = [float(f) for f in args.chord.split(',')]
@@ -231,6 +159,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
     elif args.type == 'coherence':
         # Demo phase coherence
         print(f"\n🌊 Phase Coherence Demo")
+        print(f"   (Note: This demo uses synthetically generated phase data for demonstration)")
         
         # Generate coherent vs random phase
         T, n_freq = 32, 128
@@ -252,6 +181,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
     elif args.type == 'multimodal':
         # Demo all modalities
         print(f"\n🔄 Multimodal Demo")
+        print(f"   (Note: This demo uses synthetically generated data for demonstration)")
         
         modalities = [
             ('audio', torch.randn(1, 8000)),
@@ -345,21 +275,9 @@ Examples:
     process_parser = subparsers.add_parser('process', help='Process file through FBC')
     process_parser.add_argument('input', help='Input file (wav, png, etc.)')
     process_parser.add_argument('-o', '--output', help='Output JSON file')
-    process_parser.add_argument('-v', '--visualize', action='store_true', help='Generate plots')
     process_parser.add_argument('--n_fft', type=int, default=1024, help='FFT size')
     process_parser.add_argument('--d_model', type=int, default=128, help='Model dimension')
     process_parser.set_defaults(func=cmd_process)
-    
-    # Train command
-    train_parser = subparsers.add_parser('train', help='Train complex SSM')
-    train_parser.add_argument('--data', required=True, help='Dataset directory')
-    train_parser.add_argument('--epochs', type=int, default=10, help='Training epochs')
-    train_parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
-    train_parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
-    train_parser.add_argument('--device', default='cpu', help='Device (cpu/cuda)')
-    train_parser.add_argument('--output', help='Output checkpoint file')
-    train_parser.add_argument('--d_model', type=int, default=128, help='Model dimension')
-    train_parser.set_defaults(func=cmd_train)
     
     # Demo command
     demo_parser = subparsers.add_parser('demo', help='Interactive demo')
