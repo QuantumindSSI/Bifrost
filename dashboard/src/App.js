@@ -5,24 +5,9 @@ import './App.css';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [metrics, setMetrics] = useState(null);
   const [demoData, setDemoData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Fetch metrics on mount
-  useEffect(() => {
-    fetchMetrics();
-  }, []);
-
-  const fetchMetrics = async () => {
-    try {
-      const response = await axios.get('/metrics/coherence');
-      setMetrics(response.data);
-    } catch (err) {
-      setError('Failed to fetch metrics');
-    }
-  };
 
   const runDemo = async (type) => {
     setLoading(true);
@@ -40,41 +25,6 @@ function App() {
     <div className="dashboard">
       <h2>🎵 FBC Dashboard</h2>
       
-      <div className="metrics-grid">
-        <div className="metric-card">
-          <h3>Phase Coherence</h3>
-          <div className="metric-value">
-            {metrics ? `${metrics.diagonal_coherence_ratio.toFixed(2)}x` : 'Loading...'}
-          </div>
-          <p>Diagonal attention ratio</p>
-          <div className="status">
-            {metrics?.diagonal_coherence_ratio > 1.0 ? '✅ Healthy' : '⚠️ Low'}
-          </div>
-        </div>
-
-        <div className="metric-card">
-          <h3>Phase Smoothness</h3>
-          <div className="metric-value">
-            {metrics ? `${metrics.phase_smoothness.toFixed(1)}` : 'Loading...'}
-          </div>
-          <p>Temporal phase evolution</p>
-          <div className="status">
-            {metrics?.phase_smoothness > 5.0 ? '✅ Smooth' : '⚠️ Chaotic'}
-          </div>
-        </div>
-
-        <div className="metric-card">
-          <h3>Complex Correlation</h3>
-          <div className="metric-value">
-            {metrics ? `${metrics.complex_correlation.toFixed(3)}` : 'Loading...'}
-          </div>
-          <p>State correlation</p>
-          <div className="status">
-            {metrics?.complex_correlation > 0.5 ? '✅ High' : '⚠️ Low'}
-          </div>
-        </div>
-      </div>
-
       <div className="actions">
         <h3>Interactive Demos</h3>
         <button onClick={() => runDemo('harmonic')} disabled={loading}>
