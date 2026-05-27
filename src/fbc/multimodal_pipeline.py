@@ -560,7 +560,7 @@ class MultiModalSpectralPipeline(nn.Module):
         n_bands: int = 8,
         use_2d_fft: bool = False,
         use_mamba: bool = True,
-        use_complex_ssm: bool = False,  # Enable complex-valued SSM for phase coherence
+        use_complex_ssm: bool = True,  # Default: complex-valued SSM for phase coherence
         d_state: int = 16,
         expand: int = 2,
         d_conv: int = 4,

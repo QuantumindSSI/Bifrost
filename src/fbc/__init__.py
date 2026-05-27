@@ -10,6 +10,11 @@ from .spectral_tensor import SpectralTensor
 from .canonicalizer import SpectralCanonicalizer
 from .decomposer import SpectralDecomposer
 from .resonance_attention import ResonanceAttention, SpectralBinding
+from .resonance_attention.harmonic_binding import (
+    HarmonicBinding,
+    HarmonicAttention,
+    HarmonicFrequencyGrid,
+)
 from .phase_lock_bridge import PhaseLockBridge, FrequencyAttractor
 from .pipeline import FBCPipeline
 from .bridge import bridge_to_canonicalizer
@@ -41,6 +46,9 @@ __all__ = [
     "SpectralDecomposer",
     "ResonanceAttention",
     "SpectralBinding",
+    "HarmonicBinding",
+    "HarmonicAttention",
+    "HarmonicFrequencyGrid",
     "PhaseLockBridge",
     "FrequencyAttractor",
     "FBCPipeline",

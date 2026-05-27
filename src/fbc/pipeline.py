@@ -61,7 +61,7 @@ class FBCPipeline(nn.Module):
         preserve_frames: bool = True,  # Enable meaningful attention
         use_mamba: bool = True,  # Use real Mamba-3 when CUDA available
         use_2d_fft: bool = False,  # Use 2D FFT for spatial data
-        use_complex_ssm: bool = False,  # Use complex-valued SSM for true phase coherence
+        use_complex_ssm: bool = True,  # Default: complex-valued SSM for true phase coherence
     ) -> None:
         super().__init__()
         self.use_complex_ssm = use_complex_ssm

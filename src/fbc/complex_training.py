@@ -238,25 +238,46 @@ class ComplexFBCTrainer:
             # Add temporal dimension if missing
             z_input = z_input.unsqueeze(1)  # (B, 1, n_freq)
 
+        # Ensure we have at least 2 frames for prediction
+        if z_input.shape[1] < 2:
+            # Replicate to create minimum temporal structure
+            z_input = z_input.repeat(1, 2, 1)
+
         # Shift to create prediction target: predict frame t+1 from frame t
         pred_z = z_input[:, :-1, :]  # (B, T-1, n_freq)
         target_z = z_input[:, 1:, :]  # (B, T-1, n_freq)
 
         # Interpolate to match decomposer output dimension if needed
-        if pred_z.shape[-1] != decomposed.amplitude.shape[-1]:
-            # Simple linear interpolation
-            pred_z = F.interpolate(
-                pred_z.transpose(-2, -1),
+        if pred_z.shape[-1] != decomposed.amplitude.shape[-1] and pred_z.shape[1] > 0:
+            # Complex interpolation: handle real and imag separately
+            # F.interpolate needs 3D: (B, C, L) where C = n_freq, L = T
+            pred_z_real = F.interpolate(
+                pred_z.real.transpose(-2, -1),
                 size=decomposed.amplitude.shape[-1],
                 mode='linear',
                 align_corners=True
             ).transpose(-2, -1)
-            target_z = F.interpolate(
-                target_z.transpose(-2, -1),
+            pred_z_imag = F.interpolate(
+                pred_z.imag.transpose(-2, -1),
                 size=decomposed.amplitude.shape[-1],
                 mode='linear',
                 align_corners=True
             ).transpose(-2, -1)
+            pred_z = torch.complex(pred_z_real, pred_z_imag)
+
+            target_z_real = F.interpolate(
+                target_z.real.transpose(-2, -1),
+                size=decomposed.amplitude.shape[-1],
+                mode='linear',
+                align_corners=True
+            ).transpose(-2, -1)
+            target_z_imag = F.interpolate(
+                target_z.imag.transpose(-2, -1),
+                size=decomposed.amplitude.shape[-1],
+                mode='linear',
+                align_corners=True
+            ).transpose(-2, -1)
+            target_z = torch.complex(target_z_real, target_z_imag)
 
         # Convert amplitude/phase back to complex for loss
         pred_z_complex = torch.complex(
