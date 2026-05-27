@@ -74,10 +74,11 @@ class ComplexNextStepLoss(nn.Module):
         phase_diff = torch.atan2(phase_diff.sin(), phase_diff.cos())
         phase_error = (phase_diff ** 2).mean()
 
-        # Combined loss with weighting
-        total_loss = complex_error + \
-                     self.amplitude_weight * amp_error + \
-                     self.phase_weight * phase_error
+        # complex_error = |pred - target|² already penalises both amplitude and phase jointly.
+        # Adding amp_error again would double-penalise amplitude and bias gradients toward
+        # amplitude at the expense of phase learning. Only the circular phase error is added
+        # as a separately weighted term since it captures wrap-around structure.
+        total_loss = complex_error + self.phase_weight * phase_error
 
         return total_loss
 
@@ -105,16 +106,20 @@ class PhaseCoherenceMetrics:
         """
         B, H, T, _ = coherence.shape
 
-        # Apply softmax if not already done (ensure positive weights)
-        coherence = F.softmax(coherence, dim=-1)
+        # coherence is already softmax-normalised by ResonanceAttention;
+        # re-applying softmax would compress the distribution toward uniform
+        # and make the ratio artificially close to 1.0, masking real structure.
 
         # Extract diagonal (temporal self-coherence)
         diagonal = coherence.diagonal(dim1=-2, dim2=-1)  # (B, H, T)
         diag_mean = diagonal.mean().item()
 
-        # Extract off-diagonal
-        mask = ~torch.eye(T, dtype=torch.bool, device=coherence.device)
-        off_diag = coherence[..., mask]  # Flattened off-diagonal elements
+        # Reshape to (B*H, T, T) so the 2D off-diagonal mask indexes correctly.
+        # coherence[..., mask] on a 4D tensor with a 2D mask uses advanced indexing
+        # that selects across the wrong dimensions and produces NaN.
+        coh_flat = coherence.reshape(B * H, T, T)
+        off_diag_mask = ~torch.eye(T, dtype=torch.bool, device=coherence.device)  # (T, T)
+        off_diag = coh_flat[:, off_diag_mask]  # (B*H, T*(T-1))
         off_diag_mean = off_diag.mean().item()
 
         # Ratio: diagonal should be higher than off-diagonal for coherent attention

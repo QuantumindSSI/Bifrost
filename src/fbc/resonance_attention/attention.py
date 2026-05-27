@@ -186,33 +186,19 @@ class ResonanceAttention(nn.Module):
         pq = phase_q[..., :usable].view(*phase_q.shape[:-1], n_bands, band_size)
         pk = phase_k[..., :usable].view(*phase_k.shape[:-1], n_bands, band_size)
 
-        # CORRECT: Compute temporal coherence across frames
-        # For each band, compute cos(Δφ) between all frame pairs
-        # pq: (B, H, S_q, n_bands, band_size)
-        # pk: (B, H, S_k, n_bands, band_size)
+        # cos(a - b) = cos(a)cos(b) + sin(a)sin(b)
+        # Avoids materialising (B, H, n_bands, band_size, S_q, S_k) intermediate.
+        # pq/pk: (B, H, S, n_bands, band_size)
+        # Reshape to (B, H, n_bands, S, band_size) for batched matmul
+        pq_r = pq.permute(0, 1, 3, 2, 4)  # (B, H, n_bands, S_q, band_size)
+        pk_r = pk.permute(0, 1, 3, 2, 4)  # (B, H, n_bands, S_k, band_size)
 
-        # Expand to compute all pairs using einsum for clarity
-        # We want: for each (i, j) in (S_q, S_k), compute mean_f(cos(pq[i,f] - pk[j,f]))
-        # pq: (B, H, S_q, n_bands, band_size)
-        # pk: (B, H, S_k, n_bands, band_size)
-
-        # Move n_bands and band_size to the end for simpler broadcasting
-        # pq: (B, H, S_q, n_bands, band_size) -> permute to (B, H, n_bands, band_size, S_q)
-        pq_t = pq.permute(0, 1, 3, 4, 2)  # (B, H, n_bands, band_size, S_q)
-        pk_t = pk.permute(0, 1, 3, 4, 2)  # (B, H, n_bands, band_size, S_k)
-
-        # Now expand: (B, H, n_bands, band_size, S_q, 1) - (B, H, n_bands, band_size, 1, S_k)
-        pq_exp = pq_t.unsqueeze(-1)  # (B, H, n_bands, band_size, S_q, 1)
-        pk_exp = pk_t.unsqueeze(-2)  # (B, H, n_bands, band_size, 1, S_k)
-
-        # Phase difference: broadcasting gives (B, H, n_bands, band_size, S_q, S_k)
-        phase_diff = pq_exp - pk_exp
-
-        # Cosine of phase difference
-        cos_diff = torch.cos(phase_diff)  # (B, H, n_bands, band_size, S_q, S_k)
-
-        # Average over band_size (dim 3) first
-        cos_per_band = cos_diff.mean(dim=3)  # (B, H, n_bands, S_q, S_k)
+        # cos(pq) @ cos(pk).T + sin(pq) @ sin(pk).T  →  (B, H, n_bands, S_q, S_k)
+        # Each matmul: (B, H, n_bands, S_q, band_size) @ (B, H, n_bands, band_size, S_k)
+        cos_per_band = (
+            torch.matmul(torch.cos(pq_r), torch.cos(pk_r).transpose(-2, -1))
+            + torch.matmul(torch.sin(pq_r), torch.sin(pk_r).transpose(-2, -1))
+        ) / band_size  # normalise by band_size to match mean semantics
 
         # Weighted sum over n_bands (dim 2)
         w = F.softmax(self.band_weights[:n_bands], dim=0)  # (n_bands,)

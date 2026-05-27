@@ -92,11 +92,17 @@ class FBCPipeline(nn.Module):
                 use_mamba=use_mamba,
             )
 
+        # For the dual-stream decomposer the binding receives n_freq_decomp-dimensional
+        # phase tensors; passing n_freq_in activates the harmonic-preserving original-phase
+        # coherence path in SpectralBinding (use_original_phase=True).
+        # For the complex SSM the decomposer already outputs d_model, so no projection needed.
+        binding_n_freq_in = None if use_complex_ssm else n_freq_decomp
         self.binding = SpectralBinding(
             d_model=d_model,
             n_heads=n_heads,
             n_bands=n_bands,
             dropout=dropout,
+            n_freq_in=binding_n_freq_in,
         )
 
         # Bridge projection if decomposer output dim != binding d_model

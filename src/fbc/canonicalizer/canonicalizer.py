@@ -244,20 +244,36 @@ class SpectralCanonicalizer(nn.Module):
         radius = torch.sqrt(xx**2 + yy**2).long()
 
         n_freq = self.n_fft // 2 + 1
+
+        # Clamp radius indices to valid bin range [0, n_freq-1]
+        radius_clamped = radius.clamp(0, n_freq - 1)  # (n_fft, n_fft)
+        flat_radius = radius_clamped.reshape(-1)  # (n_fft*n_fft,)
+
+        # Flatten spatial dims for scatter: amplitude_2d is (..., n_fft, n_fft)
+        flat_shape = list(amplitude_2d.shape[:-2]) + [self.n_fft * self.n_fft]
+        amplitude_flat = amplitude_2d.reshape(flat_shape)  # (..., n_fft*n_fft)
+
+        # Count pixels per radial bin (same for all batch elements)
+        bin_counts = torch.zeros(n_freq, device=signal.device)
+        bin_counts.scatter_add_(0, flat_radius, torch.ones_like(flat_radius, dtype=torch.float32))
+        bin_counts = bin_counts.clamp(min=1.0)
+
+        # Scatter-sum amplitude per radial bin for each batch element
         radial_amplitude = torch.zeros(*batch_dims, n_freq, device=signal.device)
-        radial_count = torch.zeros(n_freq, device=signal.device)
+        idx = flat_radius.unsqueeze(0).expand(amplitude_flat.shape[:-1] + (flat_radius.shape[0],))
+        radial_amplitude.scatter_add_(-1, idx, amplitude_flat)
+        radial_amplitude = radial_amplitude / bin_counts  # mean per bin
 
-        # Radially bin the amplitudes
-        for r in range(n_freq):
-            mask = (radius == r)
-            if mask.any():
-                radial_amplitude[..., r] = amplitude_2d[..., mask].mean(dim=-1)
-                radial_count[r] = mask.sum()
+        # Phase: circular mean per radial bin to preserve per-band spatial phase information
+        # spectrum_2d: (..., n_fft, n_fft) complex
+        phase_2d = spectrum_2d.angle()  # (..., n_fft, n_fft)
+        phase_flat = phase_2d.reshape(flat_shape)  # (..., n_fft*n_fft)
 
-        # Phase: use angle of DC component as representative
-        # For simplicity, take phase at center
-        phase_dc = spectrum_2d[..., self.n_fft//2, self.n_fft//2].angle()
-        phase = phase_dc.unsqueeze(-1).expand_as(radial_amplitude)
+        sin_sum = torch.zeros(*batch_dims, n_freq, device=signal.device)
+        cos_sum = torch.zeros(*batch_dims, n_freq, device=signal.device)
+        sin_sum.scatter_add_(-1, idx, torch.sin(phase_flat))
+        cos_sum.scatter_add_(-1, idx, torch.cos(phase_flat))
+        phase = torch.atan2(sin_sum, cos_sum)  # circular mean phase per bin (..., n_freq)
 
         # Normalize amplitude
         amp_max = radial_amplitude.amax(dim=-1, keepdim=True).clamp(min=1e-8)

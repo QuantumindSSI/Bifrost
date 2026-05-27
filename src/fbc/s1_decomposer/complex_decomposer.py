@@ -160,7 +160,6 @@ class ComplexSelectiveScan(nn.Module):
         dt = delta.unsqueeze(-1)  # (B, L, d_inner, 1)
         dt_B_x = dt * B.unsqueeze(2) * x.unsqueeze(-1)  # (B, L, d_inner, d_state)
 
-        # Recurrence (sequential for now - can be parallelized)
         h = torch.zeros(B_batch, self.d_inner, self.d_state, dtype=torch.complex64, device=x.device)
         ys = []
 
@@ -306,16 +305,11 @@ class ComplexSpectralDecomposer(nn.Module):
             else:
                 z_frames = z
         else:
-            # 2D input: (B, n_freq) - replicate to create temporal frames
+            # 2D input: (B, n_freq) - replicate to create stationary temporal frames.
+            # No synthetic phase ramp: the SSM receives the true (time-invariant) signal
+            # and learns the identity mapping, which is the correct prior for a single frame.
             B = z.shape[0]
-            # Replicate z to create T frames: (B, T, n_freq)
-            z_frames = z.unsqueeze(1).expand(B, self.n_frames, self.n_freq)
-
-            # Add position-dependent phase modulation to create temporal evolution
-            position_phase = torch.linspace(0, 2 * 3.14159, self.n_frames, device=z.device)
-            position_phase = position_phase.view(1, self.n_frames, 1)
-            phase_shift = torch.exp(1j * position_phase)
-            z_frames = z_frames * phase_shift
+            z_frames = z.unsqueeze(1).expand(B, self.n_frames, self.n_freq).contiguous()
 
         # Project to d_model (complex)
         h = self.input_proj(z_frames)  # (B, T, d_model) complex

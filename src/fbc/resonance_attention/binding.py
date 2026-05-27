@@ -127,6 +127,14 @@ class SpectralBinding(nn.Module):
             phase_orig, self.amp_proj.weight, self.amp_proj.bias
         ) if self.use_original_phase else phase_orig
 
+        # Compute V projections needed for re-aggregation when harmonic blend is active
+        V_proj = self.resonance.W_v(amp_proj)  # (B, T, d_model)
+        B_sz, T_sz, _ = amp_proj.shape
+        d_head = self.resonance.d_head
+        n_heads = self.resonance.n_heads
+        # (B, n_heads, T, d_head)
+        V_heads = V_proj.view(B_sz, T_sz, n_heads, d_head).transpose(1, 2)
+
         # Main resonance attention uses projected amplitude and phase
         bound, coherence = self.resonance(amp_proj, phase=phase_proj)
         # coherence: (B, n_heads, T, T) - returned for diagnostics
@@ -139,21 +147,19 @@ class SpectralBinding(nn.Module):
             # coherence_orig: (B, 1, T, T) computed from full 513-dim phase
 
             # Broadcast original-phase coherence to all heads
-            # This makes harmonic structure influence the attention weights
-            coherence_orig_expanded = coherence_orig.expand(-1, self.resonance.n_heads, -1, -1)
+            coherence_orig_expanded = coherence_orig.expand(-1, n_heads, -1, -1)
 
-            # Blend: use original-phase coherence structure with projected-phase scaling
-            # coherence_orig captures harmonic relationships (440Hz, 880Hz, etc.)
-            # coherence (projected) provides the multi-head structure
-            # Weighted combination: 70% original-phase (structure), 30% projected (learned)
+            # Blend: 70% harmonic-space coherence (structure) + 30% projected (learned)
             coherence = 0.7 * coherence_orig_expanded + 0.3 * coherence
 
-            # Recompute bound with blended coherence
-            # Reshape for einsum: (B, H, T, T) @ (B, H, T, d_head) -> (B, H, T, d_head)
-            V = bound.view(bound.shape[0], bound.shape[1], self.resonance.n_heads, -1)
-            # Actually, bound is already the output of attention, so we need to recompute
-            # Let's just use the blended coherence for the return value
-            # The bound is computed with projected-phase, which is acceptable
+            # Re-normalise blended weights and re-aggregate V so bound reflects harmonics
+            blended_weights = F.softmax(coherence, dim=-1)
+            blended_weights = self.resonance.attn_dropout(blended_weights)
+            # (B, n_heads, T, d_head)
+            out_heads = torch.matmul(blended_weights, V_heads)
+            # (B, T, d_model)
+            out_flat = out_heads.transpose(1, 2).contiguous().view(B_sz, T_sz, self.d_model)
+            bound = self.resonance.norm(self.resonance.W_o(out_flat) + amp_proj)
 
         if needs_squeeze:
             bound = bound.squeeze(0)
@@ -201,6 +207,7 @@ class SpectralBinding(nn.Module):
                 "n_bands": self.resonance.n_bands,
             },
         )
+        bound_st.validate()
 
         return bound_st, coherence
 
