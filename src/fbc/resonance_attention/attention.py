@@ -191,21 +191,31 @@ class ResonanceAttention(nn.Module):
         # pq: (B, H, S_q, n_bands, band_size)
         # pk: (B, H, S_k, n_bands, band_size)
 
-        # Expand to compute all pairs: (B, H, S_q, 1, n_bands, band_size) - (B, H, 1, S_k, n_bands, band_size)
-        pq_exp = pq.unsqueeze(-4)  # (B, H, S_q, 1, n_bands, band_size)
-        pk_exp = pk.unsqueeze(-5)  # (B, H, 1, S_k, n_bands, band_size)
+        # Expand to compute all pairs using einsum for clarity
+        # We want: for each (i, j) in (S_q, S_k), compute mean_f(cos(pq[i,f] - pk[j,f]))
+        # pq: (B, H, S_q, n_bands, band_size)
+        # pk: (B, H, S_k, n_bands, band_size)
 
-        # Phase difference across time frames
-        phase_diff = pq_exp - pk_exp  # (B, H, S_q, S_k, n_bands, band_size)
+        # Move n_bands and band_size to the end for simpler broadcasting
+        # pq: (B, H, S_q, n_bands, band_size) -> permute to (B, H, n_bands, band_size, S_q)
+        pq_t = pq.permute(0, 1, 3, 4, 2)  # (B, H, n_bands, band_size, S_q)
+        pk_t = pk.permute(0, 1, 3, 4, 2)  # (B, H, n_bands, band_size, S_k)
+
+        # Now expand: (B, H, n_bands, band_size, S_q, 1) - (B, H, n_bands, band_size, 1, S_k)
+        pq_exp = pq_t.unsqueeze(-1)  # (B, H, n_bands, band_size, S_q, 1)
+        pk_exp = pk_t.unsqueeze(-2)  # (B, H, n_bands, band_size, 1, S_k)
+
+        # Phase difference: broadcasting gives (B, H, n_bands, band_size, S_q, S_k)
+        phase_diff = pq_exp - pk_exp
 
         # Cosine of phase difference
-        cos_diff = torch.cos(phase_diff)  # (B, H, S_q, S_k, n_bands, band_size)
+        cos_diff = torch.cos(phase_diff)  # (B, H, n_bands, band_size, S_q, S_k)
 
-        # Average over band_size first
-        cos_per_band = cos_diff.mean(dim=-1)  # (B, H, S_q, S_k, n_bands)
+        # Average over band_size (dim 3) first
+        cos_per_band = cos_diff.mean(dim=3)  # (B, H, n_bands, S_q, S_k)
 
-        # Weighted sum over bands
+        # Weighted sum over n_bands (dim 2)
         w = F.softmax(self.band_weights[:n_bands], dim=0)  # (n_bands,)
-        coherence = (cos_per_band * w.view(1, 1, 1, 1, n_bands)).sum(dim=-1)  # (B, H, S_q, S_k)
+        coherence = (cos_per_band * w.view(1, 1, n_bands, 1, 1)).sum(dim=2)  # (B, H, S_q, S_k)
 
         return coherence
