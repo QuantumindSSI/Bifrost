@@ -59,11 +59,13 @@ class SpectralBinding(nn.Module):
 
         if self.use_original_phase:
             # Separate resonance attention for original-phase coherence
+            # Use n_heads=1 since 513 (n_freq) may not be divisible by n_heads
+            # We only need coherence computation, not multi-head attention
             self.resonance_orig = ResonanceAttention(
                 d_model=in_dim,  # n_freq dimension for phase coherence
-                n_heads=n_heads,
+                n_heads=1,  # Single head for coherence in original frequency space
                 n_bands=min(n_bands, in_dim),  # can't have more bands than features
-                dropout=dropout,
+                dropout=0.0,  # No dropout for coherence computation
             )
             # Linear layer to map coherence from n_freq space to d_model for aggregation
             self.coherence_proj = nn.Linear(in_dim, d_model)
@@ -120,28 +122,21 @@ class SpectralBinding(nn.Module):
         # Project amplitude to d_model for values
         amp_proj = self.amp_proj(amp)
 
+        # Project phase for the main resonance attention
+        phase_proj = torch.nn.functional.linear(
+            phase_orig, self.amp_proj.weight, self.amp_proj.bias
+        ) if self.use_original_phase else phase_orig
+
         # Compute coherence in ORIGINAL n_freq space to preserve harmonic structure
         if self.use_original_phase and phase_orig.shape[-1] != self.d_model:
-            # Compute phase coherence in original frequency space
-            _, coherence_orig = self.resonance_orig(amp_proj, phase=phase_orig)
-            # coherence_orig: (B, H, T, T) computed from 513-dim phase relationships
+            # Compute phase coherence in original frequency space (n_freq dimension)
+            # This preserves harmonic relationships (440Hz, 880Hz, etc. are distinct)
+            _, coherence_orig = self.resonance_orig(amp, phase=phase_orig)
+            # coherence_orig: (B, 1, T, T) computed from full 513-dim phase
 
-            # Also compute in projected space as fallback
-            phase_proj = torch.nn.functional.linear(
-                phase_orig, self.amp_proj.weight, self.amp_proj.bias
-            ) if hasattr(self, 'amp_proj') else amp_proj
-            _, coherence_proj = self.resonance(amp_proj, phase=phase_proj)
-
-            # Blend: use original-space coherence (better for harmonics)
-            # but we need to reconcile shapes if they're different
-            coherence = coherence_orig
-
-            # Resonance attention uses projected amplitude with original-phase coherence
-            bound, _ = self.resonance(amp_proj, phase=phase_proj)
-        else:
-            # Original behavior when dimensions match
-            phase_proj = phase if not self.use_original_phase else amp_proj
-            bound, coherence = self.resonance(amp_proj, phase=phase_proj)
+        # Main resonance attention uses projected amplitude and phase
+        bound, coherence = self.resonance(amp_proj, phase=phase_proj)
+        # coherence: (B, n_heads, T, T) - returned for diagnostics
 
         if needs_squeeze:
             bound = bound.squeeze(0)
