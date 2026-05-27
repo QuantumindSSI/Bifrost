@@ -1,6 +1,8 @@
-# Quantumind FBC Core
+# Bifröst — The Spectral Rainbow Bridge
 
-**Frequency-Based Cognition (FBC) Framework**
+**Frequency-Based Cognition (FBC) Framework by Quantumind**
+
+> *Bifröst — the burning rainbow bridge between worlds, alluded to in mythology as the path connecting the realm of humans to the realm of gods. In our implementation, Bifröst bridges raw sensory signals to coherent cognitive representations through spectral decomposition.*
 
 Phase-coherent neural computation for artificial general intelligence. Implements ResonanceAttention — an attention mechanism based on phase-locking rather than dot-product similarity.
 

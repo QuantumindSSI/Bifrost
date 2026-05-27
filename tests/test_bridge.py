@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import torch
 
-from fbc.bridge import bridge_to_canonicalizer
+from bifrost.bridge import bridge_to_canonicalizer
 
 
 class TestBridgeAudio:
@@ -140,7 +140,7 @@ class TestBridgeText:
 
     def test_text_array_from_decoder(self):
         """Text-decoded numpy array passes through bridge."""
-        from fbc.ingest.decoders.text import TextDecoder
+        from bifrost.ingest.decoders.text import TextDecoder
 
         decoder = TextDecoder()
         import pandas as pd
@@ -162,7 +162,7 @@ class TestBridgeText:
 class TestBridgeToS0Integration:
     def test_audio_through_s0(self):
         """Full bridge → canonicalizer round-trip."""
-        from fbc.canonicalizer import SpectralCanonicalizer
+        from bifrost.canonicalizer import SpectralCanonicalizer
 
         s0 = SpectralCanonicalizer(n_fft=256)
         data = np.random.randn(16000).astype(np.float32)
@@ -175,7 +175,7 @@ class TestBridgeToS0Integration:
 
     def test_stereo_through_s0(self):
         """Stereo scipy-layout → bridge → canonicalizer."""
-        from fbc.canonicalizer import SpectralCanonicalizer
+        from bifrost.canonicalizer import SpectralCanonicalizer
 
         s0 = SpectralCanonicalizer(n_fft=256)
         data = np.random.randn(16000, 2).astype(np.float32)
@@ -188,7 +188,7 @@ class TestBridgeToS0Integration:
 
     def test_image_through_s0(self):
         """Image → bridge → canonicalizer."""
-        from fbc.canonicalizer import SpectralCanonicalizer
+        from bifrost.canonicalizer import SpectralCanonicalizer
 
         s0 = SpectralCanonicalizer(n_fft=256)
         data = np.random.rand(32, 32, 3).astype(np.float32)

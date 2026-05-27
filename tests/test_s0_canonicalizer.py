@@ -4,8 +4,8 @@ import pytest
 import numpy as np
 import torch
 
-from fbc.canonicalizer import SpectralCanonicalizer
-from fbc.spectral_tensor import SpectralTensor
+from bifrost.canonicalizer import SpectralCanonicalizer
+from bifrost.spectral_tensor import SpectralTensor
 
 
 @pytest.fixture

@@ -6,7 +6,7 @@ producing coherence-bound spectral embeddings ready for attractor
 identification.
 
 Usage:
-    from fbc.pipeline import FBCPipeline
+    from bifrost.pipeline import FBCPipeline
 
     pipe = FBCPipeline()
     bound_st, coherence = pipe.process_signal(audio_tensor, metadata)

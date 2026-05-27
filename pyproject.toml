@@ -3,9 +3,9 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "quantumind-fbc"
+name = "quantumind-bifrost"
 version = "0.1.0"
-description = "Frequency-Based Cognition (FBC) framework with ResonanceAttention for phase-aware neural computation"
+description = "Bifröst - The Spectral Rainbow Bridge: Frequency-Based Cognition framework with ResonanceAttention"
 readme = "README.md"
 requires-python = ">=3.9,<3.13"
 license = {text = "MIT"}
@@ -13,6 +13,7 @@ authors = [
     {name = "Quantumind Ltd.", email = "engineering@quantumind.io"}
 ]
 keywords = [
+    "bifrost",
     "fbc",
     "resonance-attention",
     "phase-cognition",
@@ -70,18 +71,19 @@ phase2 = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/quantumind/fbc-core"
-Documentation = "https://github.com/quantumind/fbc-core#readme"
-Repository = "https://github.com/quantumind/fbc-core.git"
-Issues = "https://github.com/quantumind/fbc-core/issues"
+Homepage = "https://github.com/quantumind/bifrost"
+Documentation = "https://github.com/quantumind/bifrost#readme"
+Repository = "https://github.com/quantumind/bifrost.git"
+Issues = "https://github.com/quantumind/bifrost/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["fbc*"]
+include = ["bifrost*", "fbc*"]
 exclude = ["tests*", "demos*", "benchmarks*"]
 
 [project.scripts]
-fbc = "fbc.cli.main:main"
+bifrost = "bifrost.cli:main"
+fbc = "bifrost.cli:main"
 
 [tool.black]
 line-length = 100
@@ -90,7 +92,7 @@ target-version = ['py38', 'py39', 'py310', 'py311']
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
-addopts = "--cov=fbc --cov-report=html --cov-report=term-missing"
+addopts = "--cov=bifrost --cov-report=html --cov-report=term-missing"
 
 [tool.mypy]
 python_version = "3.9"

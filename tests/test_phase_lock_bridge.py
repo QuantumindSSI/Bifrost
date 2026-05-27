@@ -3,9 +3,9 @@
 import pytest
 import torch
 
-from fbc.phase_lock_bridge import PhaseLockBridge, FrequencyAttractor
-from fbc.phase_lock_bridge.bridge import BridgeCandidate
-from fbc.spectral_tensor import SpectralTensor
+from bifrost.phase_lock_bridge import PhaseLockBridge, FrequencyAttractor
+from bifrost.phase_lock_bridge.bridge import BridgeCandidate
+from bifrost.spectral_tensor import SpectralTensor
 
 
 def _make_attractor(d=64, n_bands=8, domain="test", aid="a0", phase_offset=0.0):

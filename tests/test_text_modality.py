@@ -8,10 +8,10 @@ import pandas as pd
 import pytest
 import torch
 
-from fbc.ingest import IngestPipeline, Modality, TextTokenizer
-from fbc.ingest.decoders.text import TextDecoder, TensorDecoder
-from fbc.bridge import bridge_to_canonicalizer
-from fbc.pipeline import FBCPipeline
+from bifrost.ingest import IngestPipeline, Modality, TextTokenizer
+from bifrost.ingest.decoders.text import TextDecoder, TensorDecoder
+from bifrost.bridge import bridge_to_canonicalizer
+from bifrost.pipeline import FBCPipeline
 
 
 class TestTextDecoder:

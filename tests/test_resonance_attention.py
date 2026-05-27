@@ -3,9 +3,9 @@
 import pytest
 import torch
 
-from fbc.resonance_attention.attention import ResonanceAttention
-from fbc.resonance_attention.binding import SpectralBinding
-from fbc.spectral_tensor import SpectralTensor
+from bifrost.resonance_attention.attention import ResonanceAttention
+from bifrost.resonance_attention.binding import SpectralBinding
+from bifrost.spectral_tensor import SpectralTensor
 
 
 @pytest.fixture

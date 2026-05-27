@@ -17,10 +17,10 @@ import pytest
 import torch
 from scipy.io import wavfile
 
-from fbc.bridge import bridge_to_canonicalizer
-from fbc.canonicalizer import SpectralCanonicalizer
-from fbc.decomposer import SpectralDecomposer
-from fbc.resonance_attention import SpectralBinding
+from bifrost.bridge import bridge_to_canonicalizer
+from bifrost.canonicalizer import SpectralCanonicalizer
+from bifrost.decomposer import SpectralDecomposer
+from bifrost.resonance_attention import SpectralBinding
 
 
 N_FFT = 1024

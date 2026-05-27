@@ -8,7 +8,7 @@ Endpoints:
     GET  /metrics   Phase coherence metrics
 
 Usage:
-    from fbc.api import start_server
+    from bifrost.api import start_server
     start_server(host="0.0.0.0", port=8000)
 """
 

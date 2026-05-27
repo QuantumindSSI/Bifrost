@@ -3,9 +3,9 @@
 import pytest
 import torch
 
-from fbc.spectral_tensor import SpectralTensor
-from fbc.canonicalizer import SpectralCanonicalizer
-from fbc.decomposer import SpectralDecomposer
+from bifrost.spectral_tensor import SpectralTensor
+from bifrost.canonicalizer import SpectralCanonicalizer
+from bifrost.decomposer import SpectralDecomposer
 
 
 @pytest.fixture

@@ -16,7 +16,7 @@ from typing import Any, Dict, Optional, Tuple, Union
 import numpy as np
 import torch
 
-from fbc.ingest.decoders.text import TextTokenizer
+from bifrost.ingest.decoders.text import TextTokenizer
 
 
 def bridge_to_canonicalizer(

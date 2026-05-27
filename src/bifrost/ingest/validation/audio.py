@@ -3,7 +3,7 @@
 import numpy as np
 from typing import Tuple
 
-from fbc.ingest.validation.exceptions import ValidationError
+from bifrost.ingest.validation.exceptions import ValidationError
 
 
 class AudioValidator:

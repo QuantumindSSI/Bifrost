@@ -20,8 +20,8 @@ import numpy as np
 import pytest
 import torch
 
-from fbc.resonance_attention import ResonanceAttention
-from fbc.phase_lock_bridge import PhaseLockBridge, FrequencyAttractor
+from bifrost.resonance_attention import ResonanceAttention
+from bifrost.phase_lock_bridge import PhaseLockBridge, FrequencyAttractor
 
 
 # ─────────────────────────────────────────────────────────────────────────

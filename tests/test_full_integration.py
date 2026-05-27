@@ -8,12 +8,12 @@ import pytest
 import numpy as np
 import torch
 
-from fbc.bridge import bridge_to_canonicalizer
-from fbc.canonicalizer import SpectralCanonicalizer
-from fbc.decomposer import SpectralDecomposer
-from fbc.resonance_attention import SpectralBinding
-from fbc.phase_lock_bridge import PhaseLockBridge, FrequencyAttractor
-from fbc.spectral_tensor import SpectralTensor
+from bifrost.bridge import bridge_to_canonicalizer
+from bifrost.canonicalizer import SpectralCanonicalizer
+from bifrost.decomposer import SpectralDecomposer
+from bifrost.resonance_attention import SpectralBinding
+from bifrost.phase_lock_bridge import PhaseLockBridge, FrequencyAttractor
+from bifrost.spectral_tensor import SpectralTensor
 
 
 N_FFT = 256

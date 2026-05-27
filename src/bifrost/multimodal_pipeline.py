@@ -6,7 +6,7 @@ appropriate processing path while maintaining the core FBC architecture:
     Ingest → Canonicalize → Decompose → Bind
 
 Usage:
-    from fbc.multimodal_pipeline import MultiModalSpectralPipeline, Modality
+    from bifrost.multimodal_pipeline import MultiModalSpectralPipeline, Modality
 
     # Audio (1D temporal)
     pipeline = MultiModalSpectralPipeline(modality=Modality.AUDIO)

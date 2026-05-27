@@ -5,8 +5,8 @@ Self-supervised next-frame prediction enables the dual-stream SSM
 to learn temporal phase coherence patterns.
 
 Usage:
-    from fbc.training import FBCTrainer
-    from fbc.pipeline import FBCPipeline
+    from bifrost.training import FBCTrainer
+    from bifrost.pipeline import FBCPipeline
 
     pipeline = FBCPipeline(d_model=128, use_mamba=True)
     trainer = FBCTrainer(pipeline, lr=1e-3)

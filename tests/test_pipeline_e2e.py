@@ -4,8 +4,8 @@ import pytest
 import numpy as np
 import torch
 
-from fbc.pipeline import FBCPipeline
-from fbc.spectral_tensor import SpectralTensor
+from bifrost.pipeline import FBCPipeline
+from bifrost.spectral_tensor import SpectralTensor
 
 
 @pytest.fixture

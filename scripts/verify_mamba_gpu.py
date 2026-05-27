@@ -101,7 +101,7 @@ def test_fbc_mamba_integration():
 
     sys.path.insert(0, "/workspace/fbc-core/src")
 
-    from fbc.pipeline import FBCPipeline
+    from bifrost.pipeline import FBCPipeline
 
     # Create pipeline with Mamba enabled
     pipeline = FBCPipeline(

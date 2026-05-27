@@ -3,7 +3,7 @@
 import pytest
 import torch
 
-from fbc.spectral_tensor import SpectralTensor
+from bifrost.spectral_tensor import SpectralTensor
 
 
 @pytest.fixture

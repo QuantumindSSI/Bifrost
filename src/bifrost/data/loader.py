@@ -200,14 +200,14 @@ def quick_start_pipeline(audio_name: str = "mono_16khz"):
         Tuple of (canonical, decomposed, bound, attention_weights)
         
     Example:
-        >>> from fbc.data import quick_start_pipeline
+        >>> from bifrost.data import quick_start_pipeline
         >>> canonical, decomposed, bound, attn = quick_start_pipeline("mono_16khz")
         >>> print(f"Attention shape: {attn.shape}")
         Pipeline complete. Spectral tensor shape: torch.Size([1, 513, 8])
     """
-    from fbc.canonicalizer import SpectralCanonicalizer
-    from fbc.decomposer import SpectralDecomposer
-    from fbc.resonance_attention import SpectralBinding
+    from bifrost.canonicalizer import SpectralCanonicalizer
+    from bifrost.decomposer import SpectralDecomposer
+    from bifrost.resonance_attention import SpectralBinding
     
     # Load sample
     audio, sr = load_sample_audio(audio_name)

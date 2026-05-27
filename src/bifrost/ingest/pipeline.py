@@ -7,12 +7,12 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
-from fbc.ingest.decoders.audio import AudioDecoder
-from fbc.ingest.decoders.image import ImageDecoder
-from fbc.ingest.decoders.text import TextDecoder, TensorDecoder
-from fbc.ingest.validation.audio import AudioValidator
-from fbc.ingest.validation.image import ImageValidator
-from fbc.ingest.validation.exceptions import ValidationError, IngestException
+from bifrost.ingest.decoders.audio import AudioDecoder
+from bifrost.ingest.decoders.image import ImageDecoder
+from bifrost.ingest.decoders.text import TextDecoder, TensorDecoder
+from bifrost.ingest.validation.audio import AudioValidator
+from bifrost.ingest.validation.image import ImageValidator
+from bifrost.ingest.validation.exceptions import ValidationError, IngestException
 
 
 class Modality(str, Enum):

@@ -19,7 +19,7 @@ from fbc import (
     PhaseCoherenceMetrics,
     ComplexFBCTrainer,
 )
-from fbc.spectral_tensor import SpectralTensor
+from bifrost.spectral_tensor import SpectralTensor
 
 
 def test_basic_fbc_pipeline():

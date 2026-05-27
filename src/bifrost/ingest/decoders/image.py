@@ -7,7 +7,7 @@ from typing import Any, Dict, Tuple
 
 import numpy as np
 
-from fbc.ingest.validation.exceptions import DecodingError
+from bifrost.ingest.validation.exceptions import DecodingError
 
 
 class ImageDecoder:

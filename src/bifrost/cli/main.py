@@ -9,7 +9,7 @@ from typing import List, Optional
 warnings.filterwarnings("ignore", message="mamba-ssm not available", category=UserWarning)
 warnings.filterwarnings("ignore", message="SelectiveScanBlock stand-in", category=UserWarning)
 
-from fbc.cli import __version__
+from bifrost.cli import __version__
 
 
 def cmd_demo(args: argparse.Namespace) -> int:
@@ -80,11 +80,11 @@ def cmd_process(args: argparse.Namespace) -> int:
     import numpy as np
     import torch
 
-    from fbc.data import load_sample_audio
-    from fbc.data.loader import SAMPLES
-    from fbc.canonicalizer import SpectralCanonicalizer
-    from fbc.decomposer import SpectralDecomposer
-    from fbc.resonance_attention import SpectralBinding
+    from bifrost.data import load_sample_audio
+    from bifrost.data.loader import SAMPLES
+    from bifrost.canonicalizer import SpectralCanonicalizer
+    from bifrost.decomposer import SpectralDecomposer
+    from bifrost.resonance_attention import SpectralBinding
 
     # Load audio
     if args.input in SAMPLES["audio"]:
@@ -154,7 +154,7 @@ def cmd_process(args: argparse.Namespace) -> int:
 
 def cmd_samples(args: argparse.Namespace) -> int:
     """List available sample data."""
-    from fbc.data import list_samples
+    from bifrost.data import list_samples
 
     AUDIO_DESC = {
         "mono_16khz":   "440 Hz tone, mono, 16 kHz, 2s",
@@ -196,13 +196,13 @@ def cmd_attractors(args: argparse.Namespace) -> int:
     import numpy as np
     import torch
 
-    from fbc.data import load_sample_audio
-    from fbc.canonicalizer import SpectralCanonicalizer
-    from fbc.decomposer import SpectralDecomposer
-    from fbc.resonance_attention import SpectralBinding
-    from fbc.phase_lock_bridge import PhaseLockBridge
+    from bifrost.data import load_sample_audio
+    from bifrost.canonicalizer import SpectralCanonicalizer
+    from bifrost.decomposer import SpectralDecomposer
+    from bifrost.resonance_attention import SpectralBinding
+    from bifrost.phase_lock_bridge import PhaseLockBridge
 
-    from fbc.data.loader import SAMPLES
+    from bifrost.data.loader import SAMPLES
 
     # Load audio
     if args.input in SAMPLES["audio"]:
@@ -278,7 +278,7 @@ def cmd_attractors(args: argparse.Namespace) -> int:
 def cmd_bridge(args: argparse.Namespace) -> int:
     """Evaluate Phase-Lock Bridge between two attractor sets (S4)."""
     import torch
-    from fbc.phase_lock_bridge import PhaseLockBridge
+    from bifrost.phase_lock_bridge import PhaseLockBridge
 
     # Load attractor files
     try:

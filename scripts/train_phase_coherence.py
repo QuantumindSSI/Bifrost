@@ -14,7 +14,7 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 
 from fbc import FBCPipeline, FBCTrainer, train_fbc_simple
-from fbc.data.loader import load_sample_audio
+from bifrost.data.loader import load_sample_audio
 
 
 def create_dummy_dataloader(batch_size: int = 4, num_batches: int = 10) -> DataLoader:
