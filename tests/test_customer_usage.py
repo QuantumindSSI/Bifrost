@@ -210,11 +210,12 @@ def test_phase_coherence_metrics():
         f"Coherent phase should be smoother: {smooth_coherent} vs {smooth_random}"
 
     # Test diagonal coherence ratio
-    coherence = torch.randn(2, 4, 32, 32)
+    # Use positive values (like softmax attention weights)
+    coherence = torch.rand(2, 4, 32, 32) * 0.5 + 0.1  # All positive, [0.1, 0.6]
     # Make diagonal stronger
     for b in range(2):
         for h in range(4):
-            coherence[b, h] = torch.eye(32) * 2.0 + coherence[b, h] * 0.1
+            coherence[b, h] = coherence[b, h] + torch.eye(32) * 1.5  # Boost diagonal
 
     ratio = PhaseCoherenceMetrics.diagonal_coherence_ratio(coherence)
     print(f"Diagonal coherence ratio: {ratio:.3f} (should be > 1.0)")
@@ -290,11 +291,16 @@ def test_training_workflow():
     target_z = z_input[:, 1:, :]  # Shift by one frame
 
     print(f"Pred: {pred_complex.shape}, Target: {target_z.shape}")
+    
+    # Check for NaN/Inf in inputs before loss computation
+    assert torch.isfinite(pred_complex).all(), "Pred contains NaN/Inf"
+    assert torch.isfinite(target_z).all(), "Target contains NaN/Inf"
+    
     loss = criterion(pred_complex, target_z)
     print(f"Loss: {loss.item():.4f}")
 
     # Verify loss is finite
-    assert torch.isfinite(loss), "Loss should be finite"
+    assert torch.isfinite(loss), f"Loss should be finite, got {loss.item()}"
 
     print("\n✅ TEST 5 PASSED: Training workflow functional")
     return True

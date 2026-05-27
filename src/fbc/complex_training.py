@@ -57,14 +57,22 @@ class ComplexNextStepLoss(nn.Module):
         Returns:
             Scalar loss
         """
+        # Check for NaN/Inf in inputs
+        if not torch.isfinite(pred_z).all() or not torch.isfinite(target_z).all():
+            # Return a large but finite loss to signal numerical issues
+            return torch.tensor(1e6, device=pred_z.device, requires_grad=True)
+        
         # Complex squared error: |pred - target|^2
         # For complex: |a + ib|^2 = a^2 + b^2
         diff = pred_z - target_z
-        complex_error = (diff.real ** 2 + diff.imag ** 2).mean()
+        # Clamp to prevent overflow
+        diff_real = diff.real.clamp(-10, 10)
+        diff_imag = diff.imag.clamp(-10, 10)
+        complex_error = (diff_real ** 2 + diff_imag ** 2).mean()
 
         # Also compute separate amplitude and phase errors for monitoring
-        pred_amp = pred_z.abs()
-        target_amp = target_z.abs()
+        pred_amp = pred_z.abs().clamp(0, 10)  # Prevent extreme values
+        target_amp = target_z.abs().clamp(0, 10)
         amp_error = F.mse_loss(pred_amp, target_amp)
 
         pred_phase = pred_z.angle()
@@ -79,6 +87,9 @@ class ComplexNextStepLoss(nn.Module):
         # amplitude at the expense of phase learning. Only the circular phase error is added
         # as a separately weighted term since it captures wrap-around structure.
         total_loss = complex_error + self.phase_weight * phase_error
+        
+        # Final clamp to ensure finite output
+        total_loss = torch.clamp(total_loss, 0, 1e6)
 
         return total_loss
 

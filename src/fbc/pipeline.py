@@ -85,10 +85,11 @@ class FBCPipeline(nn.Module):
             )
         else:
             # Dual-stream SSM (default, backward compatible)
+            # Use d_model (not n_freq_decomp) so output matches binding expectation
             self.decomposer = SpectralDecomposer(
                 n_fft=n_fft_s1,
                 n_scales=n_scales,
-                d_model=n_freq_decomp,
+                d_model=d_model,
                 use_mamba=use_mamba,
             )
 
