@@ -158,22 +158,33 @@ class SpectralDecomposer(nn.Module):
 
         # n_freq → d_model per frame
         self.input_proj = nn.Linear(self.n_freq, d_model)
+        # Parallel projection for phase stream
+        self.input_proj_phase = nn.Linear(self.n_freq, d_model)
 
-        # Temporal SSM over T frames
+        # Temporal SSM over T frames - dual stream for amplitude and phase
         if use_mamba:
             self.ssm = MambaBlock(
+                d_model=d_model, d_state=d_state, d_conv=d_conv, expand=expand
+            )
+            self.ssm_phase = MambaBlock(
                 d_model=d_model, d_state=d_state, d_conv=d_conv, expand=expand
             )
         else:
             self.ssm = nn.Sequential(
                 SelectiveScan(d_model=d_model, d_state=d_state, d_conv=d_conv, expand=expand)
             )
+            self.ssm_phase = nn.Sequential(
+                SelectiveScan(d_model=d_model, d_state=d_state, d_conv=d_conv, expand=expand)
+            )
 
         # d_model → n_freq per frame
         self.output_proj = nn.Linear(d_model, self.n_freq)
+        # Parallel output projection for phase
+        self.output_proj_phase = nn.Linear(d_model, self.n_freq)
 
         # Layer norm for stability
         self.norm = nn.LayerNorm(d_model)
+        self.norm_phase = nn.LayerNorm(d_model)
 
     @property
     def ssm_type(self) -> str:
@@ -212,14 +223,20 @@ class SpectralDecomposer(nn.Module):
         # 3. Per-frame wavelet → FFT → amplitude  (B, T, n_freq)
         frame_amps, frame_phases = self._per_frame_spectral(frames, B)
 
-        # 4. Project → (B, T, d_model) → SSM → norm
+        # 4. Project → (B, T, d_model) → SSM → norm (dual stream)
+        # Amplitude stream
         h = self.input_proj(frame_amps)     # (B, T, d_model)
         h = self.ssm(h)                      # (B, T, d_model)
         h = self.norm(h)
 
+        # Phase stream - now processed through its own SSM for temporal coherence
+        h_phase = self.input_proj_phase(frame_phases)  # (B, T, d_model)
+        h_phase = self.ssm_phase(h_phase)              # (B, T, d_model) - learns temporal patterns
+        h_phase = self.norm_phase(h_phase)
+
         # 5. Project back to frequency domain
-        out_amp = self.output_proj(h).abs()  # (B, T, n_freq)
-        out_phase = frame_phases             # (B, T, n_freq)
+        out_amp = self.output_proj(h).abs()            # (B, T, n_freq)
+        out_phase = self.output_proj_phase(h_phase)    # (B, T, n_freq) - learned temporal phase
 
         # 6. Scale and uncertainty
         # Flatten scale to 1-D, interpolate to n_freq, broadcast over (B, T)
