@@ -37,6 +37,7 @@ import torch.nn.functional as F
 from .spectral_tensor import SpectralTensor
 from .canonicalizer import SpectralCanonicalizer
 from .s1_decomposer.decomposer import SpectralDecomposer
+from .s1_decomposer.complex_decomposer import ComplexSpectralDecomposer
 from .resonance_attention.binding import SpectralBinding
 
 
@@ -559,6 +560,7 @@ class MultiModalSpectralPipeline(nn.Module):
         n_bands: int = 8,
         use_2d_fft: bool = False,
         use_mamba: bool = True,
+        use_complex_ssm: bool = False,  # Enable complex-valued SSM for phase coherence
         d_state: int = 16,
         expand: int = 2,
         d_conv: int = 4,
@@ -568,6 +570,7 @@ class MultiModalSpectralPipeline(nn.Module):
         self.n_fft = n_fft
         self.d_model = d_model
         self.use_2d_fft = use_2d_fft
+        self.use_complex_ssm = use_complex_ssm
 
         # Modality-specific canonicalizer/decomposer
         if modality == Modality.AUDIO:
@@ -576,15 +579,24 @@ class MultiModalSpectralPipeline(nn.Module):
                 preserve_frames=True,
                 use_2d_fft=False,
             )
-            self.decomposer = SpectralDecomposer(
-                n_fft=n_fft // 2,  # S1 uses smaller FFT
-                d_model=d_model,
-                n_frames=32,
-                use_mamba=use_mamba,
-                d_state=d_state,
-                expand=expand,
-                d_conv=d_conv,
-            )
+            if use_complex_ssm:
+                self.decomposer = ComplexSpectralDecomposer(
+                    n_fft=n_fft // 2,
+                    d_model=d_model,
+                    n_frames=32,
+                    d_state=d_state,
+                    expand=expand,
+                )
+            else:
+                self.decomposer = SpectralDecomposer(
+                    n_fft=n_fft // 2,  # S1 uses smaller FFT
+                    d_model=d_model,
+                    n_frames=32,
+                    use_mamba=use_mamba,
+                    d_state=d_state,
+                    expand=expand,
+                    d_conv=d_conv,
+                )
 
         elif modality == Modality.IMAGE:
             self.canonicalizer = SpectralCanonicalizer(
@@ -608,34 +620,56 @@ class MultiModalSpectralPipeline(nn.Module):
                 embed_dim=256,
                 n_fft=n_fft,
             )
-            self.decomposer = SpectralDecomposer(
-                n_fft=n_fft,
-                d_model=d_model,
-                n_frames=32,
-                use_mamba=use_mamba,
-                d_state=d_state,
-                expand=expand,
-                d_conv=d_conv,
-            )
+            if use_complex_ssm:
+                self.decomposer = ComplexSpectralDecomposer(
+                    n_fft=n_fft,
+                    d_model=d_model,
+                    n_frames=32,
+                    d_state=d_state,
+                    expand=expand,
+                )
+            else:
+                self.decomposer = SpectralDecomposer(
+                    n_fft=n_fft,
+                    d_model=d_model,
+                    n_frames=32,
+                    use_mamba=use_mamba,
+                    d_state=d_state,
+                    expand=expand,
+                    d_conv=d_conv,
+                )
 
         elif modality == Modality.TENSOR:
             self.canonicalizer = TensorSpectralAdapter(
                 n_fft=n_fft,
             )
-            self.decomposer = SpectralDecomposer(
-                n_fft=n_fft,
-                d_model=d_model,
-                n_frames=32,
-                use_mamba=use_mamba,
-                d_state=d_state,
-                expand=expand,
-                d_conv=d_conv,
-            )
+            if use_complex_ssm:
+                self.decomposer = ComplexSpectralDecomposer(
+                    n_fft=n_fft,
+                    d_model=d_model,
+                    n_frames=32,
+                    d_state=d_state,
+                    expand=expand,
+                )
+            else:
+                self.decomposer = SpectralDecomposer(
+                    n_fft=n_fft,
+                    d_model=d_model,
+                    n_frames=32,
+                    use_mamba=use_mamba,
+                    d_state=d_state,
+                    expand=expand,
+                    d_conv=d_conv,
+                )
 
         # Binding stage - needs to know input n_freq from decomposer
         # For audio: decomposer uses n_fft//2, so n_freq = n_fft//2 // 2 + 1 = n_fft//4 + 1
         # For others: decomposer uses n_fft directly, so n_freq = n_fft//2 + 1
-        if modality == Modality.AUDIO:
+        # Complex SSM: outputs d_model directly, no projection needed
+        if use_complex_ssm:
+            # Complex decomposer outputs d_model features directly
+            binding_n_freq = None  # No projection needed
+        elif modality == Modality.AUDIO:
             binding_n_freq = n_fft // 4 + 1  # S1 uses n_fft//2, then n_freq = (n_fft//2)//2 + 1
         else:
             binding_n_freq = n_fft // 2 + 1
@@ -677,7 +711,9 @@ class MultiModalSpectralPipeline(nn.Module):
     @property
     def ssm_type(self) -> str:
         """Return the SSM type being used."""
-        if hasattr(self.decomposer, 'ssm_type'):
+        if self.use_complex_ssm:
+            return "ComplexSpectralDecomposer (phase coherence learned)"
+        elif hasattr(self.decomposer, 'ssm_type'):
             return self.decomposer.ssm_type
         return "Unknown"
 
