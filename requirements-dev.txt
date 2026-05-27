@@ -1,0 +1,11 @@
+# Bifröst - Development Dependencies
+# Install with: pip install -r requirements.txt -r requirements-dev.txt
+
+# Testing
+pytest>=6.0
+pytest-cov>=2.12.0
+
+# Code Quality
+black>=21.0
+flake8>=3.9.0
+mypy>=0.900
