@@ -84,6 +84,7 @@ class ResonanceAttention(nn.Module):
         x: torch.Tensor,
         phase: Optional[torch.Tensor] = None,
         mask: Optional[torch.Tensor] = None,
+        precomputed_coherence: Optional[torch.Tensor] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Parameters
@@ -95,6 +96,13 @@ class ResonanceAttention(nn.Module):
             a Hilbert-style analytic signal approximation.
         mask : (batch, seq_len, seq_len) or None
             Optional boolean mask (True = ignore).
+        precomputed_coherence : (batch, n_heads, seq_len, seq_len) or None
+            When supplied, skips all internal phase/coherence computation and
+            uses this tensor directly as attention weights (after softmax).
+            Gradients flow only through W_v and W_o — not through coherence.
+            This is the collapse-proof path: coherence is computed from raw
+            canonical STFT phase (zero learned parameters) in SpectralBinding,
+            then passed here. W_q/W_k cannot collapse it to uniform.
 
         Returns
         -------
@@ -105,16 +113,28 @@ class ResonanceAttention(nn.Module):
         """
         B, S, D = x.shape
 
-        # --- project Q, K, V (amplitude only — NOT used for phase) -----------
-        Q = self._reshape_heads(self.W_q(x))  # (B, H, S, d_head) — used for V aggregation
+        # --- project V only (Q, K not needed when coherence is precomputed) --
+        V = self._reshape_heads(self.W_v(x))  # (B, H, S, d_head)
+
+        if precomputed_coherence is not None:
+            # Coherence is from raw canonical phase — parameter-free, collapse-proof.
+            # Broadcast to n_heads if supplied as (B, 1, S, S).
+            coh = precomputed_coherence
+            if coh.shape[1] == 1 and self.n_heads > 1:
+                coh = coh.expand(-1, self.n_heads, -1, -1)
+            weights = F.softmax(coh / self.tau.view(1, self.n_heads, 1, 1).clamp(min=0.05, max=2.0), dim=-1)
+            weights = self.attn_dropout(weights)
+            out = torch.matmul(weights, V)
+            out = out.transpose(1, 2).contiguous().view(B, S, D)
+            out = self.W_o(out)
+            out = self.norm(out + x)
+            return out, weights
+
+        # --- project Q, K for internal coherence computation -----------------
+        Q = self._reshape_heads(self.W_q(x))
         K = self._reshape_heads(self.W_k(x))
-        V = self._reshape_heads(self.W_v(x))
 
         # --- obtain phase for coherence computation -------------------------
-        # When phase is supplied externally (raw SSM phase), use it directly.
-        # Do NOT pass phase through W_q/W_k — those learned projections collapse
-        # phase differences to zero at equilibrium, causing uniform softmax.
-        # When no phase is given, fall back to extracting from the projected Q.
         if phase is not None:
             ph = self._reshape_heads(phase)  # (B, H, S, d_head)
             Q_phase = ph

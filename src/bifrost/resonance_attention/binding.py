@@ -161,51 +161,50 @@ class SpectralBinding(nn.Module):
             # Project amplitude to d_model for values
             amp_proj = self.amp_proj(amp)
 
-        # Phase for coherence computation: canonical_phase anchors + learned phase.
-        #
-        # Problem: using only canonical_phase (no grad) → coherence has no grad_fn
-        # → var_real has no grad → loss.backward() raises RuntimeError.
-        #
-        # Problem: using only learned phase (W_q/W_k output) → projects to constant
-        # at equilibrium → cos(0)=1 everywhere → uniform softmax → var=0 → dead.
-        #
-        # Solution: use W_q(amp_proj) output directly as the learned phase component,
-        # then ADD canonical phase as a fixed additive bias (detached). The sum carries
-        # a grad_fn (through W_q) while the canonical term prevents full collapse:
-        # even if W_q learns a constant output, the canonical phase differences
-        # between real and noise signals survive in the sum.
-        Q_for_phase = self.resonance._reshape_heads(self.resonance.W_q(amp_proj))  # (B,H,T,d_head)
-        learned_phase = Q_for_phase  # real-valued W_q output; carries grad_fn; shape (B,H,T,d_head)
-
-        if phase_orig.shape[-1] != self.d_model:
-            phase_anchor = torch.nn.functional.interpolate(
-                phase_orig.reshape(-1, 1, phase_orig.shape[-1]),
-                size=self.d_model,
-                mode='linear',
-                align_corners=False,
-            ).reshape(phase_orig.shape[0], phase_orig.shape[1], self.d_model)
-        else:
-            phase_anchor = phase_orig
-
-        # Reshape anchor to (B, H, T, d_head) to match learned_phase
-        phase_anchor_heads = self.resonance._reshape_heads(phase_anchor.float())
-        # Sum: learned phase provides grad path; canonical anchor prevents collapse.
-        # Convert (B,H,T,d_head) → (B,T,d_model) for resonance.forward interface.
-        phase_for_attn_heads = learned_phase + phase_anchor_heads.detach()
         B_sz, T_sz, _ = amp_proj.shape
         d_head = self.resonance.d_head
         n_heads = self.resonance.n_heads
-        phase_for_attn = (
-            phase_for_attn_heads.transpose(1, 2).contiguous().view(B_sz, T_sz, self.d_model)
-        )  # (B, T, d_model)
 
-        # Compute V projections needed for re-aggregation when harmonic blend is active
+        # Coherence computation strategy depends on whether canonical_phase is supplied.
+        #
+        # When canonical_phase IS available (normal training/inference via pipeline):
+        #   Compute coherence directly from raw S0 STFT phase — zero learned parameters,
+        #   architecturally collapse-proof. W_q/W_k/W_k cannot drive it to uniform.
+        #   Gradients flow only through W_v and W_o (value routing), not coherence.
+        #   The loss (var_real - var_noise) still has grad_fn through W_v: when the
+        #   coherence matrix is peaked for real signals, the weighted-sum output of W_v
+        #   differs from the noise case, so var_real carries grad via W_v → amp_proj.
+        #
+        # When canonical_phase is NOT available (standalone / legacy use):
+        #   Fall through to resonance.forward with phase_orig (may collapse eventually
+        #   but keeps the module usable independently of the pipeline).
+        if canonical_phase is not None:
+            # phase_orig already set to resized canonical_phase (B, T_target, d_model)
+            # Compute coherence in (B, 1, T, T) using _phase_coherence with single band
+            # — no learned parameters involved.
+            ph = self.resonance._reshape_heads(phase_orig.float())  # (B, H, T, d_head)
+            precomp_coh = self.resonance._phase_coherence(ph, ph)   # (B, H, T, T)
+            bound, coherence = self.resonance(
+                amp_proj,
+                precomputed_coherence=precomp_coh,
+            )
+        else:
+            # Legacy path: use phase_orig through the internal attention mechanism.
+            if phase_orig.shape[-1] != self.d_model:
+                phase_for_attn = torch.nn.functional.interpolate(
+                    phase_orig.reshape(-1, 1, phase_orig.shape[-1]),
+                    size=self.d_model,
+                    mode='linear',
+                    align_corners=False,
+                ).reshape(B_sz, T_sz, self.d_model)
+            else:
+                phase_for_attn = phase_orig
+            bound, coherence = self.resonance(amp_proj, phase=phase_for_attn)
+
+        # Compute V projections for diagnostics / harmonic blend re-aggregation
         V_proj = self.resonance.W_v(amp_proj)  # (B, T, d_model)
         # (B, n_heads, T, d_head)
         V_heads = V_proj.view(B_sz, T_sz, n_heads, d_head).transpose(1, 2)
-
-        # Main resonance attention: amplitude for values; anchored phase for coherence.
-        bound, coherence = self.resonance(amp_proj, phase=phase_for_attn)
         # coherence: (B, n_heads, T, T) - returned for diagnostics
 
         # Compute coherence in ORIGINAL n_freq space to preserve harmonic structure

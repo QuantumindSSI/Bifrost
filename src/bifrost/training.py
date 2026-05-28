@@ -165,11 +165,14 @@ class FBCTrainer:
         # margin=1e-4 is in variance units (softmax variance ~1e-5 to 1e-3 range).
         self.criterion = ContrastiveCoherenceLoss(margin=1e-4)
 
-        # Freeze tau and band_weights in ResonanceAttention.
-        # These control softmax sharpness globally — when learned they equalise
-        # attention variance across ALL inputs (real and noise), collapsing the gap.
-        # Only SSM weights, projections, and binding parameters should be trained.
-        frozen_names = {"tau", "band_weights"}
+        # Freeze band_weights only. tau is now UNFROZEN.
+        # With parameter-free coherence (from canonical STFT phase), tau cannot collapse
+        # coherence to uniform — the phase differences are fixed by S0, not by tau.
+        # tau now provides the only gradient path: weights = softmax(precomp_coh / tau)
+        # carries grad_fn via tau, so var_real = weights.var() has a gradient.
+        # band_weights stays frozen: it controls multi-band weighting and is irrelevant
+        # in the precomputed-coherence path.
+        frozen_names = {"band_weights"}
         trainable_params = [
             p for name, p in pipeline.named_parameters()
             if not any(name.endswith(f".{fn}") or name == fn for fn in frozen_names)
