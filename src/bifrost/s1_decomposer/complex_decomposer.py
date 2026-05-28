@@ -150,7 +150,9 @@ class ComplexSelectiveScan(nn.Module):
 
         # exp(-dt_A) for recurrence
         # For complex: exp(a + ib) = exp(a) * (cos(b) + i*sin(b))
-        exp_neg_dt_A_real = torch.exp(-dt_A_real)
+        # Clamp exponent to [-20, 0] to prevent overflow: A_real is negative so
+        # -dt_A_real is positive and can grow unboundedly without clamping.
+        exp_neg_dt_A_real = torch.exp(torch.clamp(-dt_A_real, max=0.0))
         exp_neg_dt_A = torch.complex(
             exp_neg_dt_A_real * torch.cos(dt_A_imag),
             -exp_neg_dt_A_real * torch.sin(dt_A_imag)
@@ -166,6 +168,9 @@ class ComplexSelectiveScan(nn.Module):
         for t in range(L):
             # h = exp(-dt_A) * h + dt_B_x
             h = exp_neg_dt_A[:, t] * h + dt_B_x[:, t]
+            # Clamp state magnitude to prevent unbounded growth across recurrence steps
+            h_abs = h.abs().clamp(min=1e-8)
+            h = h * (h_abs.clamp(max=10.0) / h_abs)
 
             # Output: y = C * h (contract over d_state)
             # C[:, t] is (B, d_state), need to broadcast to (B, d_inner, d_state)
