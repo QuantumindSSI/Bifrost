@@ -197,27 +197,17 @@ class FBCTrainer:
         # --- Positive: run real signal through pipeline ---
         _, coh_real = self.pipeline(signal, metadata)
 
-        # --- Negative: phase-randomised version of same signal ---
-        # For time-domain (B, L): randomise phase via STFT.
-        # For spectral (B, T, D) or other shapes: add uniform random noise to signal.
-        # Both approaches destroy harmonic phase relationships while preserving energy.
+        # --- Negative: white noise with same RMS as the real signal ---
+        # Phase-randomised signals share the same amplitude spectrum as the original
+        # and are indistinguishable to an STFT-based canonicalizer (S0 throws phase away
+        # during amplitude normalisation, then recomputes phase from the STFT).
+        # White noise has a FLAT amplitude spectrum — no harmonic peaks — so it produces
+        # a fundamentally different SpectralTensor that the SSM can learn to distinguish.
+        rms = signal.std(dim=-1, keepdim=True).clamp(min=1e-8)
         if signal.dim() == 2:
-            B, L = signal.shape
-            n_fft = min(1024, L // 2)
-            hop = n_fft // 4
-            window = torch.hann_window(n_fft, device=signal.device)
-            stft = torch.stft(signal, n_fft=n_fft, hop_length=hop,
-                              window=window, return_complex=True)  # (B, F, T_stft)
-            mag = stft.abs()
-            rand_phase = torch.rand_like(mag) * 2 * 3.14159265 - 3.14159265
-            noise_stft = mag * torch.exp(1j * rand_phase)
-            noise_signal = torch.istft(noise_stft, n_fft=n_fft, hop_length=hop,
-                                       window=window, length=L)  # (B, L)
-            noise_signal = noise_signal / (noise_signal.abs().max(dim=-1, keepdim=True).values + 1e-8)
+            noise_signal = torch.randn_like(signal) * rms
         else:
-            # Spectral or other input: corrupt with random noise scaled to signal std
-            noise_signal = signal + torch.randn_like(signal) * signal.std()
-            noise_signal = noise_signal / (noise_signal.norm(dim=-1, keepdim=True) + 1e-8)
+            noise_signal = torch.randn_like(signal) * rms
 
         with torch.no_grad():
             self.pipeline.eval()

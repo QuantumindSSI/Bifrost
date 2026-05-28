@@ -273,23 +273,13 @@ def train(args: argparse.Namespace) -> None:
             loss_val = trainer.train_step(batch)
             losses.append(loss_val if loss_val == loss_val else 0.0)  # nan→0 for mean
 
-            # Track coherence gap: real signal vs phase-randomised noise
+            # Track coherence gap: real harmonic signal vs white noise
             pipeline.eval()
             with torch.no_grad():
                 _, coh_real = pipeline(batch)
-                # Build phase-randomised version for comparison
-                B, L = batch.shape
-                n_fft, hop = 1024, 256
-                win = torch.hann_window(n_fft, device=device)
-                stft = torch.stft(batch, n_fft=n_fft, hop_length=hop,
-                                  window=win, return_complex=True)
-                noise_stft = stft.abs() * torch.exp(
-                    1j * (torch.rand_like(stft.abs()) * 2 * 3.14159265 - 3.14159265)
-                )
-                noise = torch.istft(noise_stft, n_fft=n_fft, hop_length=hop,
-                                    window=win, length=L)
-                noise = noise / (noise.abs().max(dim=-1, keepdim=True).values + 1e-8)
-                _, coh_noise = pipeline(noise)
+                rms = batch.std(dim=-1, keepdim=True).clamp(min=1e-8)
+                white_noise = torch.randn_like(batch) * rms
+                _, coh_noise = pipeline(white_noise)
             pipeline.train()
 
             coh_reals.append(coh_real.mean().item())
