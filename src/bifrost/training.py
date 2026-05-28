@@ -236,17 +236,45 @@ class FBCTrainer:
         # --- Positive: run real signal through pipeline ---
         _, coh_real = self.pipeline(signal, metadata)
 
-        # --- Negative: temporally shuffled real signal ---
-        # White noise has a flat amplitude spectrum — trivially different from harmonic
-        # signals — so learned projections W_q/W_k accidentally learn to detect spectral
-        # shape differences rather than phase coherence. Over training, the projections
-        # become sensitive enough to structure white noise too, collapsing the gap.
+        # --- Negative: STFT-domain phase randomisation ---
+        # Goal: identical per-frame amplitude spectrum, destroyed inter-frame phase coherence.
+        # White noise is too spectrally different (flat vs harmonic peaks) — W_q/W_k learn
+        # amplitude shape discrimination, not phase coherence. Temporal shuffling destroys
+        # frame structure entirely, making the task trivial then forgettable.
         #
-        # Shuffling the time dimension destroys temporal phase coherence while preserving
-        # the exact amplitude spectrum (same harmonics, same energy). This forces the model
-        # to discriminate on PHASE STRUCTURE ALONE — the actual learning objective.
-        perm = torch.randperm(signal.shape[-1], device=signal.device)
-        noise_signal = signal[..., perm]
+        # STFT phase randomisation keeps |STFT(x)[f,t]| identical to the original but
+        # assigns a uniform-random phase to each (freq, frame) bin independently.
+        # The reconstructed waveform has the same per-frame spectral envelope but no
+        # consistent phase relationship across frames — forcing the SSM to detect
+        # inter-frame phase coherence, which is the actual training objective.
+        if signal.dim() == 2:
+            # (B, L) time-domain: STFT phase randomisation — same amplitude spectrum,
+            # destroyed inter-frame phase coherence. Forces SSM to detect phase structure.
+            n_fft = 1024
+            hop = n_fft // 4
+            B, L = signal.shape
+            win = torch.hann_window(n_fft, device=signal.device)
+            spec = torch.stft(
+                signal,
+                n_fft=n_fft,
+                hop_length=hop,
+                return_complex=True,
+                window=win,
+                pad_mode='reflect',
+            )  # (B, F, T)
+            rand_phase = torch.rand_like(spec.real) * 2.0 * _math.pi
+            noise_spec = torch.polar(spec.abs(), rand_phase)
+            noise_signal = torch.istft(
+                noise_spec,
+                n_fft=n_fft,
+                hop_length=hop,
+                window=win,
+                length=L,
+            )
+        else:
+            # (B, T, D) spectral input: RMS-matched white noise fallback
+            rms = signal.std(dim=-1, keepdim=True).clamp(min=1e-8)
+            noise_signal = torch.randn_like(signal) * rms
 
         with torch.no_grad():
             self.pipeline.eval()

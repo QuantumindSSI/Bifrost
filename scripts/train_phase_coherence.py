@@ -273,13 +273,30 @@ def train(args: argparse.Namespace) -> None:
             loss_val = trainer.train_step(batch)
             losses.append(loss_val if loss_val == loss_val else 0.0)  # nan→0 for mean
 
-            # Track coherence gap: real signal vs temporally shuffled version
+            # Track coherence gap: real signal vs STFT-phase-randomised version
             pipeline.eval()
             with torch.no_grad():
                 _, coh_real = pipeline(batch)
-                perm = torch.randperm(batch.shape[-1], device=batch.device)
-                shuffled = batch[..., perm]
-                _, coh_noise = pipeline(shuffled)
+                _n_fft, _hop = 1024, 256
+                _win = torch.hann_window(_n_fft, device=batch.device)
+                _spec = torch.stft(
+                    batch,
+                    n_fft=_n_fft,
+                    hop_length=_hop,
+                    return_complex=True,
+                    window=_win,
+                    pad_mode='reflect',
+                )
+                _rph = torch.rand_like(_spec.real) * 2.0 * math.pi
+                _nspec = torch.polar(_spec.abs(), _rph)
+                _phase_rand = torch.istft(
+                    _nspec,
+                    n_fft=_n_fft,
+                    hop_length=_hop,
+                    window=_win,
+                    length=batch.shape[-1],
+                )
+                _, coh_noise = pipeline(_phase_rand)
             pipeline.train()
 
             coh_reals.append(coh_real.var().item())    # variance, not mean
