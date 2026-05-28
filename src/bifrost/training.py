@@ -165,9 +165,22 @@ class FBCTrainer:
         # margin=1e-4 is in variance units (softmax variance ~1e-5 to 1e-3 range).
         self.criterion = ContrastiveCoherenceLoss(margin=1e-4)
 
+        # Freeze tau and band_weights in ResonanceAttention.
+        # These control softmax sharpness globally — when learned they equalise
+        # attention variance across ALL inputs (real and noise), collapsing the gap.
+        # Only SSM weights, projections, and binding parameters should be trained.
+        frozen_names = {"tau", "band_weights"}
+        trainable_params = [
+            p for name, p in pipeline.named_parameters()
+            if not any(name.endswith(f".{fn}") or name == fn for fn in frozen_names)
+        ]
+        for name, p in pipeline.named_parameters():
+            if any(name.endswith(f".{fn}") or name == fn for fn in frozen_names):
+                p.requires_grad_(False)
+
         # Optimizer: Adam with weight decay
         self.optimizer = Adam(
-            pipeline.parameters(),
+            trainable_params,
             lr=lr,
             betas=(0.9, 0.999),
             weight_decay=weight_decay,
