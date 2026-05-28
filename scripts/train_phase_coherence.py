@@ -282,8 +282,8 @@ def train(args: argparse.Namespace) -> None:
                 _, coh_noise = pipeline(white_noise)
             pipeline.train()
 
-            coh_reals.append(coh_real.mean().item())
-            coh_noises.append(coh_noise.mean().item())
+            coh_reals.append(coh_real.var().item())    # variance, not mean
+            coh_noises.append(coh_noise.var().item())
             coh_var, diag_ratio = _coherence_metrics(coh_real)
             coh_vars.append(coh_var)
             diag_ratios.append(diag_ratio)

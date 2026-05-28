@@ -65,16 +65,24 @@ class ContrastiveCoherenceLoss(nn.Module):
         """
         Compute contrastive coherence loss.
 
+        Coherence matrices are softmax outputs — their mean is always 1/T
+        (rows sum to 1), so mean() gives zero gradient regardless of structure.
+
+        Instead, we maximise the VARIANCE of coh_real (structured attention has
+        high variance — peaked at coherent pairs) and minimise the variance of
+        coh_noise (white noise should produce near-uniform attention, low variance).
+
         Args:
-            coh_real:  (B, H, T, T) coherence weights from real signal.
-            coh_noise: (B, H, T, T) coherence weights from noise signal.
+            coh_real:  (B, H, T, T) softmax coherence weights from real signal.
+            coh_noise: (B, H, T, T) softmax coherence weights from noise signal.
 
         Returns:
-            Scalar loss. Minimising this maximises the gap
-            coh_real.mean() - coh_noise.mean() by at least margin.
+            Scalar loss. Minimising this maximises var(coh_real) - var(coh_noise).
         """
-        gap = coh_real.mean() - coh_noise.mean()
-        loss = F.softplus(self.margin - gap)  # 0 when gap > margin
+        var_real = coh_real.var()
+        var_noise = coh_noise.var()
+        gap = var_real - var_noise
+        loss = F.softplus(self.margin - gap)  # 0 when var_real > var_noise + margin
         return loss
 
 
