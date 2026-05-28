@@ -34,7 +34,11 @@ def cmd_demo(args: argparse.Namespace) -> int:
         
         script = Path(__file__).parent.parent.parent.parent / "demos" / demo_scripts[demo_id]
         if not script.exists():
-            print(f"Error: Demo script not found: {script}")
+            print(f"\n⚠️  Demo script not found: {script}")
+            print(f"\nTo run demos, ensure demo files are in the demos/ directory:")
+            print(f"  cp dev-docs/demo_*.py demos/")
+            print(f"\nOr run without demos:")
+            print(f"  bifrost --help")
             return 1
         
         print(f"\n{'='*60}")

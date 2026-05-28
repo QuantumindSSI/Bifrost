@@ -470,3 +470,7 @@ def train_complex_bifrost_simple(
         "trainer": trainer,
         "metrics": summary,
     }
+
+
+# Backward compatibility alias
+train_complex_fbc_simple = train_complex_bifrost_simple

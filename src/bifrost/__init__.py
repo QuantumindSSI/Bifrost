@@ -38,8 +38,14 @@ from .complex_training import (
     ComplexFBCTrainer,
     ComplexNextStepLoss,
     PhaseCoherenceMetrics,
+    train_complex_bifrost_simple,
     train_complex_fbc_simple,
 )
+
+# New Bifröst naming aliases (backward compatibility maintained)
+BifrostPipeline = FBCPipeline
+BifrostTrainer = FBCTrainer
+ComplexBifrostTrainer = ComplexFBCTrainer
 
 __all__ = [
     "SpectralTensor",
@@ -53,10 +59,12 @@ __all__ = [
     "PhaseLockBridge",
     "FrequencyAttractor",
     "FBCPipeline",
+    "BifrostPipeline",
     "bridge_to_canonicalizer",
     "IngestPipeline",
     "IngestModality",
     "FBCTrainer",
+    "BifrostTrainer",
     "NextFramePredictionLoss",
     "train_fbc_simple",
     "MultiModalSpectralPipeline",
@@ -69,7 +77,9 @@ __all__ = [
     "ComplexSelectiveScan",
     "ComplexLinear",
     "ComplexFBCTrainer",
+    "ComplexBifrostTrainer",
     "ComplexNextStepLoss",
     "PhaseCoherenceMetrics",
     "train_complex_fbc_simple",
+    "train_complex_bifrost_simple",
 ]
