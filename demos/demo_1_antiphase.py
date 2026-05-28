@@ -116,6 +116,15 @@ def _evaluate_pair(
     dot_dist = attention_l1_distance(w_dot_a, w_dot_b)
     ratio = res_dist / max(dot_dist, 1e-12)
 
+    # NASA Rule 5: Pre/post assertions
+    assert res_dist >= 0.0, f"Resonant L1 distance must be non-negative, got {res_dist}"
+    assert dot_dist >= 0.0, f"Dot-product L1 distance must be non-negative, got {dot_dist}"
+    # Core claim: Resonant attention detects phase differences where dot-product fails
+    assert res_dist > dot_dist, (
+        f"Resonant attention must discriminate better than dot-product: "
+        f"res_dist={res_dist:.6f} vs dot_dist={dot_dist:.6f}"
+    )
+
     return Result(
         label=label,
         res_distance=res_dist,
