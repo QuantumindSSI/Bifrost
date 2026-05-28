@@ -364,7 +364,7 @@ def main() -> None:
         description="Train Bifröst complex SSM for phase coherence via next-frame prediction."
     )
     parser.add_argument("--epochs",            type=int,   default=100,                    help="Training epochs")
-    parser.add_argument("--lr",                type=float, default=1e-3,                   help="Learning rate")
+    parser.add_argument("--lr",                type=float, default=1e-4,                   help="Learning rate")
     parser.add_argument("--batch-size",        type=int,   default=4,                      help="Batch size")
     parser.add_argument("--n-batches",         type=int,   default=20,                     help="Batches per epoch")
     parser.add_argument("--d-model",           type=int,   default=128,                    help="Model hidden dimension")

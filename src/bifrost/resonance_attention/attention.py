@@ -63,8 +63,12 @@ class ResonanceAttention(nn.Module):
         # Output projection
         self.W_o = nn.Linear(d_model, d_model)
 
-        # Learnable temperature per head
-        self.tau = nn.Parameter(torch.ones(n_heads) * math.sqrt(self.d_head))
+        # Learnable temperature per head.
+        # Coherence scores are cosines in [-1, 1], NOT dot products in [-sqrt(d),sqrt(d)].
+        # tau=sqrt(d_head)~5.66 crushes cosines to ~0 before softmax (dead gradient).
+        # tau=1.0 is the identity at init: cosine scores enter softmax unchanged [-1,1].
+        # tau is learned and will sharpen during training as phase coherence emerges.
+        self.tau = nn.Parameter(torch.ones(n_heads) * 1.0)
 
         # Band-specific learnable weights for coherence aggregation
         self.band_weights = nn.Parameter(torch.ones(n_bands) / n_bands)
