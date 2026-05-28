@@ -9,7 +9,7 @@ Usage:
 import torch
 import numpy as np
 
-from fbc import create_multimodal_pipeline, Modality
+from bifrost import create_multimodal_pipeline, Modality
 
 
 def test_audio():

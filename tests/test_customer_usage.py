@@ -12,7 +12,7 @@ Run: python tests/test_customer_usage.py
 
 import torch
 import numpy as np
-from fbc import (
+from bifrost import (
     FBCPipeline,
     create_multimodal_pipeline,
     HarmonicBinding,
@@ -240,7 +240,7 @@ def test_training_workflow():
     print("TEST 5: Training Workflow (Complex SSM)")
     print("="*60)
 
-    from fbc import ComplexSpectralDecomposer, ComplexNextStepLoss
+    from bifrost import ComplexSpectralDecomposer, ComplexNextStepLoss
 
     # Use n_fft=256, so n_freq = 129. Set d_model=129 to match.
     n_fft = 256
@@ -280,7 +280,7 @@ def test_training_workflow():
 
     # Forward pass
     print("Testing forward pass...")
-    decomposed = decomposer(batch)
+    decomposed, _ = decomposer(batch)
     print(f"Decomposed: {decomposed.amplitude.shape}")
 
     # Compute loss manually - both should be (B, T-1, d_model)

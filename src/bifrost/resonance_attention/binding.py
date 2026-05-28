@@ -99,16 +99,22 @@ class SpectralBinding(nn.Module):
         """
         amp = st.amplitude   # (B, T, n_freq) or (B, n_freq)
         phase = st.phase
+        scale = st.scale
+        uncertainty = st.uncertainty
 
         # Ensure 3-D: (batch, seq_len, features)
         needs_squeeze = False
         if amp.dim() == 1:
             amp = amp.unsqueeze(0).unsqueeze(0)
             phase = phase.unsqueeze(0).unsqueeze(0)
+            scale = scale.unsqueeze(0).unsqueeze(0)
+            uncertainty = uncertainty.unsqueeze(0).unsqueeze(0)
             needs_squeeze = True
         elif amp.dim() == 2:
             amp = amp.unsqueeze(1)
             phase = phase.unsqueeze(1)
+            scale = scale.unsqueeze(1)
+            uncertainty = uncertainty.unsqueeze(1)
             needs_squeeze = True
 
         # Store original amplitude and phase before any projection (needed for harmonic coherence)
@@ -171,24 +177,24 @@ class SpectralBinding(nn.Module):
         # Package back into SpectralTensor
         # If amp was projected (n_freq → d_model), scale/uncertainty must
         # be resampled to match the new spectral dimension.
-        orig_d = st.amplitude.shape[-1]
+        orig_d = amp.shape[-1]  # use post-unsqueeze amp shape
         new_d = bound.shape[-1]
 
         if orig_d != new_d:
             # Resample scale linearly along the feature dim
             scale_out = F.interpolate(
-                st.scale.reshape(-1, 1, orig_d),
+                scale.reshape(-1, 1, orig_d),
                 size=new_d, mode="linear", align_corners=False,
-            ).reshape(*st.scale.shape[:-1], new_d)
+            ).reshape(*scale.shape[:-1], new_d)
 
             # Resample uncertainty similarly
             unc_out = F.interpolate(
-                st.uncertainty.reshape(-1, 1, orig_d),
+                uncertainty.reshape(-1, 1, orig_d),
                 size=new_d, mode="linear", align_corners=False,
-            ).reshape(*st.uncertainty.shape[:-1], new_d)
+            ).reshape(*uncertainty.shape[:-1], new_d)
         else:
-            scale_out = st.scale
-            unc_out = st.uncertainty
+            scale_out = scale
+            unc_out = uncertainty
 
         # coherence: (B, H, S, S) → scalar confidence per element in [0, 1]
         coh_score = coherence.mean(dim=1).mean(dim=-1)  # (B, S)

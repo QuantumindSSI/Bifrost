@@ -132,7 +132,8 @@ class ComplexSelectiveScan(nn.Module):
         B: torch.Tensor,  # (B, L, d_state) complex
         C: torch.Tensor,  # (B, L, d_state) complex
         D: torch.Tensor,  # (d_inner) complex
-    ) -> torch.Tensor:
+        h_0: Optional[torch.Tensor] = None,  # (B, d_inner, d_state) complex — initial state
+    ) -> Tuple[torch.Tensor, torch.Tensor]:  # (output, h_T)
         """
         Complex selective scan recurrence.
 
@@ -162,7 +163,10 @@ class ComplexSelectiveScan(nn.Module):
         dt = delta.unsqueeze(-1)  # (B, L, d_inner, 1)
         dt_B_x = dt * B.unsqueeze(2) * x.unsqueeze(-1)  # (B, L, d_inner, d_state)
 
-        h = torch.zeros(B_batch, self.d_inner, self.d_state, dtype=torch.complex64, device=x.device)
+        if h_0 is not None:
+            h = h_0.to(x.device)
+        else:
+            h = torch.zeros(B_batch, self.d_inner, self.d_state, dtype=torch.complex64, device=x.device)
         ys = []
 
         for t in range(L):
@@ -184,17 +188,27 @@ class ComplexSelectiveScan(nn.Module):
         D_complex = torch.complex(self.D_real, self.D_imag)
         y = y + D_complex.unsqueeze(0).unsqueeze(1) * x
 
-        return y
+        return y, h  # h is the final hidden state (B, d_inner, d_state)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        h_0: Optional[torch.Tensor] = None,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass of complex selective scan.
 
         Args:
-            x: Complex tensor of shape (B, L, d_model)
+            x:   Complex tensor of shape (B, L, d_model)
+            h_0: Optional initial hidden state (B, d_inner, d_state) complex.
+                 If None, initialises to zeros (stateless / start-of-sequence).
 
         Returns:
-            Complex tensor of shape (B, L, d_model)
+            Tuple of:
+              - output: Complex tensor of shape (B, L, d_model)
+              - h_T:    Final hidden state (B, d_inner, d_state) complex,
+                        detached from graph — pass as h_0 to the next call
+                        for streaming / stateful inference.
         """
         # Input projection
         x_and_res = self.in_proj(x)  # (B, L, d_inner * 2)
@@ -219,8 +233,8 @@ class ComplexSelectiveScan(nn.Module):
 
         D_complex = torch.complex(self.D_real, self.D_imag)
 
-        # Selective scan
-        y = self._complex_selective_scan(x_inner, delta, A_real, A_imag, B, C, D_complex)
+        # Selective scan — returns (output, h_T)
+        y, h_T = self._complex_selective_scan(x_inner, delta, A_real, A_imag, B, C, D_complex, h_0)
 
         # Gating with residual
         y = y * F.silu(res.real + res.imag)  # Simple gating
@@ -228,7 +242,7 @@ class ComplexSelectiveScan(nn.Module):
         # Output projection
         output = self.out_proj(y)
 
-        return output
+        return output, h_T.detach()
 
 
 class ComplexSpectralDecomposer(nn.Module):
@@ -275,15 +289,24 @@ class ComplexSpectralDecomposer(nn.Module):
         # Complex output projection: d_model -> d_model (keep consistent dimension)
         self.output_proj = ComplexLinear(d_model, d_model, bias=True)
 
-    def forward(self, st: SpectralTensor) -> SpectralTensor:
+    def forward(
+        self,
+        st: SpectralTensor,
+        h_0: Optional[torch.Tensor] = None,
+    ) -> Tuple[SpectralTensor, torch.Tensor]:
         """
         Process SpectralTensor through complex SSM.
 
         Args:
-            st: Input SpectralTensor with amplitude, phase
+            st:  Input SpectralTensor with amplitude, phase.
+            h_0: Optional initial SSM hidden state (B, d_inner, d_state) complex.
+                 None → initialise to zeros (stateless, default for training).
 
         Returns:
-            SpectralTensor with learned temporal phase coherence
+            Tuple of:
+              - SpectralTensor with learned temporal phase coherence.
+              - h_T: Final hidden state (B, d_inner, d_state) complex, detached.
+                     Pass as h_0 on the next call for streaming / stateful use.
         """
         # Get complex spectrum: z = amplitude * exp(i * phase)
         z = st.complex_spectrum()  # (B, n_freq), (B, T, n_freq), or (B, C, T, n_freq) complex
@@ -310,11 +333,24 @@ class ComplexSpectralDecomposer(nn.Module):
             else:
                 z_frames = z
         else:
-            # 2D input: (B, n_freq) - replicate to create stationary temporal frames.
-            # No synthetic phase ramp: the SSM receives the true (time-invariant) signal
-            # and learns the identity mapping, which is the correct prior for a single frame.
-            B = z.shape[0]
-            z_frames = z.unsqueeze(1).expand(B, self.n_frames, self.n_freq).contiguous()
+            # 2D input: (B, n_freq_in) - replicate to n_frames, then interpolate
+            # to self.n_freq if needed so input_proj always receives correct shape.
+            B, n_freq_in = z.shape
+            z_rep = z.unsqueeze(1).expand(B, self.n_frames, n_freq_in).contiguous()
+            if n_freq_in != self.n_freq:
+                z_real = F.interpolate(
+                    z_rep.real.unsqueeze(1),
+                    size=(self.n_frames, self.n_freq),
+                    mode='bilinear', align_corners=True,
+                ).squeeze(1)
+                z_imag = F.interpolate(
+                    z_rep.imag.unsqueeze(1),
+                    size=(self.n_frames, self.n_freq),
+                    mode='bilinear', align_corners=True,
+                ).squeeze(1)
+                z_frames = torch.complex(z_real, z_imag)
+            else:
+                z_frames = z_rep
 
         # Project to d_model (complex)
         h = self.input_proj(z_frames)  # (B, T, d_model) complex
@@ -324,8 +360,8 @@ class ComplexSpectralDecomposer(nn.Module):
         h_imag = self.norm_imag(h.imag)
         h = torch.complex(h_real, h_imag)
 
-        # Complex SSM - this learns temporal phase relationships naturally
-        h = self.ssm(h)  # (B, T, d_model) complex with learned phase coherence
+        # Complex SSM - returns (output, h_T)
+        h, h_T = self.ssm(h, h_0)  # (B, T, d_model) complex with learned phase coherence
 
         # Output projection
         z_out = self.output_proj(h)  # (B, T, d_model) complex
@@ -348,8 +384,9 @@ class ComplexSpectralDecomposer(nn.Module):
                 **st.metadata,
                 "stage": "S1_complex",
                 "n_frames": self.n_frames,
+                "n_scales": self.n_fft,
                 "d_model": self.d_model,
                 "ssm_type": "ComplexSelectiveScan",
                 "phase_coherence": "learned_via_complex_ssm",
             },
-        )
+        ), h_T

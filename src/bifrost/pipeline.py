@@ -25,6 +25,7 @@ from .canonicalizer import SpectralCanonicalizer
 from .decomposer import SpectralDecomposer
 from .s1_decomposer.complex_decomposer import ComplexSpectralDecomposer
 from .resonance_attention import ResonanceAttention, SpectralBinding
+from .resonance_attention.harmonic_binding import HarmonicBinding
 
 
 class FBCPipeline(nn.Module):
@@ -62,9 +63,12 @@ class FBCPipeline(nn.Module):
         use_mamba: bool = True,  # Use real Mamba-3 when CUDA available
         use_2d_fft: bool = False,  # Use 2D FFT for spatial data
         use_complex_ssm: bool = True,  # Default: complex-valued SSM for true phase coherence
+        use_harmonic_binding: bool = False,  # Wire HarmonicBinding (explicit 440Hz↔4880Hz grid)
+        sample_rate: float = 16000.0,  # Used by HarmonicBinding frequency grid
     ) -> None:
         super().__init__()
         self.use_complex_ssm = use_complex_ssm
+        self.use_harmonic_binding = use_harmonic_binding
 
         self.canonicalizer = SpectralCanonicalizer(
             n_fft=n_fft_s0,
@@ -98,13 +102,26 @@ class FBCPipeline(nn.Module):
         # coherence path in SpectralBinding (use_original_phase=True).
         # For the complex SSM the decomposer already outputs d_model, so no projection needed.
         binding_n_freq_in = None if use_complex_ssm else n_freq_decomp
-        self.binding = SpectralBinding(
-            d_model=d_model,
-            n_heads=n_heads,
-            n_bands=n_bands,
-            dropout=dropout,
-            n_freq_in=binding_n_freq_in,
-        )
+        if use_harmonic_binding:
+            # HarmonicBinding: explicit 440Hz↔4880Hz frequency grid wired into attention.
+            # n_freq = n_fft_s1 // 2 + 1 (the frequency dimension of the decomposer output
+            # before d_model projection; used by the harmonic grid for bin mapping).
+            self.binding = HarmonicBinding(
+                d_model=d_model,
+                n_heads=n_heads,
+                n_freq=n_freq_decomp,
+                n_bands=n_bands,
+                sample_rate=sample_rate,
+                dropout=dropout,
+            )
+        else:
+            self.binding = SpectralBinding(
+                d_model=d_model,
+                n_heads=n_heads,
+                n_bands=n_bands,
+                dropout=dropout,
+                n_freq_in=binding_n_freq_in,
+            )
 
         # Bridge projection if decomposer output dim != binding d_model
         # Complex SSM already outputs d_model features, no projection needed
@@ -119,6 +136,7 @@ class FBCPipeline(nn.Module):
         self,
         signal: torch.Tensor,
         metadata: Optional[Dict[str, Any]] = None,
+        h_0: Optional[torch.Tensor] = None,
     ) -> Tuple[SpectralTensor, torch.Tensor]:
         """
         Run the full canonicalize → decompose → bind pipeline.
@@ -129,6 +147,10 @@ class FBCPipeline(nn.Module):
             Raw time-domain signal (1-D, 2-D, or batched 3-D).
         metadata : dict, optional
             Provenance metadata (e.g. sample_rate).
+        h_0 : torch.Tensor, optional
+            Initial SSM hidden state (B, d_inner, d_state) complex.
+            None → stateless (zeros). Only used when use_complex_ssm=True.
+            Pass the h_T returned by a previous call for streaming use.
 
         Returns
         -------
@@ -137,10 +159,102 @@ class FBCPipeline(nn.Module):
         coherence : torch.Tensor
             Attention coherence weights from binding.
         """
+        if signal.numel() == 0:
+            raise ValueError("Input signal is empty (numel=0).")
         canonical = self.canonicalizer(signal, metadata)
-        decomposed = self.decomposer(canonical)
-        bound_st, coherence = self.binding(decomposed, input_proj=self._decomp_to_bind_proj)
+        if self.use_complex_ssm:
+            decomposed, _ = self.decomposer(canonical, h_0)
+        else:
+            decomposed = self.decomposer(canonical)
+        if self.use_harmonic_binding:
+            # HarmonicBinding takes (amplitude, phase) tensors directly.
+            amp = decomposed.amplitude
+            phase = decomposed.phase
+            if amp.dim() == 2:
+                amp = amp.unsqueeze(1)
+                phase = phase.unsqueeze(1)
+            if amp.shape[1] == 1:
+                raise ValueError(
+                    "Single-token input (T=1) produces trivially uniform coherence. "
+                    "Pass a signal long enough to produce T > 1 spectral frames."
+                )
+            bound_amp, coherence = self.binding(amp, phase=phase)
+            bound_st = SpectralTensor(
+                amplitude=bound_amp,
+                phase=phase,
+                scale=decomposed.scale,
+                uncertainty=decomposed.uncertainty,
+                metadata=decomposed.metadata,
+            )
+        else:
+            amp = decomposed.amplitude
+            if amp.dim() == 3 and amp.shape[1] == 1:
+                import warnings
+                warnings.warn(
+                    "SpectralBinding received T=1 (single token). "
+                    "Coherence will be trivially 1.0 — phase carries no information. "
+                    "Provide longer signals for meaningful phase-coherence routing.",
+                    stacklevel=2,
+                )
+            bound_st, coherence = self.binding(decomposed, input_proj=self._decomp_to_bind_proj)
         return bound_st, coherence
+
+    def forward_stateful(
+        self,
+        signal: torch.Tensor,
+        metadata: Optional[Dict[str, Any]] = None,
+        h_0: Optional[torch.Tensor] = None,
+    ) -> Tuple[SpectralTensor, torch.Tensor, torch.Tensor]:
+        """
+        Stateful forward pass — returns h_T for chaining across chunks.
+
+        Parameters
+        ----------
+        signal : torch.Tensor
+            Raw time-domain signal.
+        metadata : dict, optional
+            Provenance metadata.
+        h_0 : torch.Tensor, optional
+            Initial SSM hidden state from a previous call. None → zeros.
+
+        Returns
+        -------
+        bound_st : SpectralTensor
+        coherence : torch.Tensor
+        h_T : torch.Tensor
+            Final SSM hidden state (B, d_inner, d_state) complex, detached.
+            Pass as h_0 to the next call to maintain temporal continuity.
+        """
+        if not self.use_complex_ssm:
+            raise RuntimeError(
+                "forward_stateful requires use_complex_ssm=True. "
+                "The non-complex decomposer does not expose hidden state."
+            )
+        if signal.numel() == 0:
+            raise ValueError("Input signal is empty (numel=0).")
+        canonical = self.canonicalizer(signal, metadata)
+        decomposed, h_T = self.decomposer(canonical, h_0)
+        if self.use_harmonic_binding:
+            amp = decomposed.amplitude
+            phase = decomposed.phase
+            if amp.dim() == 2:
+                amp = amp.unsqueeze(1)
+                phase = phase.unsqueeze(1)
+            if amp.shape[1] == 1:
+                raise ValueError(
+                    "Single-token input (T=1) produces trivially uniform coherence."
+                )
+            bound_amp, coherence = self.binding(amp, phase=phase)
+            bound_st = SpectralTensor(
+                amplitude=bound_amp,
+                phase=phase,
+                scale=decomposed.scale,
+                uncertainty=decomposed.uncertainty,
+                metadata=decomposed.metadata,
+            )
+        else:
+            bound_st, coherence = self.binding(decomposed, input_proj=self._decomp_to_bind_proj)
+        return bound_st, coherence, h_T
 
     @property
     def ssm_type(self) -> str:

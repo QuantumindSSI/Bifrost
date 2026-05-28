@@ -662,15 +662,17 @@ class MultiModalSpectralPipeline(nn.Module):
                     d_conv=d_conv,
                 )
 
-        # Binding stage - needs to know input n_freq from decomposer
-        # For audio: decomposer uses n_fft//2, so n_freq = n_fft//2 // 2 + 1 = n_fft//4 + 1
-        # For others: decomposer uses n_fft directly, so n_freq = n_fft//2 + 1
-        # Complex SSM: outputs d_model directly, no projection needed
-        if use_complex_ssm:
-            # Complex decomposer outputs d_model features directly
-            binding_n_freq = None  # No projection needed
+        # Binding stage - needs to know input n_freq from decomposer output.
+        # IMAGE always uses ImageSpectralDecomposer (no complex SSM path) → outputs n_fft//2+1.
+        # AUDIO/TEXT/TENSOR with complex SSM → outputs d_model directly (no projection needed).
+        # AUDIO without complex SSM → n_fft//4+1 (S1 uses n_fft//2).
+        # TEXT/TENSOR without complex SSM → n_fft//2+1.
+        if modality == Modality.IMAGE:
+            binding_n_freq = n_fft // 2 + 1
+        elif use_complex_ssm:
+            binding_n_freq = None  # Complex decomposer outputs d_model directly
         elif modality == Modality.AUDIO:
-            binding_n_freq = n_fft // 4 + 1  # S1 uses n_fft//2, then n_freq = (n_fft//2)//2 + 1
+            binding_n_freq = n_fft // 4 + 1
         else:
             binding_n_freq = n_fft // 2 + 1
 
@@ -701,7 +703,9 @@ class MultiModalSpectralPipeline(nn.Module):
         canonical = self.canonicalizer(data, metadata)
 
         # Decompose (SSM processing)
-        decomposed = self.decomposer(canonical)
+        # ComplexSpectralDecomposer returns (SpectralTensor, h_T); others return SpectralTensor.
+        decomp_out = self.decomposer(canonical)
+        decomposed = decomp_out[0] if isinstance(decomp_out, tuple) else decomp_out
 
         # Bind (resonance attention)
         bound, coherence = self.binding(decomposed)

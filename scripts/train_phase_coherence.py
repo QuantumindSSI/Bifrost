@@ -1,121 +1,285 @@
 #!/usr/bin/env python3
 """
-Train FBC pipeline for phase coherence on sample audio.
+Train Bifröst pipeline for phase coherence learning.
 
-This script demonstrates training the dual-stream SpectralDecomposer
-to learn temporal phase coherence patterns via next-frame prediction.
+Training objective: next-frame spectral prediction.
+  - Input:  first half of each audio chunk → pipeline → bound_st
+  - Target: second half of each audio chunk → pipeline (no_grad) → target_st
+  - Loss:   |amplitude_pred - amplitude_tgt|^2 + |phase_pred_wrapped - phase_tgt|^2
+
+This is a real next-frame objective: the model must predict the spectral
+representation of audio it has NOT yet seen, not a shifted version of its own output.
 
 Usage:
-    python scripts/train_phase_coherence.py --epochs 50 --device cuda
+    cd bifrost
+    python scripts/train_phase_coherence.py --epochs 100
+    python scripts/train_phase_coherence.py --epochs 200 --harmonic-binding --device cuda
+
+Diagnostic output every epoch:
+  - loss:              next-frame prediction MSE (lower = better temporal prediction)
+  - coherence_var:     variance across attention matrix (higher = more structured attention)
+  - diag_ratio:        diagonal vs off-diagonal mean coherence (>1 = self-coherence dominant)
+
+Expected progression (complex SSM, d_model=128):
+  Epoch   0: loss ~0.5,  coherence_var ~0.001, diag_ratio ~1.06
+  Epoch  50: loss ~0.3,  coherence_var ~0.003, diag_ratio ~1.15
+  Epoch 100: loss ~0.15, coherence_var ~0.005, diag_ratio ~1.2–1.5
 """
 
+from __future__ import annotations
+
 import argparse
+import math
+import sys
+import time
+from pathlib import Path
+from typing import List, Tuple
+
 import torch
+import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
-from fbc import FBCPipeline, FBCTrainer, train_fbc_simple
-from bifrost.data.loader import load_sample_audio
+# Allow running from both repo root and bifrost/ subdirectory
+_repo_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_repo_root / "src"))
+
+from bifrost import BifrostPipeline
+from bifrost.training import FBCTrainer as BifrostTrainer
 
 
-def create_dummy_dataloader(batch_size: int = 4, num_batches: int = 10) -> DataLoader:
+# ── Signal generation ────────────────────────────────────────────────────────
+
+def _harmonic_signal(
+    fund_hz: float,
+    n_harmonics: int,
+    duration_s: float,
+    sample_rate: int,
+    amp_decay: float = 0.6,
+) -> torch.Tensor:
+    """Return a (L,) harmonic tone: fundamental + n_harmonics overtones."""
+    t = torch.linspace(0.0, duration_s, int(sample_rate * duration_s))
+    wave = torch.zeros_like(t)
+    for k in range(1, n_harmonics + 1):
+        freq = fund_hz * k
+        if freq >= sample_rate / 2:
+            break
+        wave = wave + (amp_decay ** (k - 1)) * torch.sin(2.0 * math.pi * freq * t)
+    return wave / (wave.abs().max() + 1e-8)
+
+
+def build_dataset(
+    batch_size: int,
+    n_batches: int,
+    sample_rate: int = 16_000,
+    chunk_s: float = 1.0,
+    seed: int = 0,
+) -> DataLoader:
     """
-    Create a dummy dataloader for demonstration.
+    Build a synthetic training dataset of harmonic audio chunks.
 
-    In production, replace with actual audio dataset.
+    Each sample is a (L,) 1-D waveform.  Fundamentals are drawn from
+    the musical chromatic scale (A2–A5: 110–880 Hz) so the model sees
+    real harmonic structure across multiple octaves.
+
+    Args:
+        batch_size:  Samples per batch.
+        n_batches:   Total number of batches.
+        sample_rate: Audio sample rate in Hz.
+        chunk_s:     Duration of each waveform in seconds.
+        seed:        RNG seed for reproducibility.
+
+    Returns:
+        DataLoader yielding (batch_size, L) float32 tensors.
     """
-    # Load sample audio and create synthetic sequences
-    audio, sr = load_sample_audio("speech_synth")
-
-    # Create multiple sequences by adding small variations
-    sequences = []
-    for i in range(batch_size * num_batches):
-        # Add slight noise/variation
-        noise = torch.randn_like(audio) * 0.01
-        seq = audio + noise
-        sequences.append(seq)
-
-    # Stack into batch tensor (B, L)
-    data = torch.stack(sequences)
-
-    # Create dataset and dataloader
-    dataset = TensorDataset(data)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    torch.manual_seed(seed)
+    L = int(sample_rate * chunk_s)
+    fundamentals = [110.0 * (2 ** (i / 12)) for i in range(37)]  # A2 to A5
+    n_total = batch_size * n_batches
+    waveforms: List[torch.Tensor] = []
+    for i in range(n_total):
+        fund = fundamentals[i % len(fundamentals)]
+        n_harmonics = 3 + (i % 4)
+        wave = _harmonic_signal(fund, n_harmonics, chunk_s, sample_rate)
+        noise = torch.randn(L) * 0.02
+        waveforms.append((wave + noise).unsqueeze(0))  # (1, L)
+    data = torch.stack(waveforms).squeeze(1)  # (n_total, L)
+    return DataLoader(TensorDataset(data), batch_size=batch_size, shuffle=True)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Train FBC phase coherence")
-    parser.add_argument("--epochs", type=int, default=50, help="Number of training epochs")
-    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
-    parser.add_argument("--batch-size", type=int, default=4, help="Batch size")
-    parser.add_argument("--d-model", type=int, default=128, help="Model dimension")
-    parser.add_argument("--device", type=str, default=None, help="Device (cuda/cpu)")
-    parser.add_argument("--save-path", type=str, default="fbc_checkpoint.pt", help="Checkpoint path")
-    args = parser.parse_args()
+# ── Metrics ──────────────────────────────────────────────────────────────────
 
+def _coherence_metrics(coherence: torch.Tensor) -> Tuple[float, float]:
+    """
+    Compute variance and diagonal ratio of coherence matrix.
+
+    Args:
+        coherence: (B, H, T, T) attention weights.
+
+    Returns:
+        (variance, diag_ratio): Variance across all entries; mean diagonal
+        divided by mean off-diagonal. diag_ratio > 1 means the model
+        attends to the same temporal position more than cross-positions.
+    """
+    var = coherence.var().item()
+    if coherence.shape[-1] < 2:
+        return var, 1.0
+    diag = torch.diagonal(coherence, dim1=-2, dim2=-1).mean().item()
+    mask = ~torch.eye(coherence.shape[-1], dtype=torch.bool, device=coherence.device)
+    off_diag = coherence[..., mask].mean().item()
+    ratio = diag / (off_diag + 1e-8)
+    return var, ratio
+
+
+# ── Training loop ────────────────────────────────────────────────────────────
+
+def train(args: argparse.Namespace) -> None:
+    """
+    Full training loop.
+
+    Args:
+        args: Parsed CLI arguments (epochs, lr, batch_size, d_model,
+              device, harmonic_binding, save_path, n_batches).
+    """
+    device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
     print("=" * 60)
-    print("FBC Phase Coherence Training")
+    print("Bifröst Phase Coherence Training")
     print("=" * 60)
+    print(f"  device:           {device}")
+    print(f"  d_model:          {args.d_model}")
+    print(f"  epochs:           {args.epochs}")
+    print(f"  lr:               {args.lr}")
+    print(f"  batch_size:       {args.batch_size}")
+    print(f"  harmonic_binding: {args.harmonic_binding}")
+    print(f"  n_batches:        {args.n_batches}")
+    print()
 
-    # Create pipeline with dual-stream decomposer
-    print(f"\nCreating pipeline (d_model={args.d_model})...")
-    pipeline = FBCPipeline(
+    pipeline = BifrostPipeline(
         n_fft_s0=1024,
         n_fft_s1=512,
         d_model=args.d_model,
         n_heads=4,
         n_bands=8,
-        use_mamba=True,
+        use_complex_ssm=True,
+        use_harmonic_binding=args.harmonic_binding,
+        sample_rate=16_000.0,
     )
+    total_params = sum(p.numel() for p in pipeline.parameters())
+    print(f"  total_params:     {total_params:,}")
+    print(f"  ssm_type:         {pipeline.ssm_type}")
+    print()
 
-    device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
-
-    # Create dataloader
-    print(f"\nCreating dataloader (batch_size={args.batch_size})...")
-    dataloader = create_dummy_dataloader(batch_size=args.batch_size)
-
-    # Train
-    print(f"\nTraining for {args.epochs} epochs...")
-    print("-" * 60)
-
-    trainer = train_fbc_simple(
+    trainer = BifrostTrainer(
         pipeline=pipeline,
-        dataloader=dataloader,
-        epochs=args.epochs,
+        lr=args.lr,
         device=device,
+        warmup_steps=max(1, args.epochs * args.n_batches // 10),
     )
+
+    dataloader = build_dataset(
+        batch_size=args.batch_size,
+        n_batches=args.n_batches,
+        sample_rate=16_000,
+        chunk_s=1.0,
+    )
+
+    best_loss = float("inf")
+    epoch_losses: List[float] = []
+
+    for epoch in range(1, args.epochs + 1):
+        t0 = time.time()
+        losses: List[float] = []
+        coh_vars: List[float] = []
+        diag_ratios: List[float] = []
+
+        for (batch,) in dataloader:
+            batch = batch.to(device)
+            loss_val = trainer.train_step(batch)
+            losses.append(loss_val)
+
+            # Compute coherence metrics on this batch (no_grad)
+            pipeline.eval()
+            with torch.no_grad():
+                half = batch.shape[-1] // 2
+                _, coh = pipeline(batch[..., :half])
+            pipeline.train()
+            coh_var, diag_ratio = _coherence_metrics(coh)
+            coh_vars.append(coh_var)
+            diag_ratios.append(diag_ratio)
+
+        epoch_loss = sum(losses) / len(losses)
+        epoch_var = sum(coh_vars) / len(coh_vars)
+        epoch_ratio = sum(diag_ratios) / len(diag_ratios)
+        elapsed = time.time() - t0
+        epoch_losses.append(epoch_loss)
+
+        # Improvement indicator
+        improved = epoch_loss < best_loss
+        if improved:
+            best_loss = epoch_loss
+
+        print(
+            f"Epoch {epoch:4d}/{args.epochs} | "
+            f"loss={epoch_loss:.5f} {'↓' if improved else ' '} | "
+            f"coh_var={epoch_var:.5f} | "
+            f"diag_ratio={epoch_ratio:.4f} | "
+            f"{elapsed:.1f}s"
+        )
 
     # Save checkpoint
-    print(f"\nSaving checkpoint to {args.save_path}...")
-    trainer.save_checkpoint(args.save_path)
+    save_path = Path(args.save_path)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(
+        {
+            "pipeline_state": pipeline.state_dict(),
+            "epoch_losses": epoch_losses,
+            "args": vars(args),
+        },
+        save_path,
+    )
+    print(f"\nCheckpoint saved → {save_path}")
 
-    # Final evaluation
-    print("\nFinal evaluation:")
-    print("-" * 60)
-    batch = next(iter(dataloader))
-    signal = batch[0] if isinstance(batch, (list, tuple)) else batch
-    stats = trainer.eval_step(signal)
-
-    print(f"Loss: {stats['loss']:.4f}")
-    print(f"Coherence mean: {stats['coherence_mean']:.4f}")
-    print(f"Coherence std: {stats['coherence_std']:.4f}")
-    print("\nPer-head self-attention ratios (higher = more coherent):")
-    for h in range(4):
-        ratio = stats.get(f"head_{h}_ratio", 0)
-        bar = "█" * int(ratio * 10)
-        print(f"  Head {h}: {ratio:.3f} {bar}")
-
+    # Final diagnostic
     print("\n" + "=" * 60)
-    print("Training complete!")
-    print(f"Checkpoint saved to: {args.save_path}")
+    print("Final Diagnostics")
     print("=" * 60)
+    pipeline.eval()
+    dataloader_eval = build_dataset(batch_size=4, n_batches=1, seed=999)
+    (eval_batch,) = next(iter(dataloader_eval))
+    eval_batch = eval_batch.to(device)
+    with torch.no_grad():
+        half = eval_batch.shape[-1] // 2
+        st, coh = pipeline(eval_batch[..., :half])
 
-    # Expected: After training, head ratios should be > 1.2 (vs ~1.06 untrained)
-    avg_ratio = sum(stats.get(f"head_{h}_ratio", 1.0) for h in range(4)) / 4
-    if avg_ratio > 1.15:
-        print("✅ Phase coherence successfully learned!")
+    coh_var, diag_ratio = _coherence_metrics(coh)
+    print(f"  Final loss (best):  {best_loss:.5f}")
+    print(f"  Coherence variance: {coh_var:.6f}")
+    print(f"  Diagonal ratio:     {diag_ratio:.4f}")
+    print(f"  Amplitude shape:    {st.amplitude.shape}")
+
+    if diag_ratio > 1.2:
+        print("\n  Phase coherence LEARNED (diag_ratio > 1.2) ✓")
+    elif diag_ratio > 1.1:
+        print("\n  Phase coherence partially learned (1.1 < ratio < 1.2). Run more epochs.")
     else:
-        print("⚠️  Phase coherence still weak. More training epochs may be needed.")
+        print("\n  Phase coherence not yet learned (ratio ≤ 1.1). Increase --epochs.")
+
+
+# ── CLI ───────────────────────────────────────────────────────────────────────
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Train Bifröst complex SSM for phase coherence via next-frame prediction."
+    )
+    parser.add_argument("--epochs",            type=int,   default=100,                    help="Training epochs")
+    parser.add_argument("--lr",                type=float, default=1e-3,                   help="Learning rate")
+    parser.add_argument("--batch-size",        type=int,   default=4,                      help="Batch size")
+    parser.add_argument("--n-batches",         type=int,   default=20,                     help="Batches per epoch")
+    parser.add_argument("--d-model",           type=int,   default=128,                    help="Model hidden dimension")
+    parser.add_argument("--device",            type=str,   default=None,                   help="cuda or cpu (auto-detect if omitted)")
+    parser.add_argument("--harmonic-binding",  action="store_true",                        help="Use HarmonicBinding (explicit 440↔880Hz grid)")
+    parser.add_argument("--save-path",         type=str,   default="checkpoints/phase_coherence.pt", help="Checkpoint output path")
+    args = parser.parse_args()
+    train(args)
 
 
 if __name__ == "__main__":

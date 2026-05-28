@@ -254,8 +254,9 @@ class ComplexFBCTrainer:
         if self.binding:
             self.binding.train()
 
-        # Forward pass
-        decomposed = self.decomposer(spectral_batch)
+        # Forward pass — ComplexSpectralDecomposer returns (SpectralTensor, h_T)
+        decomp_out = self.decomposer(spectral_batch)
+        decomposed = decomp_out[0] if isinstance(decomp_out, tuple) else decomp_out
 
         # Get complex representations for loss computation
         # Target: next frame prediction

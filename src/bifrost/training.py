@@ -152,40 +152,62 @@ class FBCTrainer:
         Returns:
             Loss value (float)
         """
+        if signal.dim() < 2:
+            raise ValueError(
+                f"train_step expects signal with dim >= 2, got dim={signal.dim()}. "
+                "Pass (B, L) time-domain or (B, T, n_freq) spectral input."
+            )
         self.pipeline.train()
         signal = signal.to(self.device)
 
         # Zero gradients
         self.optimizer.zero_grad()
 
-        # Forward pass through pipeline
-        bound_st, coherence = self.pipeline(signal, metadata)
-
-        # Next-frame prediction loss
-        # Use all frames except last as input, all frames except first as target
-        B, T, D = bound_st.amplitude.shape
-
-        if T < 2:
-            # Single frame - can't do next-frame prediction
-            # Fall back to reconstruction loss against input
-            target = bound_st
-        else:
-            # Create shifted target for next-frame prediction
-            # Current implementation: simple shift
-            target_amplitude = torch.cat([
-                bound_st.amplitude[:, 1:, :],
-                bound_st.amplitude[:, -1:, :]  # Repeat last frame
-            ], dim=1)
-            target_phase = torch.cat([
-                bound_st.phase[:, 1:, :],
-                bound_st.phase[:, -1:, :]
-            ], dim=1)
-            target = SpectralTensor(
-                amplitude=target_amplitude.detach(),
-                phase=target_phase.detach(),
-                scale=bound_st.scale,
-                uncertainty=bound_st.uncertainty,
+        # Derive real next-frame targets from the raw signal via STFT.
+        # Split signal into two halves: frames 0..T-2 as input, frames 1..T-1 as target.
+        # This gives the model real future spectral frames to predict, not its own output.
+        B, L = signal.shape[:2]
+        half = L // 2
+        if half < 1:
+            raise ValueError(
+                f"Signal length {L} is too short for next-frame prediction (need L >= 2)."
             )
+        signal_input = signal[..., :half]    # first half → pipeline processes this
+        signal_target = signal[..., half:]   # second half → pipeline produces target
+
+        # Forward pass on input half
+        bound_st, coherence = self.pipeline(signal_input, metadata)
+
+        # Produce target spectral tensor from the second half of the signal.
+        # Run through pipeline in eval mode (no grad) to get real future representation.
+        with torch.no_grad():
+            self.pipeline.eval()
+            target_st, _ = self.pipeline(signal_target, metadata)
+            self.pipeline.train()
+
+        B_out, T_out, D_out = bound_st.amplitude.shape
+        B_tgt, T_tgt, D_tgt = target_st.amplitude.shape
+
+        # Align temporal dimension: interpolate target to match input if sizes differ
+        if T_tgt != T_out:
+            tgt_amp = F.interpolate(
+                target_st.amplitude.permute(0, 2, 1),
+                size=T_out, mode='linear', align_corners=False,
+            ).permute(0, 2, 1)
+            tgt_phase = F.interpolate(
+                target_st.phase.permute(0, 2, 1),
+                size=T_out, mode='linear', align_corners=False,
+            ).permute(0, 2, 1)
+        else:
+            tgt_amp = target_st.amplitude
+            tgt_phase = target_st.phase
+
+        target = SpectralTensor(
+            amplitude=tgt_amp.detach(),
+            phase=tgt_phase.detach(),
+            scale=bound_st.scale,
+            uncertainty=bound_st.uncertainty,
+        )
 
         loss = self.criterion(bound_st, target)
 
