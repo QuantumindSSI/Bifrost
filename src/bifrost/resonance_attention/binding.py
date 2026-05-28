@@ -140,15 +140,20 @@ class SpectralBinding(nn.Module):
             # cp is now (B, T_s0, n_freq_s0)
             T_target = amp.shape[1]
             F_target = self.d_model
-            # Reshape to (B, 1, T_s0, F_s0) for F.interpolate which expects (N, C, H, W)
-            cp_4d = cp.unsqueeze(1)  # (B, 1, T_s0, F_s0)
-            cp_resized = torch.nn.functional.interpolate(
-                cp_4d.float(),
-                size=(T_target, F_target),
-                mode='bilinear',
-                align_corners=False,
+            cp_f = cp.float()
+            # Phase is circular (wraps at ±π). Naive linear interpolation destroys
+            # variance at wrap boundaries (e.g. interpolating +π and -π gives 0).
+            # Correct approach: interpolate cos(φ) and sin(φ) (both smooth, bounded
+            # in [-1,1]), then recover angle via atan2. Preserves circular structure.
+            cos_cp = torch.cos(cp_f).unsqueeze(1)  # (B, 1, T_s0, F_s0)
+            sin_cp = torch.sin(cp_f).unsqueeze(1)
+            cos_r = torch.nn.functional.interpolate(
+                cos_cp, size=(T_target, F_target), mode='bilinear', align_corners=False,
             ).squeeze(1)  # (B, T_target, F_target)
-            phase_orig = cp_resized
+            sin_r = torch.nn.functional.interpolate(
+                sin_cp, size=(T_target, F_target), mode='bilinear', align_corners=False,
+            ).squeeze(1)
+            phase_orig = torch.atan2(sin_r, cos_r)  # (B, T_target, F_target) in (-π, π)
         else:
             phase_orig = phase
 
