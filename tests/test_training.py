@@ -78,15 +78,19 @@ class TestComplexBifrostTrainer:
     """Test suite for ComplexBifrostTrainer."""
 
     def test_complex_trainer_initialization(self):
-        """Happy path: Complex trainer initializes."""
-        from bifrost import ComplexFBCTrainer
+        """Happy path: Complex trainer initializes with real S1SpectralDecomposer."""
+        from bifrost.s1_decomposer import S1SpectralDecomposer
 
-        # Create minimal complex pipeline mock
-        class MockComplexPipeline:
-            def __init__(self):
-                self.d_model = 64
-                self.parameters = lambda: [torch.randn(10)]
+        decomposer = S1SpectralDecomposer(n_fft=64, d_model=64)
+        trainer = ComplexBifrostTrainer(decomposer, lr=1e-3)
+        assert trainer.d_model == 64
+        assert trainer.decomposer is decomposer
+        assert trainer.optimizer is not None
 
-        mock = MockComplexPipeline()
-        trainer = ComplexBifrostTrainer(mock, lr=1e-3)
-        assert trainer.lr == 1e-3
+    def test_complex_trainer_has_optimizer(self):
+        """Happy path: Trainer creates an optimizer on init."""
+        from bifrost.s1_decomposer import S1SpectralDecomposer
+
+        decomposer = S1SpectralDecomposer(n_fft=64, d_model=64)
+        trainer = ComplexBifrostTrainer(decomposer)
+        assert hasattr(trainer, 'optimizer') or hasattr(trainer, 'opt')

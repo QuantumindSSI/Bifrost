@@ -13,14 +13,14 @@ class TestDemoUtils:
     """Test suite for demo utility functions."""
 
     def test_hilbert_antiphase_shape(self):
-        """Happy path: hilbert_antiphase returns correct shapes."""
+        """Happy path: hilbert_antiphase returns tensor of same shape as input."""
         from demos.utils import hilbert_antiphase
 
         signal = torch.randn(1, 128)
-        a, b = hilbert_antiphase(signal, n_samples=64)
+        result = hilbert_antiphase(signal)
 
-        assert a.shape == (64,)
-        assert b.shape == (64,)
+        assert result.shape == signal.shape
+        assert torch.is_tensor(result)
 
     def test_attention_l1_distance_non_negative(self):
         """Property: L1 distance is always non-negative."""
@@ -57,20 +57,27 @@ class TestDemo1AntiPhase:
     """Test suite for demo_1_antiphase."""
 
     def test_discriminate_pair_assertions(self):
-        """Happy path: discriminate_pair passes NASA Rule 5 assertions."""
-        # Import the function directly
+        """Happy path: _evaluate_pair passes NASA Rule 5 assertions."""
         import demos.demo_1_antiphase as demo
+        from bifrost.resonance_attention import ResonanceAttention
+        from demos.baselines import DotProductAttention
 
-        # Create synthetic anti-phase pair
-        signal = torch.randn(1, 128)
-        label, feat_a, feat_b, phase_a, phase_b = demo._create_antiphase_pair(signal)
+        res_attn = ResonanceAttention(
+            d_model=demo.D_MODEL, n_heads=demo.N_HEADS,
+            n_bands=demo.N_BANDS, dropout=0.0,
+        )
+        dot_attn = DotProductAttention(
+            d_model=demo.D_MODEL, n_heads=demo.N_HEADS, dropout=0.0,
+        )
+        signal = torch.randn(demo.N_SAMPLES)
 
-        # Should not raise assertion error
-        result = demo.discriminate_pair(label, feat_a, feat_b, phase_a, phase_b)
+        result = demo._evaluate_pair(signal, res_attn, dot_attn, label="antiphase_test")
 
-        assert result.passes is True
-        assert result.ratio >= 1.0
-        assert result.res_distance > result.dot_distance
+        assert result.res_distance >= 0.0, f"res_distance must be non-negative, got {result.res_distance}"
+        assert result.dot_distance >= 0.0, f"dot_distance must be non-negative, got {result.dot_distance}"
+        assert result.res_distance > result.dot_distance, (
+            f"Core claim violated: res={result.res_distance:.6f} dot={result.dot_distance:.6f}"
+        )
 
     def test_load_wav_file_not_found(self):
         """Error path: Loading non-existent file raises error."""

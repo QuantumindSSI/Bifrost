@@ -53,13 +53,14 @@ class TestAttentionComparison:
         # This tests the fundamental Bifröst claim
         from demos.utils import hilbert_antiphase, attention_l1_distance
 
-        # Create anti-phase pair
+        # Create anti-phase pair: hilbert_antiphase returns -signal (same shape)
         signal = torch.randn(1, 128)
-        a, b = hilbert_antiphase(signal, n_samples=64)
+        anti = hilbert_antiphase(signal)
 
-        # For this test, we just verify the setup works
-        assert a.shape == b.shape
-        assert torch.is_tensor(a)
+        assert anti.shape == signal.shape
+        assert torch.is_tensor(anti)
+        # Core property: anti-phase has same magnitude, inverted sign
+        assert torch.allclose(anti, -signal, atol=1e-6)
 
     def test_dot_product_blind_to_phase(self):
         """Core claim: Dot-product attention fails on anti-phase."""
