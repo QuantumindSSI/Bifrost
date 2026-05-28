@@ -86,7 +86,11 @@ class ContrastiveCoherenceLoss(nn.Module):
         # Always has nonzero gradient through -var_real, even when already satisfied.
         # This prevents dead gradients when the margin condition is met.
         var_real = coh_real.var()
-        var_noise = coh_noise.var()
+        # Detach var_noise: it is a fixed reference baseline, not a gradient target.
+        # Without detach, the optimizer minimises loss by growing var_noise (making
+        # noise attention structured) instead of growing var_real (making harmonic
+        # attention structured). Only var_real should receive gradients.
+        var_noise = coh_noise.var().detach()
         loss = -var_real + var_noise + self.margin
         return loss
 
