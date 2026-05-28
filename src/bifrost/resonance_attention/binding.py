@@ -81,6 +81,7 @@ class SpectralBinding(nn.Module):
         self,
         st: SpectralTensor,
         input_proj: Optional[nn.Linear] = None,
+        canonical_phase: Optional[torch.Tensor] = None,
     ) -> Tuple[SpectralTensor, torch.Tensor]:
         """
         Parameters
@@ -89,6 +90,11 @@ class SpectralBinding(nn.Module):
             Output of decomposition.  ``st.amplitude`` shape: ``(batch, channels, n_freq)``.
         input_proj : nn.Linear, optional
             External projection layer if n_freq != d_model.
+        canonical_phase : torch.Tensor, optional
+            Raw STFT phase from S0 Canonicaliser (B, n_freq) or (B, T, n_freq).
+            When supplied, this is used for coherence computation instead of
+            st.phase — it has passed through zero learned projections and
+            cannot collapse to a constant, making it collapse-proof.
 
         Returns
         -------
@@ -119,7 +125,32 @@ class SpectralBinding(nn.Module):
 
         # Store original amplitude and phase before any projection (needed for harmonic coherence)
         amp_orig = amp
-        phase_orig = phase
+        # If canonical_phase (raw S0 STFT phase) is supplied, use it for coherence.
+        # It has passed through ZERO learned parameters — it cannot collapse.
+        # decomposed.phase passes through output_proj (a learned complex linear layer)
+        # which collapses to a constant at equilibrium, making all phase differences → 0.
+        # Resize to (B, T_amp, d_model) to match the amplitude tensor's temporal resolution.
+        if canonical_phase is not None:
+            cp = canonical_phase
+            # Normalise to exactly 3D (B, T_s0, n_freq_s0) regardless of input dims.
+            if cp.dim() == 2:
+                cp = cp.unsqueeze(1)          # (B, 1, n_freq) → treat single frame as T=1
+            elif cp.dim() == 4:
+                cp = cp.mean(dim=1)           # (B, C, T, n_freq) → average channels → (B, T, n_freq)
+            # cp is now (B, T_s0, n_freq_s0)
+            T_target = amp.shape[1]
+            F_target = self.d_model
+            # Reshape to (B, 1, T_s0, F_s0) for F.interpolate which expects (N, C, H, W)
+            cp_4d = cp.unsqueeze(1)  # (B, 1, T_s0, F_s0)
+            cp_resized = torch.nn.functional.interpolate(
+                cp_4d.float(),
+                size=(T_target, F_target),
+                mode='bilinear',
+                align_corners=False,
+            ).squeeze(1)  # (B, T_target, F_target)
+            phase_orig = cp_resized
+        else:
+            phase_orig = phase
 
         # Apply external projection if provided (S1→S2 bridge)
         if input_proj is not None:
@@ -130,32 +161,50 @@ class SpectralBinding(nn.Module):
             # Project amplitude to d_model for values
             amp_proj = self.amp_proj(amp)
 
-        # Phase is passed DIRECTLY without any learned projection.
-        # Learned projections collapse phase differences to zero at equilibrium
-        # (W_q and W_k learn to map all inputs to the same phase → cos(0)=1 everywhere
-        # → uniform softmax → zero variance → dead gradient). The raw SSM phase
-        # carries genuine temporal structure that cannot be collapsed this way.
-        # Resize to d_model if needed via interpolation (no learned parameters).
+        # Phase for coherence computation: canonical_phase anchors + learned phase.
+        #
+        # Problem: using only canonical_phase (no grad) → coherence has no grad_fn
+        # → var_real has no grad → loss.backward() raises RuntimeError.
+        #
+        # Problem: using only learned phase (W_q/W_k output) → projects to constant
+        # at equilibrium → cos(0)=1 everywhere → uniform softmax → var=0 → dead.
+        #
+        # Solution: use W_q(amp_proj) output directly as the learned phase component,
+        # then ADD canonical phase as a fixed additive bias (detached). The sum carries
+        # a grad_fn (through W_q) while the canonical term prevents full collapse:
+        # even if W_q learns a constant output, the canonical phase differences
+        # between real and noise signals survive in the sum.
+        Q_for_phase = self.resonance._reshape_heads(self.resonance.W_q(amp_proj))  # (B,H,T,d_head)
+        learned_phase = Q_for_phase  # real-valued W_q output; carries grad_fn; shape (B,H,T,d_head)
+
         if phase_orig.shape[-1] != self.d_model:
-            phase_for_attn = torch.nn.functional.interpolate(
+            phase_anchor = torch.nn.functional.interpolate(
                 phase_orig.reshape(-1, 1, phase_orig.shape[-1]),
                 size=self.d_model,
                 mode='linear',
                 align_corners=False,
             ).reshape(phase_orig.shape[0], phase_orig.shape[1], self.d_model)
         else:
-            phase_for_attn = phase_orig
+            phase_anchor = phase_orig
 
-        # Compute V projections needed for re-aggregation when harmonic blend is active
-        V_proj = self.resonance.W_v(amp_proj)  # (B, T, d_model)
+        # Reshape anchor to (B, H, T, d_head) to match learned_phase
+        phase_anchor_heads = self.resonance._reshape_heads(phase_anchor.float())
+        # Sum: learned phase provides grad path; canonical anchor prevents collapse.
+        # Convert (B,H,T,d_head) → (B,T,d_model) for resonance.forward interface.
+        phase_for_attn_heads = learned_phase + phase_anchor_heads.detach()
         B_sz, T_sz, _ = amp_proj.shape
         d_head = self.resonance.d_head
         n_heads = self.resonance.n_heads
+        phase_for_attn = (
+            phase_for_attn_heads.transpose(1, 2).contiguous().view(B_sz, T_sz, self.d_model)
+        )  # (B, T, d_model)
+
+        # Compute V projections needed for re-aggregation when harmonic blend is active
+        V_proj = self.resonance.W_v(amp_proj)  # (B, T, d_model)
         # (B, n_heads, T, d_head)
         V_heads = V_proj.view(B_sz, T_sz, n_heads, d_head).transpose(1, 2)
 
-        # Main resonance attention: amplitude goes through W_q/W_k for values,
-        # but coherence is computed from raw SSM phase (not projected).
+        # Main resonance attention: amplitude for values; anchored phase for coherence.
         bound, coherence = self.resonance(amp_proj, phase=phase_for_attn)
         # coherence: (B, n_heads, T, T) - returned for diagnostics
 

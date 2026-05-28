@@ -196,7 +196,11 @@ class FBCPipeline(nn.Module):
                     "Provide longer signals for meaningful phase-coherence routing.",
                     stacklevel=2,
                 )
-            bound_st, coherence = self.binding(decomposed, input_proj=self._decomp_to_bind_proj)
+            bound_st, coherence = self.binding(
+                decomposed,
+                input_proj=self._decomp_to_bind_proj,
+                canonical_phase=canonical.phase,
+            )
         return bound_st, coherence
 
     def forward_stateful(
