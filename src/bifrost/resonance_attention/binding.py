@@ -130,10 +130,21 @@ class SpectralBinding(nn.Module):
             # Project amplitude to d_model for values
             amp_proj = self.amp_proj(amp)
 
-        # Project phase for the main resonance attention
-        phase_proj = torch.nn.functional.linear(
-            phase_orig, self.amp_proj.weight, self.amp_proj.bias
-        ) if self.use_original_phase else phase_orig
+        # Phase is passed DIRECTLY without any learned projection.
+        # Learned projections collapse phase differences to zero at equilibrium
+        # (W_q and W_k learn to map all inputs to the same phase → cos(0)=1 everywhere
+        # → uniform softmax → zero variance → dead gradient). The raw SSM phase
+        # carries genuine temporal structure that cannot be collapsed this way.
+        # Resize to d_model if needed via interpolation (no learned parameters).
+        if phase_orig.shape[-1] != self.d_model:
+            phase_for_attn = torch.nn.functional.interpolate(
+                phase_orig.reshape(-1, 1, phase_orig.shape[-1]),
+                size=self.d_model,
+                mode='linear',
+                align_corners=False,
+            ).reshape(phase_orig.shape[0], phase_orig.shape[1], self.d_model)
+        else:
+            phase_for_attn = phase_orig
 
         # Compute V projections needed for re-aggregation when harmonic blend is active
         V_proj = self.resonance.W_v(amp_proj)  # (B, T, d_model)
@@ -143,8 +154,9 @@ class SpectralBinding(nn.Module):
         # (B, n_heads, T, d_head)
         V_heads = V_proj.view(B_sz, T_sz, n_heads, d_head).transpose(1, 2)
 
-        # Main resonance attention uses projected amplitude and phase
-        bound, coherence = self.resonance(amp_proj, phase=phase_proj)
+        # Main resonance attention: amplitude goes through W_q/W_k for values,
+        # but coherence is computed from raw SSM phase (not projected).
+        bound, coherence = self.resonance(amp_proj, phase=phase_for_attn)
         # coherence: (B, n_heads, T, T) - returned for diagnostics
 
         # Compute coherence in ORIGINAL n_freq space to preserve harmonic structure

@@ -193,18 +193,18 @@ class FBCTrainer:
         self.loss_history: List[float] = []
 
     def _create_scheduler(self) -> LambdaLR:
-        """Create warmup + cosine decay scheduler.
+        """Create linear warmup scheduler with constant LR after warmup.
 
-        Warmup for warmup_steps, then cosine decay over 50x that many steps.
-        Long decay keeps gradients active well past the plateau region.
+        Cosine decay was removed: tau and band_weights are frozen, so there is
+        no tau-overshoot risk. The decay was killing gradients past epoch 33,
+        causing attention variance to collapse toward uniform even though the
+        gap remained positive. Constant LR after warmup keeps gradients active
+        for the full 200 epochs.
         """
-        total_steps = self.warmup_steps * 50
-
         def lr_lambda(step: int) -> float:
             if step < self.warmup_steps:
                 return step / max(1, self.warmup_steps)
-            progress = (step - self.warmup_steps) / max(1, total_steps - self.warmup_steps)
-            return 0.01 + 0.99 * 0.5 * (1.0 + _math.cos(_math.pi * min(progress, 1.0)))
+            return 1.0
 
         return LambdaLR(self.optimizer, lr_lambda)
 

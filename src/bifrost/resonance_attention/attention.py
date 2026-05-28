@@ -105,15 +105,20 @@ class ResonanceAttention(nn.Module):
         """
         B, S, D = x.shape
 
-        # --- project Q, K, V ------------------------------------------------
-        Q = self._reshape_heads(self.W_q(x))  # (B, H, S, d_head)
+        # --- project Q, K, V (amplitude only — NOT used for phase) -----------
+        Q = self._reshape_heads(self.W_q(x))  # (B, H, S, d_head) — used for V aggregation
         K = self._reshape_heads(self.W_k(x))
         V = self._reshape_heads(self.W_v(x))
 
-        # --- obtain phase for Q and K ---------------------------------------
+        # --- obtain phase for coherence computation -------------------------
+        # When phase is supplied externally (raw SSM phase), use it directly.
+        # Do NOT pass phase through W_q/W_k — those learned projections collapse
+        # phase differences to zero at equilibrium, causing uniform softmax.
+        # When no phase is given, fall back to extracting from the projected Q.
         if phase is not None:
-            Q_phase = self._reshape_heads(phase)
-            K_phase = self._reshape_heads(phase)
+            ph = self._reshape_heads(phase)  # (B, H, S, d_head)
+            Q_phase = ph
+            K_phase = ph
         else:
             Q_phase = self._extract_phase(Q)
             K_phase = self._extract_phase(K)
