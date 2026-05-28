@@ -236,17 +236,17 @@ class FBCTrainer:
         # --- Positive: run real signal through pipeline ---
         _, coh_real = self.pipeline(signal, metadata)
 
-        # --- Negative: white noise with same RMS as the real signal ---
-        # Phase-randomised signals share the same amplitude spectrum as the original
-        # and are indistinguishable to an STFT-based canonicalizer (S0 throws phase away
-        # during amplitude normalisation, then recomputes phase from the STFT).
-        # White noise has a FLAT amplitude spectrum — no harmonic peaks — so it produces
-        # a fundamentally different SpectralTensor that the SSM can learn to distinguish.
-        rms = signal.std(dim=-1, keepdim=True).clamp(min=1e-8)
-        if signal.dim() == 2:
-            noise_signal = torch.randn_like(signal) * rms
-        else:
-            noise_signal = torch.randn_like(signal) * rms
+        # --- Negative: temporally shuffled real signal ---
+        # White noise has a flat amplitude spectrum — trivially different from harmonic
+        # signals — so learned projections W_q/W_k accidentally learn to detect spectral
+        # shape differences rather than phase coherence. Over training, the projections
+        # become sensitive enough to structure white noise too, collapsing the gap.
+        #
+        # Shuffling the time dimension destroys temporal phase coherence while preserving
+        # the exact amplitude spectrum (same harmonics, same energy). This forces the model
+        # to discriminate on PHASE STRUCTURE ALONE — the actual learning objective.
+        perm = torch.randperm(signal.shape[-1], device=signal.device)
+        noise_signal = signal[..., perm]
 
         with torch.no_grad():
             self.pipeline.eval()

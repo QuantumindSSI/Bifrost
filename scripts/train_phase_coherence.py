@@ -273,13 +273,13 @@ def train(args: argparse.Namespace) -> None:
             loss_val = trainer.train_step(batch)
             losses.append(loss_val if loss_val == loss_val else 0.0)  # nan→0 for mean
 
-            # Track coherence gap: real harmonic signal vs white noise
+            # Track coherence gap: real signal vs temporally shuffled version
             pipeline.eval()
             with torch.no_grad():
                 _, coh_real = pipeline(batch)
-                rms = batch.std(dim=-1, keepdim=True).clamp(min=1e-8)
-                white_noise = torch.randn_like(batch) * rms
-                _, coh_noise = pipeline(white_noise)
+                perm = torch.randperm(batch.shape[-1], device=batch.device)
+                shuffled = batch[..., perm]
+                _, coh_noise = pipeline(shuffled)
             pipeline.train()
 
             coh_reals.append(coh_real.var().item())    # variance, not mean
