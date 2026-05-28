@@ -1,4 +1,4 @@
-"""Sample data loader for FBC quick-start.
+"""Sample data loader for Bifröst quick-start.
 
 Provides easy access to bundled audio/image samples for testing
 and experimentation without external dependencies.
@@ -186,12 +186,12 @@ def load_sample_image(name: str = "rgb", return_tensor: bool = True):
 
 
 def quick_start_pipeline(audio_name: str = "mono_16khz"):
-    """Complete quick-start: load sample + run through FBC pipeline.
+    """Complete quick-start: load sample + run through Bifröst pipeline.
     
     Returns:
         Tuple of (canonical, decomposed, bound, attention_weights)
     
-    This is the fastest way to verify your installation and see FBC in action.
+    This is the fastest way to verify your installation and see Bifröst in action.
     
     Args:
         audio_name: Which audio sample to use

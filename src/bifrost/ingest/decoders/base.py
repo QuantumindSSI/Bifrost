@@ -1,4 +1,4 @@
-"""Base decoder interface for FBC ingest layer."""
+"""Base decoder interface for Bifröst ingest layer."""
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple
@@ -8,10 +8,10 @@ import numpy as np
 
 class BaseDecoder(ABC):
     """
-    Abstract base class for all FBC decoders.
+    Abstract base class for all Bifröst decoders.
 
     Decoders convert raw bytes from various formats into
-    canonical numpy arrays suitable for FBC pipeline ingestion.
+    canonical numpy arrays suitable for Bifröst pipeline ingestion.
     """
 
     @abstractmethod

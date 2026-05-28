@@ -19,7 +19,7 @@ class TextDecoder(BaseDecoder):
     Pipeline:
         1. Parse raw bytes → DataFrame or dict
         2. Convert to numeric representation
-        3. Return (array, metadata) for FBC pipeline
+        3. Return (array, metadata) for Bifröst pipeline
 
     Supported formats:
         - csv: Comma-separated values
@@ -146,7 +146,7 @@ class TextDecoder(BaseDecoder):
                     features_list.append(text_features[:, i])
                     feature_names.append(f"{col}_charfreq_{i}")
 
-        # Stack to (features, samples) - transpose for FBC format
+        # Stack to (features, samples) - transpose for Bifröst spectral format
         if not features_list:
             raise ValueError("No features extracted from DataFrame")
 
@@ -210,7 +210,7 @@ class TextDecoder(BaseDecoder):
 
 class TextTokenizer:
     """
-    Tokenize raw text strings into numeric embeddings for FBC pipeline.
+    Tokenize raw text strings into numeric embeddings for Bifröst pipeline.
 
     Lightweight alternative to DataFrame-based decoding for:
         - Raw text documents

@@ -1,8 +1,8 @@
 """
-MultiModalSpectralPipeline — unified FBC pipeline for audio, image, text, and tensor.
+MultiModalSpectralPipeline — unified Bifröst pipeline for audio, image, text, and tensor.
 
 This pipeline automatically detects the input modality and routes through the
-appropriate processing path while maintaining the core FBC architecture:
+appropriate processing path while maintaining the core Bifröst architecture:
     Ingest → Canonicalize → Decompose → Bind
 
 Usage:
@@ -42,7 +42,7 @@ from .resonance_attention.binding import SpectralBinding
 
 
 class Modality(Enum):
-    """Supported data modalities for FBC processing."""
+    """Supported data modalities for Bifröst processing."""
     AUDIO = "audio"
     IMAGE = "image"
     TEXT = "text"
@@ -528,7 +528,7 @@ class TensorSpectralAdapter(nn.Module):
 
 class MultiModalSpectralPipeline(nn.Module):
     """
-    Unified multimodal FBC pipeline supporting audio, image, text, and tensor.
+    Unified multimodal Bifröst pipeline supporting audio, image, text, and tensor.
 
     Automatically routes each modality through the appropriate processing path
     while maintaining consistent output: SpectralTensor → coherence weights.

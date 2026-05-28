@@ -1,4 +1,4 @@
-"""Custom exceptions for the FBC ingest pipeline."""
+"""Custom exceptions for the Bifröst ingest pipeline."""
 
 
 class IngestException(Exception):

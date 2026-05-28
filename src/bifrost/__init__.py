@@ -1,7 +1,8 @@
 """
-FBC — Frequency-Based Cognition core modules.
+Bifröst — The Spectral Rainbow Bridge
 
-Implements the FBC pipeline: canonicalize → decompose → bind.
+Frequency-Based Cognition core modules by Quantumind.
+Implements the spectral pipeline: canonicalize → decompose → bind.
 """
 
 __version__ = "0.1.1"

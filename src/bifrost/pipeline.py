@@ -1,14 +1,14 @@
 """
-FBCPipeline — end-to-end canonicalize → decompose → bind orchestrator.
+BifrostPipeline — end-to-end canonicalize → decompose → bind orchestrator.
 
-Connects the data ingest layer to the FBC neural pipeline stages,
+Connects the data ingest layer to the Bifröst spectral pipeline stages,
 producing coherence-bound spectral embeddings ready for attractor
 identification.
 
 Usage:
-    from bifrost.pipeline import FBCPipeline
+    from bifrost.pipeline import FBCPipeline, BifrostPipeline
 
-    pipe = FBCPipeline()
+    pipe = BifrostPipeline()
     bound_st, coherence = pipe.process_signal(audio_tensor, metadata)
 """
 

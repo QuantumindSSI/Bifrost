@@ -1,15 +1,15 @@
 """
-FBCTrainer — basic training infrastructure for phase coherence learning.
+BifröstTrainer — basic training infrastructure for phase coherence learning.
 
 Self-supervised next-frame prediction enables the dual-stream SSM
 to learn temporal phase coherence patterns.
 
 Usage:
-    from bifrost.training import FBCTrainer
-    from bifrost.pipeline import FBCPipeline
+    from bifrost.training import FBCTrainer, BifrostTrainer
+    from bifrost.pipeline import FBCPipeline, BifrostPipeline
 
-    pipeline = FBCPipeline(d_model=128, use_mamba=True)
-    trainer = FBCTrainer(pipeline, lr=1e-3)
+    pipeline = BifrostPipeline(d_model=128, use_mamba=True)
+    trainer = BifrostTrainer(pipeline, lr=1e-3)
 
     # Train on audio sequences
     for epoch in range(100):
@@ -74,7 +74,7 @@ class NextFramePredictionLoss(nn.Module):
 
 class FBCTrainer:
     """
-    Basic trainer for FBC pipeline with phase coherence learning.
+    Basic trainer for Bifröst pipeline with phase coherence learning.
 
     Implements next-frame prediction training with Adam optimizer,
     gradient clipping, and warmup learning rate schedule.
@@ -82,7 +82,7 @@ class FBCTrainer:
     Parameters
     ----------
     pipeline : FBCPipeline
-        The FBC pipeline to train
+        The Bifröst pipeline to train
     lr : float
         Learning rate (default: 1e-3)
     weight_decay : float
@@ -293,7 +293,7 @@ def train_fbc_simple(
     device: Optional[str] = None,
 ) -> FBCTrainer:
     """
-    Simple training loop for FBC pipeline.
+    Simple training loop for Bifröst pipeline.
 
     Args:
         pipeline: FBCPipeline instance

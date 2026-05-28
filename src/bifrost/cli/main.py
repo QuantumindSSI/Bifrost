@@ -1,4 +1,4 @@
-"""FBC CLI main entry point."""
+"""Bifröst CLI main entry point."""
 
 import argparse
 import sys
@@ -76,7 +76,7 @@ def cmd_bench(args: argparse.Namespace) -> int:
 
 
 def cmd_process(args: argparse.Namespace) -> int:
-    """Process audio through FBC pipeline."""
+    """Process audio through Bifröst pipeline."""
     import numpy as np
     import torch
 
@@ -123,7 +123,7 @@ def cmd_process(args: argparse.Namespace) -> int:
     elif audio.dim() == 2 and audio.shape[1] <= 2:
         audio = audio.unsqueeze(0)
 
-    print(f"Processing through FBC pipeline (SSM: {decomposer.ssm_type})...")
+    print(f"Processing through Bifröst pipeline (SSM: {decomposer.ssm_type})...")
     with torch.no_grad():
         canonical = canonicalizer(audio, metadata={"sample_rate": float(sr)})
         decomposed = decomposer(canonical)
@@ -175,7 +175,7 @@ def cmd_samples(args: argparse.Namespace) -> int:
     samples = list_samples()
     print("Available sample data:")
     print()
-    print("Audio samples (use with: fbc process <name>):")
+    print("Audio samples (use with: bifrost process <name>):")
     for name in samples["audio"]:
         desc = AUDIO_DESC.get(name, "")
         print(f"  {name:<16}  {desc}")
@@ -186,8 +186,8 @@ def cmd_samples(args: argparse.Namespace) -> int:
         print(f"  {name:<16}  {desc}")
     print()
     print("Usage:")
-    print("  fbc process <sample_name>          # process bundled sample")
-    print("  fbc process myfile.wav -o out.pt   # process your own file")
+    print("  bifrost process <sample_name>          # process bundled sample")
+    print("  bifrost process myfile.wav -o out.pt   # process your own file")
     return 0
 
 
@@ -290,7 +290,7 @@ def cmd_bridge(args: argparse.Namespace) -> int:
         print(f"Loaded {len(attractors_b)} attractors from {args.target}")
     except Exception as e:
         print(f"Error loading attractor files: {e}")
-        print("Hint: Use 'fbc attractors <audio>' to generate .pt files first")
+        print("Hint: Use 'bifrost attractors <audio>' to generate .pt files first")
         return 1
 
     # Initialize bridge
@@ -358,19 +358,19 @@ def cmd_bridge(args: argparse.Namespace) -> int:
 def main(argv: Optional[List[str]] = None) -> int:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        prog="fbc",
-        description="FBC (Frequency-Based Cognition) CLI",
+        prog="bifrost",
+        description="Bifröst — The Spectral Rainbow Bridge (Frequency-Based Cognition) CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  fbc demo 1                     # Run anti-phase discrimination demo
-  fbc demo all                   # Run all demos
-  fbc bench attention            # Run attention benchmark
-  fbc process mono_16khz         # Process sample audio (S0-S2)
-  fbc process myfile.wav -o out.pt  # Process file, save results
-  fbc samples                    # List available samples
-  fbc attractors mono_16khz -o att.pt   # Extract attractors (S3)
-  fbc bridge att_a.pt att_b.pt -o bridges.pt  # Phase-lock evaluation (S4)
+  bifrost demo 1                     # Run anti-phase discrimination demo
+  bifrost demo all                   # Run all demos
+  bifrost bench attention            # Run attention benchmark
+  bifrost process mono_16khz         # Process sample audio (S0-S2)
+  bifrost process myfile.wav -o out.pt  # Process file, save results
+  bifrost samples                    # List available samples
+  bifrost attractors mono_16khz -o att.pt   # Extract attractors (S3)
+  bifrost bridge att_a.pt att_b.pt -o bridges.pt  # Phase-lock evaluation (S4)
         """
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -388,7 +388,7 @@ Examples:
     bench_parser.set_defaults(func=cmd_bench)
     
     # Process command
-    process_parser = subparsers.add_parser("process", help="Process audio through FBC pipeline")
+    process_parser = subparsers.add_parser("process", help="Process audio through Bifröst pipeline")
     process_parser.add_argument("input", help="Audio file or sample name (e.g., 'mono_16khz')")
     process_parser.add_argument("-o", "--output", help="Output file for results (.pt)")
     process_parser.add_argument("--n-fft", type=int, default=1024, help="FFT size (default: 1024)")

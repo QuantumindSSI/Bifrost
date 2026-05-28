@@ -81,6 +81,14 @@ where = ["src"]
 include = ["bifrost*", "fbc*"]
 exclude = ["tests*", "demos*", "benchmarks*"]
 
+[tool.poetry]
+name = "quantumind-bifrost"
+version = "0.1.0"
+description = "Bifröst - The Spectral Rainbow Bridge: Frequency-Based Cognition framework"
+authors = ["Oluwaferanmi <admin@quantumind.com>"]
+readme = "README.md"
+packages = [{include = "bifrost", from = "src"}]
+
 [project.scripts]
 bifrost = "bifrost.cli:main"
 fbc = "bifrost.cli:main"

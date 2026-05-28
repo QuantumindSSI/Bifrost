@@ -1,4 +1,4 @@
-"""FBC Ingest layer — decode, validate, and normalize raw audio/image/text data.
+"""Bifröst Ingest layer — decode, validate, and normalize raw audio/image/text data.
 
 Supports:
     - Audio: WAV, MP3, FLAC, OGG

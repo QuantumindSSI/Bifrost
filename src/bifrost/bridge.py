@@ -1,8 +1,8 @@
 """
 Ingest → Canonicalizer Bridge Adapter.
 
-Converts the output of ``fbc.ingest.pipeline.IngestPipeline``
-into the canonical format expected by ``fbc.canonicalizer.SpectralCanonicalizer``:
+Converts the output of ``bifrost.ingest.pipeline.IngestPipeline``
+into the canonical format expected by ``bifrost.canonicalizer.SpectralCanonicalizer``:
     - np.ndarray → torch.Tensor (float32)
     - Channel axis normalised to channels-first: (channels, samples)
     - Metadata enriched with ``channel_axis`` field.
@@ -74,7 +74,7 @@ def bridge_to_canonicalizer(
         raise TypeError(
             f"bridge_to_canonicalizer requires NumPy array or text input, got {type(data).__name__}. "
             f"Text / structured data must be embedded into a numeric array "
-            f"before entering the FBC pipeline."
+            f"before entering the Bifröst pipeline."
         )
 
     return signal, meta
@@ -218,7 +218,7 @@ def _canonicalize_text(
 
     # Tokenize each text to (embedding_dim,) then stack to (embedding_dim, n_texts)
     embeddings = tokenizer.tokenize_batch(texts)
-    arr = embeddings.T  # (features, samples) for FBC format
+    arr = embeddings.T  # (features, samples) for Bifröst format
 
     meta["channel_axis"] = 0
     meta["sample_axis"] = 1

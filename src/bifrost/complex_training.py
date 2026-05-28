@@ -1,5 +1,5 @@
 """
-ComplexFBCTrainer — Training infrastructure for ComplexSpectralDecomposer.
+ComplexBifrostTrainer — Training infrastructure for ComplexSpectralDecomposer.
 
 Implements the correct training objective for phase coherence learning:
 - Complex-valued next-step prediction: |pred_z - target_z|^2
@@ -185,7 +185,7 @@ class ComplexFBCTrainer:
     """
     Trainer for ComplexSpectralDecomposer with proper complex-valued objectives.
 
-    Key improvements over FBCTrainer:
+    Key improvements over BifrostTrainer:
     1. Complex next-step prediction loss (not independent phase MSE)
     2. Phase coherence metrics during training
     3. Verification that diagonal attention patterns emerge
@@ -429,7 +429,7 @@ class ComplexFBCTrainer:
             self.binding.load_state_dict(checkpoint["binding"])
 
 
-def train_complex_fbc_simple(
+def train_complex_bifrost_simple(
     decomposer: ComplexSpectralDecomposer,
     train_data: DataLoader,
     epochs: int = 10,

@@ -1,5 +1,5 @@
 """
-SpectralTensor — canonical data container for the FBC pipeline.
+SpectralTensor — canonical data container for the Bifröst pipeline.
 
 Every pipeline stage operates on SpectralTensor instances.
 Fields follow the Engineering Script specification:
@@ -19,7 +19,7 @@ import torch
 
 @dataclasses.dataclass
 class SpectralTensor:
-    """Immutable-ish canonical spectral representation used across all FBC stages."""
+    """Immutable-ish canonical spectral representation used across all Bifröst stages."""
 
     amplitude: torch.Tensor
     phase: torch.Tensor

@@ -1,4 +1,4 @@
-"""Sample data utilities for FBC users.
+"""Sample data utilities for Bifröst users.
 
 Quick-start example:
     >>> from bifrost.data import quick_start_pipeline, list_samples

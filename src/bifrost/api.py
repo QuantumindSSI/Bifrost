@@ -1,5 +1,5 @@
 """
-FBC API Server — FastAPI backend for web dashboard.
+Bifröst API Server — FastAPI backend for web dashboard.
 
 Endpoints:
     POST /process   Process audio/image/text
@@ -67,8 +67,8 @@ class MetricsResponse(BaseModel):
 
 # Create FastAPI app
 app = FastAPI(
-    title="FBC API",
-    description="Frequency-Based Cognition API for audio, image, and text processing",
+    title="Bifröst API",
+    description="Bifröst — The Spectral Rainbow Bridge: Frequency-Based Cognition API for audio, image, and text processing",
     version="0.1.0",
 )
 
@@ -96,7 +96,7 @@ async def process_file(
     d_model: int = Form(128),
 ) -> ProcessResponse:
     """
-    Process uploaded file through FBC pipeline.
+    Process uploaded file through Bifröst pipeline.
     
     Supports:
         - Audio: .wav, .mp3 (requires torchaudio)
@@ -263,7 +263,7 @@ async def demo_coherence(
 
 @app.get("/demo/multimodal", response_model=DemoResponse)
 async def demo_multimodal() -> DemoResponse:
-    """Show FBC working across all modalities."""
+    """Show Bifröst working across all modalities."""
     modalities_data = []
     
     test_data = [

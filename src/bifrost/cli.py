@@ -1,17 +1,17 @@
 """
-FBC CLI — Command-line interface for Frequency-Based Cognition.
+Bifröst CLI — Command-line interface for Frequency-Based Cognition.
 
 Commands:
-    fbc process <file>    Process audio/image/text through FBC pipeline
-    fbc train <data>      Train complex SSM on dataset
-    fbc demo              Interactive demo with visualizations
-    fbc validate <file>   Check phase coherence metrics
-    fbc serve             Start API server
+    bifrost process <file>    Process audio/image/text through Bifröst pipeline
+    bifrost train <data>      Train complex SSM on dataset
+    bifrost demo              Interactive demo with visualizations
+    bifrost validate <file>   Check phase coherence metrics
+    bifrost serve             Start API server
 
 Examples:
-    fbc process audio.wav --output results.json --visualize
-    fbc train --data ./dataset --epochs 100 --device cuda
-    fbc demo --chord "440,880,1320" --type harmonic
+    bifrost process audio.wav --output results.json --visualize
+    bifrost train --data ./dataset --epochs 100 --device cuda
+    bifrost demo --chord "440,880,1320" --type harmonic
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ from .complex_training import ComplexFBCTrainer, PhaseCoherenceMetrics
 
 
 def cmd_process(args: argparse.Namespace) -> int:
-    """Process file through FBC pipeline."""
+    """Process file through Bifröst pipeline."""
     print(f"🎵 Processing: {args.input}")
     
     # Detect file type
@@ -97,7 +97,7 @@ def cmd_process(args: argparse.Namespace) -> int:
 
 def cmd_demo(args: argparse.Namespace) -> int:
     """Interactive demo with visualizations."""
-    print("🎹 FBC Interactive Demo")
+    print("🎹 Bifröst Interactive Demo")
     print("=" * 60)
     
     if args.type == 'harmonic':
@@ -233,7 +233,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 def cmd_serve(args: argparse.Namespace) -> int:
     """Start API server."""
-    print(f"🌐 Starting FBC API Server")
+    print(f"🌐 Starting Bifröst API Server")
     print(f"   Host: {args.host}")
     print(f"   Port: {args.port}")
     print(f"\n   Endpoints:")
@@ -247,7 +247,7 @@ def cmd_serve(args: argparse.Namespace) -> int:
     except ImportError:
         print("\n⚠️  API server not implemented yet. Run:")
         print("   pip install fastapi uvicorn")
-        print("   Then: fbc serve")
+        print("   Then: bifrost serve")
         return 1
     
     return 0
@@ -256,23 +256,23 @@ def cmd_serve(args: argparse.Namespace) -> int:
 def main() -> int:
     """Main entry point for CLI."""
     parser = argparse.ArgumentParser(
-        prog='fbc',
-        description='Frequency-Based Cognition CLI',
+        prog='bifrost',
+        description='Bifröst — The Spectral Rainbow Bridge (Frequency-Based Cognition) CLI',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  fbc process audio.wav --output results.json --visualize
-  fbc train --data ./dataset --epochs 100 --device cuda
-  fbc demo --chord "440,880,1320" --type harmonic
-  fbc validate audio.wav --metrics coherence_ratio
-  fbc serve --host 0.0.0.0 --port 8000
+  bifrost process audio.wav --output results.json --visualize
+  bifrost train --data ./dataset --epochs 100 --device cuda
+  bifrost demo --chord "440,880,1320" --type harmonic
+  bifrost validate audio.wav --metrics coherence_ratio
+  bifrost serve --host 0.0.0.0 --port 8000
         """
     )
     
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
     
     # Process command
-    process_parser = subparsers.add_parser('process', help='Process file through FBC')
+    process_parser = subparsers.add_parser('process', help='Process file through Bifröst')
     process_parser.add_argument('input', help='Input file (wav, png, etc.)')
     process_parser.add_argument('-o', '--output', help='Output JSON file')
     process_parser.add_argument('--n_fft', type=int, default=1024, help='FFT size')
