@@ -182,16 +182,16 @@ class FBCTrainer:
     def _create_scheduler(self) -> LambdaLR:
         """Create warmup + cosine decay scheduler.
 
-        Warmup for warmup_steps, then cosine decay over 10x that many steps.
-        Prevents tau overshoot that causes attention to collapse to uniform softmax.
+        Warmup for warmup_steps, then cosine decay over 50x that many steps.
+        Long decay keeps gradients active well past the plateau region.
         """
-        total_steps = self.warmup_steps * 10
+        total_steps = self.warmup_steps * 50
 
         def lr_lambda(step: int) -> float:
             if step < self.warmup_steps:
                 return step / max(1, self.warmup_steps)
             progress = (step - self.warmup_steps) / max(1, total_steps - self.warmup_steps)
-            return 0.1 + 0.9 * 0.5 * (1.0 + _math.cos(_math.pi * min(progress, 1.0)))
+            return 0.01 + 0.99 * 0.5 * (1.0 + _math.cos(_math.pi * min(progress, 1.0)))
 
         return LambdaLR(self.optimizer, lr_lambda)
 
@@ -238,7 +238,10 @@ class FBCTrainer:
         with torch.no_grad():
             self.pipeline.eval()
             _, coh_noise = self.pipeline(noise_signal.detach(), metadata)
+        # Restore full train mode on every submodule explicitly
         self.pipeline.train()
+        for module in self.pipeline.modules():
+            module.training = True
 
         loss = self.criterion(coh_real, coh_noise)
 
