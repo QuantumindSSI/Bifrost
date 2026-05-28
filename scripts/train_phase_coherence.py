@@ -265,7 +265,7 @@ def train(args: argparse.Namespace) -> None:
         coh_vars: List[float] = []
         diag_ratios: List[float] = []
 
-        for (batch,) in dataloader:
+        for batch in dataloader:
             batch = batch.to(device)
             loss_val = trainer.train_step(batch)
             losses.append(loss_val)
@@ -318,7 +318,7 @@ def train(args: argparse.Namespace) -> None:
     print("=" * 60)
     pipeline.eval()
     dataloader_eval = build_dataset(batch_size=4, n_batches=1, seed=999)
-    (eval_batch,) = next(iter(dataloader_eval))
+    eval_batch = next(iter(dataloader_eval))
     eval_batch = eval_batch.to(device)
     with torch.no_grad():
         half = eval_batch.shape[-1] // 2
