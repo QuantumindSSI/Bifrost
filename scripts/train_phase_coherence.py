@@ -67,6 +67,78 @@ def _harmonic_signal(
     return wave / (wave.abs().max() + 1e-8)
 
 
+class _HarmonicDataset(torch.utils.data.Dataset):
+    """
+    On-the-fly harmonic signal generator — every __getitem__ call
+    synthesises a fresh waveform with randomised fundamental, phase
+    offsets, amplitude envelope, and chord combination.  The model
+    cannot memorise exact waveforms; it must learn structure.
+
+    Parameters
+    ----------
+    size:        Virtual dataset length (items per epoch).
+    sample_rate: Audio sample rate in Hz.
+    chunk_s:     Duration of each waveform in seconds.
+    seed:        Base RNG seed; each item uses seed+index for reproducibility.
+    """
+
+    def __init__(
+        self,
+        size: int,
+        sample_rate: int = 16_000,
+        chunk_s: float = 1.0,
+        seed: int = 0,
+    ) -> None:
+        self.size = size
+        self.sample_rate = sample_rate
+        self.L = int(sample_rate * chunk_s)
+        self.seed = seed
+        # Full chromatic range A1–A6 (55–1760 Hz) — 61 unique fundamentals
+        self._fundamentals = [55.0 * (2 ** (i / 12)) for i in range(61)]
+
+    def __len__(self) -> int:
+        return self.size
+
+    def __getitem__(self, idx: int) -> torch.Tensor:
+        rng = torch.Generator()
+        rng.manual_seed(self.seed + idx)
+
+        # Random fundamental from chromatic scale
+        fund_idx = torch.randint(0, len(self._fundamentals), (1,), generator=rng).item()
+        fund = self._fundamentals[fund_idx]
+
+        # Random number of harmonics (2–6)
+        n_harmonics = int(torch.randint(2, 7, (1,), generator=rng).item())
+
+        # Random per-harmonic phase offsets — this is what forces phase coherence learning
+        phase_offsets = (torch.rand(n_harmonics, generator=rng) * 2 * math.pi).tolist()
+
+        # Random amplitude decay (0.3–0.9)
+        amp_decay = float(torch.empty(1).uniform_(0.3, 0.9))
+
+        t = torch.linspace(0.0, self.L / self.sample_rate, self.L)
+        wave = torch.zeros(self.L)
+        for k in range(n_harmonics):
+            freq = fund * (k + 1)
+            if freq >= self.sample_rate / 2:
+                break
+            phase = phase_offsets[k]
+            amp = amp_decay ** k
+            wave = wave + amp * torch.sin(2.0 * math.pi * freq * t + phase)
+
+        # Random amplitude envelope (attack/decay) — prevents trivial energy matching
+        envelope_len = self.L
+        attack = int(torch.randint(self.L // 10, self.L // 4, (1,), generator=rng).item())
+        env = torch.ones(envelope_len)
+        env[:attack] = torch.linspace(0.0, 1.0, attack)
+        wave = wave * env
+
+        # Normalise + low-level noise floor
+        wave = wave / (wave.abs().max() + 1e-8)
+        noise = torch.randn(self.L, generator=rng) * 0.015
+        return (wave + noise).float()
+
+
 def build_dataset(
     batch_size: int,
     n_batches: int,
@@ -75,35 +147,29 @@ def build_dataset(
     seed: int = 0,
 ) -> DataLoader:
     """
-    Build a synthetic training dataset of harmonic audio chunks.
+    Build an on-the-fly harmonic audio dataset.
 
-    Each sample is a (L,) 1-D waveform.  Fundamentals are drawn from
-    the musical chromatic scale (A2–A5: 110–880 Hz) so the model sees
-    real harmonic structure across multiple octaves.
+    Each call to the DataLoader generates fresh waveforms with randomised
+    fundamentals, phase offsets, and envelopes — the model cannot memorise
+    exact sequences and must learn spectral structure.
 
     Args:
         batch_size:  Samples per batch.
-        n_batches:   Total number of batches.
+        n_batches:   Total number of batches per epoch.
         sample_rate: Audio sample rate in Hz.
         chunk_s:     Duration of each waveform in seconds.
-        seed:        RNG seed for reproducibility.
+        seed:        Base RNG seed for reproducibility.
 
     Returns:
         DataLoader yielding (batch_size, L) float32 tensors.
     """
-    torch.manual_seed(seed)
-    L = int(sample_rate * chunk_s)
-    fundamentals = [110.0 * (2 ** (i / 12)) for i in range(37)]  # A2 to A5
-    n_total = batch_size * n_batches
-    waveforms: List[torch.Tensor] = []
-    for i in range(n_total):
-        fund = fundamentals[i % len(fundamentals)]
-        n_harmonics = 3 + (i % 4)
-        wave = _harmonic_signal(fund, n_harmonics, chunk_s, sample_rate)
-        noise = torch.randn(L) * 0.02
-        waveforms.append((wave + noise).unsqueeze(0))  # (1, L)
-    data = torch.stack(waveforms).squeeze(1)  # (n_total, L)
-    return DataLoader(TensorDataset(data), batch_size=batch_size, shuffle=True)
+    dataset = _HarmonicDataset(
+        size=batch_size * n_batches,
+        sample_rate=sample_rate,
+        chunk_s=chunk_s,
+        seed=seed,
+    )
+    return DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
 
 
 # ── Metrics ──────────────────────────────────────────────────────────────────
@@ -186,6 +252,14 @@ def train(args: argparse.Namespace) -> None:
     epoch_losses: List[float] = []
 
     for epoch in range(1, args.epochs + 1):
+        # Fresh dataset each epoch: new seed → new waveforms → no memorisation
+        dataloader = build_dataset(
+            batch_size=args.batch_size,
+            n_batches=args.n_batches,
+            sample_rate=16_000,
+            chunk_s=1.0,
+            seed=epoch * 1000,
+        )
         t0 = time.time()
         losses: List[float] = []
         coh_vars: List[float] = []
