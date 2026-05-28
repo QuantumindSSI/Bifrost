@@ -265,36 +265,55 @@ def train(args: argparse.Namespace) -> None:
         coh_vars: List[float] = []
         diag_ratios: List[float] = []
 
+        coh_reals: List[float] = []
+        coh_noises: List[float] = []
+
         for batch in dataloader:
             batch = batch.to(device)
             loss_val = trainer.train_step(batch)
-            losses.append(loss_val)
+            losses.append(loss_val if loss_val == loss_val else 0.0)  # nan→0 for mean
 
-            # Compute coherence metrics on this batch (no_grad)
+            # Track coherence gap: real signal vs phase-randomised noise
             pipeline.eval()
             with torch.no_grad():
-                half = batch.shape[-1] // 2
-                _, coh = pipeline(batch[..., :half])
+                _, coh_real = pipeline(batch)
+                # Build phase-randomised version for comparison
+                B, L = batch.shape
+                n_fft, hop = 1024, 256
+                win = torch.hann_window(n_fft, device=device)
+                stft = torch.stft(batch, n_fft=n_fft, hop_length=hop,
+                                  window=win, return_complex=True)
+                noise_stft = stft.abs() * torch.exp(
+                    1j * (torch.rand_like(stft.abs()) * 2 * 3.14159265 - 3.14159265)
+                )
+                noise = torch.istft(noise_stft, n_fft=n_fft, hop_length=hop,
+                                    window=win, length=L)
+                noise = noise / (noise.abs().max(dim=-1, keepdim=True).values + 1e-8)
+                _, coh_noise = pipeline(noise)
             pipeline.train()
-            coh_var, diag_ratio = _coherence_metrics(coh)
+
+            coh_reals.append(coh_real.mean().item())
+            coh_noises.append(coh_noise.mean().item())
+            coh_var, diag_ratio = _coherence_metrics(coh_real)
             coh_vars.append(coh_var)
             diag_ratios.append(diag_ratio)
 
-        epoch_loss = sum(losses) / len(losses)
-        epoch_var = sum(coh_vars) / len(coh_vars)
-        epoch_ratio = sum(diag_ratios) / len(diag_ratios)
+        epoch_loss = sum(losses) / max(len(losses), 1)
+        epoch_var = sum(coh_vars) / max(len(coh_vars), 1)
+        epoch_ratio = sum(diag_ratios) / max(len(diag_ratios), 1)
+        epoch_coh_gap = (sum(coh_reals) / max(len(coh_reals), 1)) - \
+                        (sum(coh_noises) / max(len(coh_noises), 1))
         elapsed = time.time() - t0
         epoch_losses.append(epoch_loss)
 
-        # Improvement indicator
-        improved = epoch_loss < best_loss
+        improved = epoch_loss < best_loss and epoch_loss == epoch_loss
         if improved:
             best_loss = epoch_loss
 
         print(
             f"Epoch {epoch:4d}/{args.epochs} | "
             f"loss={epoch_loss:.5f} {'↓' if improved else ' '} | "
-            f"coh_var={epoch_var:.5f} | "
+            f"coh_gap={epoch_coh_gap:+.4f} | "
             f"diag_ratio={epoch_ratio:.4f} | "
             f"{elapsed:.1f}s"
         )

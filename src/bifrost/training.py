@@ -32,13 +32,58 @@ from .spectral_tensor import SpectralTensor
 from .pipeline import FBCPipeline
 
 
+class ContrastiveCoherenceLoss(nn.Module):
+    """
+    Contrastive phase coherence loss.
+
+    Trains the pipeline to produce HIGH coherence for the input signal
+    and LOW coherence for a phase-randomised version of the same signal.
+    This is a non-collapsible objective: the model cannot drive both
+    terms to zero simultaneously.
+
+    Loss = -log(sigma(coh_real - coh_noise - margin))
+
+    where coh_real = mean coherence on real harmonic signal,
+          coh_noise = mean coherence on phase-randomised noise,
+          margin = target separation (default 0.1).
+
+    Parameters
+    ----------
+    margin : float
+        Minimum required coherence gap between real and noise (default 0.1).
+    """
+
+    def __init__(self, margin: float = 0.1) -> None:
+        super().__init__()
+        self.margin = margin
+
+    def forward(
+        self,
+        coh_real: torch.Tensor,
+        coh_noise: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Compute contrastive coherence loss.
+
+        Args:
+            coh_real:  (B, H, T, T) coherence weights from real signal.
+            coh_noise: (B, H, T, T) coherence weights from noise signal.
+
+        Returns:
+            Scalar loss. Minimising this maximises the gap
+            coh_real.mean() - coh_noise.mean() by at least margin.
+        """
+        gap = coh_real.mean() - coh_noise.mean()
+        loss = F.softplus(self.margin - gap)  # 0 when gap > margin
+        return loss
+
+
 class NextFramePredictionLoss(nn.Module):
     """
-    Self-supervised loss: predict frame t+1 from frame t.
+    MSE next-frame prediction loss (kept for API compatibility).
 
-    MSE on both amplitude and phase encourages the SSM to learn
-    temporal coherence patterns. Phase coherence emerges as the
-    phase SSM learns to predict consistent phase progressions.
+    Note: this loss can collapse to zero on periodic signals. Prefer
+    ContrastiveCoherenceLoss for phase coherence training.
     """
 
     def __init__(self, phase_weight: float = 0.5) -> None:
@@ -50,25 +95,12 @@ class NextFramePredictionLoss(nn.Module):
         pred: SpectralTensor,
         target: SpectralTensor,
     ) -> torch.Tensor:
-        """
-        Compute next-frame prediction loss.
-
-        Args:
-            pred: Predicted SpectralTensor (frame t+1)
-            target: Target SpectralTensor (actual frame t+1)
-
-        Returns:
-            Combined MSE loss on amplitude and phase
-        """
-        # Amplitude loss (standard MSE)
         amp_loss = F.mse_loss(pred.amplitude, target.amplitude)
-
-        # Phase loss (circular MSE - handle phase wraparound)
-        phase_diff = pred.phase - target.phase
-        # Wrap to [-π, π]
-        phase_diff = torch.atan2(phase_diff.sin(), phase_diff.cos())
+        phase_diff = torch.atan2(
+            (pred.phase - target.phase).sin(),
+            (pred.phase - target.phase).cos(),
+        )
         phase_loss = (phase_diff ** 2).mean()
-
         return amp_loss + self.phase_weight * phase_loss
 
 
@@ -112,8 +144,8 @@ class FBCTrainer:
         self.grad_clip = grad_clip
         self.warmup_steps = warmup_steps
 
-        # Criterion: next-frame prediction
-        self.criterion = NextFramePredictionLoss(phase_weight=0.5)
+        # Criterion: contrastive coherence (real signal vs phase-randomised noise)
+        self.criterion = ContrastiveCoherenceLoss(margin=0.1)
 
         # Optimizer: Adam with weight decay
         self.optimizer = Adam(
@@ -160,68 +192,57 @@ class FBCTrainer:
         self.pipeline.train()
         signal = signal.to(self.device)
 
-        # Zero gradients
         self.optimizer.zero_grad()
 
-        # Derive real next-frame targets from the raw signal via STFT.
-        # Split signal into two halves: frames 0..T-2 as input, frames 1..T-1 as target.
-        # This gives the model real future spectral frames to predict, not its own output.
-        B, L = signal.shape[:2]
-        half = L // 2
-        if half < 1:
-            raise ValueError(
-                f"Signal length {L} is too short for next-frame prediction (need L >= 2)."
-            )
-        signal_input = signal[..., :half]    # first half → pipeline processes this
-        signal_target = signal[..., half:]   # second half → pipeline produces target
+        # --- Positive: run real signal through pipeline ---
+        _, coh_real = self.pipeline(signal, metadata)
 
-        # Forward pass on input half
-        bound_st, coherence = self.pipeline(signal_input, metadata)
+        # --- Negative: phase-randomised version of same signal ---
+        # For time-domain (B, L): randomise phase via STFT.
+        # For spectral (B, T, D) or other shapes: add uniform random noise to signal.
+        # Both approaches destroy harmonic phase relationships while preserving energy.
+        if signal.dim() == 2:
+            B, L = signal.shape
+            n_fft = min(1024, L // 2)
+            hop = n_fft // 4
+            window = torch.hann_window(n_fft, device=signal.device)
+            stft = torch.stft(signal, n_fft=n_fft, hop_length=hop,
+                              window=window, return_complex=True)  # (B, F, T_stft)
+            mag = stft.abs()
+            rand_phase = torch.rand_like(mag) * 2 * 3.14159265 - 3.14159265
+            noise_stft = mag * torch.exp(1j * rand_phase)
+            noise_signal = torch.istft(noise_stft, n_fft=n_fft, hop_length=hop,
+                                       window=window, length=L)  # (B, L)
+            noise_signal = noise_signal / (noise_signal.abs().max(dim=-1, keepdim=True).values + 1e-8)
+        else:
+            # Spectral or other input: corrupt with random noise scaled to signal std
+            noise_signal = signal + torch.randn_like(signal) * signal.std()
+            noise_signal = noise_signal / (noise_signal.norm(dim=-1, keepdim=True) + 1e-8)
 
-        # Produce target spectral tensor from the second half of the signal.
-        # Run through pipeline in eval mode (no grad) to get real future representation.
         with torch.no_grad():
             self.pipeline.eval()
-            target_st, _ = self.pipeline(signal_target, metadata)
-            self.pipeline.train()
+            _, coh_noise = self.pipeline(noise_signal.detach(), metadata)
+        self.pipeline.train()
 
-        B_out, T_out, D_out = bound_st.amplitude.shape
-        B_tgt, T_tgt, D_tgt = target_st.amplitude.shape
+        loss = self.criterion(coh_real, coh_noise)
 
-        # Align temporal dimension: interpolate target to match input if sizes differ
-        if T_tgt != T_out:
-            tgt_amp = F.interpolate(
-                target_st.amplitude.permute(0, 2, 1),
-                size=T_out, mode='linear', align_corners=False,
-            ).permute(0, 2, 1)
-            tgt_phase = F.interpolate(
-                target_st.phase.permute(0, 2, 1),
-                size=T_out, mode='linear', align_corners=False,
-            ).permute(0, 2, 1)
-        else:
-            tgt_amp = target_st.amplitude
-            tgt_phase = target_st.phase
+        # NaN guard: skip step if loss is NaN (prevents gradient corruption)
+        if not torch.isfinite(loss):
+            self.optimizer.zero_grad()
+            self.step_count += 1
+            self.loss_history.append(float('nan'))
+            return float('nan')
 
-        target = SpectralTensor(
-            amplitude=tgt_amp.detach(),
-            phase=tgt_phase.detach(),
-            scale=bound_st.scale,
-            uncertainty=bound_st.uncertainty,
-        )
-
-        loss = self.criterion(bound_st, target)
-
-        # Backward pass
         loss.backward()
 
-        # Gradient clipping
-        torch.nn.utils.clip_grad_norm_(
+        grad_norm = torch.nn.utils.clip_grad_norm_(
             self.pipeline.parameters(),
             self.grad_clip,
         )
 
-        # Optimizer step
-        self.optimizer.step()
+        # Skip optimizer step if gradients exploded (secondary NaN guard)
+        if torch.isfinite(grad_norm):
+            self.optimizer.step()
         self.scheduler.step()
 
         self.step_count += 1
