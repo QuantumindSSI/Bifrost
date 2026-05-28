@@ -122,7 +122,7 @@ class ResonanceAttention(nn.Module):
         coherence = self._phase_coherence(Q_phase, K_phase)  # (B, H, S, S)
 
         # --- temperature scaling per head ------------------------------------
-        tau = self.tau.view(1, self.n_heads, 1, 1).clamp(min=1e-4)
+        tau = self.tau.view(1, self.n_heads, 1, 1).clamp(min=0.05, max=2.0)
         coherence = coherence / tau
 
         # --- optional mask ---------------------------------------------------

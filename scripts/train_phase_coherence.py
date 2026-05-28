@@ -300,11 +300,15 @@ def train(args: argparse.Namespace) -> None:
         if improved:
             best_loss = epoch_loss
 
+        mean_var_real = sum(coh_reals) / max(len(coh_reals), 1)
+        mean_var_noise = sum(coh_noises) / max(len(coh_noises), 1)
         print(
             f"Epoch {epoch:4d}/{args.epochs} | "
             f"loss={epoch_loss:.5f} {'↓' if improved else ' '} | "
-            f"coh_gap={epoch_coh_gap:+.4f} | "
-            f"diag_ratio={epoch_ratio:.4f} | "
+            f"var_real={mean_var_real:.2e} | "
+            f"var_noise={mean_var_noise:.2e} | "
+            f"gap={epoch_coh_gap:+.2e} | "
+            f"diag={epoch_ratio:.3f} | "
             f"{elapsed:.1f}s"
         )
 

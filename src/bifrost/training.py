@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import math as _math
 from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
 
@@ -79,10 +80,14 @@ class ContrastiveCoherenceLoss(nn.Module):
         Returns:
             Scalar loss. Minimising this maximises var(coh_real) - var(coh_noise).
         """
+        # Maximise variance of real coherence (structured = peaked attention).
+        # Minimise variance of noise coherence (noise = uniform attention).
+        # Loss = -var_real + var_noise + margin.
+        # Always has nonzero gradient through -var_real, even when already satisfied.
+        # This prevents dead gradients when the margin condition is met.
         var_real = coh_real.var()
         var_noise = coh_noise.var()
-        gap = var_real - var_noise
-        loss = F.softplus(self.margin - gap)  # 0 when var_real > var_noise + margin
+        loss = -var_real + var_noise + self.margin
         return loss
 
 
@@ -152,8 +157,9 @@ class FBCTrainer:
         self.grad_clip = grad_clip
         self.warmup_steps = warmup_steps
 
-        # Criterion: contrastive coherence (real signal vs phase-randomised noise)
-        self.criterion = ContrastiveCoherenceLoss(margin=0.1)
+        # Criterion: contrastive coherence — variance of real > variance of noise.
+        # margin=1e-4 is in variance units (softmax variance ~1e-5 to 1e-3 range).
+        self.criterion = ContrastiveCoherenceLoss(margin=1e-4)
 
         # Optimizer: Adam with weight decay
         self.optimizer = Adam(
@@ -170,11 +176,19 @@ class FBCTrainer:
         self.loss_history: List[float] = []
 
     def _create_scheduler(self) -> LambdaLR:
-        """Create warmup learning rate scheduler."""
+        """Create warmup + cosine decay scheduler.
+
+        Warmup for warmup_steps, then cosine decay over 10x that many steps.
+        Prevents tau overshoot that causes attention to collapse to uniform softmax.
+        """
+        total_steps = self.warmup_steps * 10
+
         def lr_lambda(step: int) -> float:
             if step < self.warmup_steps:
-                return step / self.warmup_steps
-            return 1.0
+                return step / max(1, self.warmup_steps)
+            progress = (step - self.warmup_steps) / max(1, total_steps - self.warmup_steps)
+            return 0.1 + 0.9 * 0.5 * (1.0 + _math.cos(_math.pi * min(progress, 1.0)))
+
         return LambdaLR(self.optimizer, lr_lambda)
 
     def train_step(
