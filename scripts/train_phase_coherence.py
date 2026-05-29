@@ -273,10 +273,10 @@ def train(args: argparse.Namespace) -> None:
             loss_val = trainer.train_step(batch)
             losses.append(loss_val if loss_val == loss_val else 0.0)  # nan→0 for mean
 
-            # Track coherence gap: real signal vs STFT-phase-randomised version
+            # Track feature amplitude gap: real signal vs STFT-phase-randomised version
             pipeline.eval()
             with torch.no_grad():
-                _, coh_real = pipeline(batch)
+                bound_real, coh_real = pipeline(batch)
                 _n_fft, _hop = 1024, 256
                 _win = torch.hann_window(_n_fft, device=batch.device)
                 _spec = torch.stft(
@@ -296,11 +296,11 @@ def train(args: argparse.Namespace) -> None:
                     window=_win,
                     length=batch.shape[-1],
                 )
-                _, coh_noise = pipeline(_phase_rand)
+                bound_noise, _ = pipeline(_phase_rand)
             pipeline.train()
 
-            coh_reals.append(coh_real.var().item())    # variance, not mean
-            coh_noises.append(coh_noise.var().item())
+            coh_reals.append(bound_real.amplitude.var().item())
+            coh_noises.append(bound_noise.amplitude.var().item())
             coh_var, diag_ratio = _coherence_metrics(coh_real)
             coh_vars.append(coh_var)
             diag_ratios.append(diag_ratio)

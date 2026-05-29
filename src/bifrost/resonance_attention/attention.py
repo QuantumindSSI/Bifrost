@@ -128,7 +128,11 @@ class ResonanceAttention(nn.Module):
             out = out.transpose(1, 2).contiguous().view(B, S, D)
             out = self.W_o(out)
             out = self.norm(out + x)
-            return out, weights
+            # Return pre-softmax coherence (full dynamic range ~[-0.5, 1.0], var~0.05-0.07)
+            # NOT post-softmax weights (compressed ~75000:1, var~1e-5, gap~1e-6).
+            # The training loss operates on the returned tensor via .var() — it must
+            # have the pre-softmax dynamic range to give a meaningful gradient signal.
+            return out, coh
 
         # --- project Q, K for internal coherence computation -----------------
         Q = self._reshape_heads(self.W_q(x))

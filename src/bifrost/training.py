@@ -60,37 +60,34 @@ class ContrastiveCoherenceLoss(nn.Module):
 
     def forward(
         self,
-        coh_real: torch.Tensor,
-        coh_noise: torch.Tensor,
+        feat_real: torch.Tensor,
+        feat_noise: torch.Tensor,
     ) -> torch.Tensor:
         """
-        Compute contrastive coherence loss.
+        Compute contrastive coherence loss on output feature amplitudes.
 
-        Coherence matrices are softmax outputs — their mean is always 1/T
-        (rows sum to 1), so mean() gives zero gradient regardless of structure.
+        When coherence is peaked (structured real signal), the attention-weighted
+        aggregation in W_v produces high-variance output features — similar frames
+        reinforce each other. When coherence is uniform (noise), aggregation averages
+        everything and produces low-variance output.
 
-        Instead, we maximise the VARIANCE of coh_real (structured attention has
-        high variance — peaked at coherent pairs) and minimise the variance of
-        coh_noise (white noise should produce near-uniform attention, low variance).
+        Using feat.amplitude.var() instead of coherence_weights.var():
+        - Has a real gradient path: W_v → amp_proj → loss
+        - Is not destroyed by softmax compression (75000:1 dynamic range loss)
+        - The canonical STFT phase controls coherence; W_v learns what to route
 
         Args:
-            coh_real:  (B, H, T, T) softmax coherence weights from real signal.
-            coh_noise: (B, H, T, T) softmax coherence weights from noise signal.
+            feat_real:  SpectralTensor or (B, T, D) amplitude from real signal.
+            feat_noise: SpectralTensor or (B, T, D) amplitude from noise signal.
 
         Returns:
-            Scalar loss. Minimising this maximises var(coh_real) - var(coh_noise).
+            Scalar loss. Minimising this maximises var(feat_real) - var(feat_noise).
         """
-        # Maximise variance of real coherence (structured = peaked attention).
-        # Minimise variance of noise coherence (noise = uniform attention).
-        # Loss = -var_real + var_noise + margin.
-        # Always has nonzero gradient through -var_real, even when already satisfied.
-        # This prevents dead gradients when the margin condition is met.
-        var_real = coh_real.var()
-        # Detach var_noise: it is a fixed reference baseline, not a gradient target.
-        # Without detach, the optimizer minimises loss by growing var_noise (making
-        # noise attention structured) instead of growing var_real (making harmonic
-        # attention structured). Only var_real should receive gradients.
-        var_noise = coh_noise.var().detach()
+        amp_real = feat_real.amplitude if hasattr(feat_real, 'amplitude') else feat_real
+        amp_noise = feat_noise.amplitude if hasattr(feat_noise, 'amplitude') else feat_noise
+        var_real = amp_real.var()
+        # Detach noise: fixed reference baseline, not a gradient target.
+        var_noise = amp_noise.var().detach()
         loss = -var_real + var_noise + self.margin
         return loss
 
@@ -161,9 +158,10 @@ class FBCTrainer:
         self.grad_clip = grad_clip
         self.warmup_steps = warmup_steps
 
-        # Criterion: contrastive coherence — variance of real > variance of noise.
-        # margin=1e-4 is in variance units (softmax variance ~1e-5 to 1e-3 range).
-        self.criterion = ContrastiveCoherenceLoss(margin=1e-4)
+        # Criterion: contrastive coherence loss on output feature amplitudes.
+        # amp.var() is O(0.1-1.0); margin=0.01 is always-active at epoch 1
+        # without being trivially satisfied.
+        self.criterion = ContrastiveCoherenceLoss(margin=0.01)
 
         # Freeze band_weights only. tau is now UNFROZEN.
         # With parameter-free coherence (from canonical STFT phase), tau cannot collapse
@@ -237,7 +235,7 @@ class FBCTrainer:
         self.optimizer.zero_grad()
 
         # --- Positive: run real signal through pipeline ---
-        _, coh_real = self.pipeline(signal, metadata)
+        bound_real, _ = self.pipeline(signal, metadata)
 
         # --- Negative: STFT-domain phase randomisation ---
         # Goal: identical per-frame amplitude spectrum, destroyed inter-frame phase coherence.
@@ -281,13 +279,13 @@ class FBCTrainer:
 
         with torch.no_grad():
             self.pipeline.eval()
-            _, coh_noise = self.pipeline(noise_signal.detach(), metadata)
+            bound_noise, _ = self.pipeline(noise_signal.detach(), metadata)
         # Restore full train mode on every submodule explicitly
         self.pipeline.train()
         for module in self.pipeline.modules():
             module.training = True
 
-        loss = self.criterion(coh_real, coh_noise)
+        loss = self.criterion(bound_real, bound_noise)
 
         # NaN guard: skip step if loss is NaN (prevents gradient corruption)
         if not torch.isfinite(loss):

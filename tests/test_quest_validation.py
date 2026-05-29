@@ -133,7 +133,7 @@ class TestQ2HarmonicBinding:
     """
 
     def test_coherence_is_normalised(self) -> None:
-        """Each attention row must sum to 1.0 (softmax invariant)."""
+        """Pre-softmax coherence values must be in [-1, 1] (cosine similarity)."""
         torch.manual_seed(0)
         pipeline = BifrostPipeline(use_complex_ssm=True)
         pipeline.eval()
@@ -142,10 +142,12 @@ class TestQ2HarmonicBinding:
         with torch.no_grad():
             _, coherence = pipeline(signal)
 
-        # coherence: (B, H, T, T)
-        row_sums = coherence.sum(dim=-1)  # (B, H, T)
-        assert torch.allclose(row_sums, torch.ones_like(row_sums), atol=1e-4), (
-            f"Coherence rows do not sum to 1. Max deviation: {(row_sums - 1).abs().max():.4f}"
+        # coherence: (B, H, T, T) — pre-softmax cosine values, bounded in [-1, 1]
+        assert coherence.min().item() >= -1.0 - 1e-4, (
+            f"Coherence below -1: min={coherence.min().item():.4f}"
+        )
+        assert coherence.max().item() <= 1.0 + 1e-4, (
+            f"Coherence above 1: max={coherence.max().item():.4f}"
         )
 
     def test_coherence_not_perfectly_uniform(self) -> None:
@@ -165,7 +167,7 @@ class TestQ2HarmonicBinding:
         )
 
     def test_coherence_range(self) -> None:
-        """All coherence values must be in (0, 1)."""
+        """Coherence values must be in [-1, 1] (pre-softmax cosine similarity)."""
         pipeline = BifrostPipeline(use_complex_ssm=True)
         pipeline.eval()
         signal = _harmonic_chord()
@@ -173,7 +175,7 @@ class TestQ2HarmonicBinding:
         with torch.no_grad():
             _, coherence = pipeline(signal)
 
-        assert coherence.min().item() >= 0.0, "Negative coherence value"
+        assert coherence.min().item() >= -1.0 - 1e-5, "Coherence < -1.0"
         assert coherence.max().item() <= 1.0 + 1e-5, "Coherence > 1.0"
 
 
@@ -454,8 +456,10 @@ class TestQ8NoiseAttentionEntropy:
         with torch.no_grad():
             _, coherence = pipeline(signal)
 
-        # coherence: (B, H, T, T) — take first batch, first head
-        attn = coherence[0, 0]  # (T, T)
+        # coherence: (B, H, T, T) — pre-softmax cosine values in [-1, 1].
+        # Apply softmax to get a proper probability distribution before entropy.
+        import torch.nn.functional as F
+        attn = F.softmax(coherence[0, 0], dim=-1)  # (T, T)
         T = attn.shape[0]
         max_entropy = math.log(T)
 
