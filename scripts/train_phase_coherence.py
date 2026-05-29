@@ -287,6 +287,12 @@ def train(args: argparse.Namespace) -> None:
 
         for batch in dataloader:
             batch = batch.to(device)
+            
+            # === PRECONDITION ASSERTIONS ===
+            assert batch.device.type == device, f"Batch on {batch.device}, expected {device}"
+            assert batch.dtype == torch.float32, f"Expected float32 batch, got {batch.dtype}"
+            assert torch.isfinite(batch).all(), "Non-finite values in input batch"
+            
             optimizer.zero_grad()
 
             # === CONTRASTIVE TRAINING ===
@@ -319,6 +325,10 @@ def train(args: argparse.Namespace) -> None:
 
             # Contrastive loss: maximize gap between real and noise coherence
             loss = contrastive_loss(coh_real, coh_noise)
+
+            # === LOSS VALIDATION ASSERTIONS ===
+            assert torch.isfinite(loss), f"Loss became NaN/Inf - training diverged. Loss: {loss}"
+            assert loss >= 0, f"Loss should be non-negative, got {loss.item()}"
 
             if torch.isfinite(loss) and loss > 0:
                 loss.backward()

@@ -29,6 +29,28 @@ class SpectralTensor:
     # Provenance metadata carried through the pipeline
     metadata: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        """Post-initialization validation: assert invariants on creation."""
+        # === CREATION ASSERTIONS ===
+        assert self.amplitude.shape == self.phase.shape, (
+            f"SpectralTensor shape mismatch: amplitude {self.amplitude.shape} vs phase {self.phase.shape}"
+        )
+        assert self.amplitude.shape == self.scale.shape, (
+            f"SpectralTensor shape mismatch: amplitude {self.amplitude.shape} vs scale {self.scale.shape}"
+        )
+        assert self.amplitude.shape == self.uncertainty.shape, (
+            f"SpectralTensor shape mismatch: amplitude {self.amplitude.shape} vs uncertainty {self.uncertainty.shape}"
+        )
+        assert torch.all(self.amplitude >= 0), "SpectralTensor amplitude must be non-negative"
+        assert torch.all(self.phase >= -torch.pi) and torch.all(self.phase <= torch.pi), (
+            f"SpectralTensor phase must be in [-π, π], got range [{self.phase.min()}, {self.phase.max()}]"
+        )
+        assert torch.all(self.scale > 0), "SpectralTensor scale must be positive"
+        assert torch.all(self.uncertainty >= 0), "SpectralTensor uncertainty must be non-negative"
+        assert self.amplitude.device == self.phase.device == self.scale.device == self.uncertainty.device, (
+            "SpectralTensor tensors must be on the same device"
+        )
+
     # ----- convenience helpers -----
 
     @property

@@ -161,6 +161,12 @@ class FBCPipeline(nn.Module):
         """
         if signal.numel() == 0:
             raise ValueError("Input signal is empty (numel=0).")
+        
+        # === INPUT VALIDATION ASSERTIONS ===
+        assert signal.dtype == torch.float32, f"Expected float32 input signal, got {signal.dtype}"
+        assert signal.dim() >= 1, f"Expected 1D+ signal, got shape {signal.shape}"
+        assert torch.isfinite(signal).all(), "Non-finite values in input signal"
+        
         canonical = self.canonicalizer(signal, metadata)
         if self.use_complex_ssm:
             decomposed, _ = self.decomposer(canonical, h_0)
