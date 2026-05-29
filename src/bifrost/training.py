@@ -282,9 +282,28 @@ class FBCTrainer:
             rms = signal.std(dim=-1, keepdim=True).clamp(min=1e-8)
             noise_signal = torch.randn_like(signal) * rms
 
+        # --- Negative: same decomposed amplitude, destroyed phase coherence ---
+        # The key insight: W_v learns amplitude shortcuts if decomposed amplitude
+        # differs between positive and negative. We must keep decomposed amplitude
+        # identical, varying ONLY the coherence pattern (via canonical phase).
+        #
+        # Implementation: run canonicalizer on phase-randomized signal to get
+        # destroyed phase, but use the REAL signal's decomposed amplitude.
         with torch.no_grad():
             self.pipeline.eval()
-            bound_noise, _ = self.pipeline(noise_signal.detach(), metadata)
+            # Get phase-randomized canonical representation
+            canonical_rand = self.pipeline.canonicalizer(noise_signal.detach(), metadata)
+            # Get real signal's decomposed representation
+            if self.pipeline.use_complex_ssm:
+                decomposed_real_neg, _ = self.pipeline.decomposer(canonical, None)
+            else:
+                decomposed_real_neg = self.pipeline.decomposer(canonical)
+            # Bind with real amplitude but random phase → destroyed coherence
+            bound_noise, _ = self.pipeline.binding(
+                decomposed_real_neg,
+                input_proj=self.pipeline._decomp_to_bind_proj,
+                canonical_phase=canonical_rand.phase,
+            )
         # Restore full train mode on every submodule explicitly
         self.pipeline.train()
         for module in self.pipeline.modules():

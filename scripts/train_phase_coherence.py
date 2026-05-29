@@ -2,13 +2,13 @@
 """
 Train Bifröst pipeline for phase coherence learning.
 
-Training objective: next-frame spectral prediction.
-  - Input:  first half of each audio chunk → pipeline → bound_st
-  - Target: second half of each audio chunk → pipeline (no_grad) → target_st
-  - Loss:   |amplitude_pred - amplitude_tgt|^2 + |phase_pred_wrapped - phase_tgt|^2
+Training objective: CONTRASTIVE PHASE DISCRIMINATION.
+  - Real signals: harmonic with coherent phase relationships
+  - Noise signals: same amplitude spectrum, randomized phase
+  - Loss: contrastive - maximize gap between real and noise coherence
 
-This is a real next-frame objective: the model must predict the spectral
-representation of audio it has NOT yet seen, not a shifted version of its own output.
+This forces the model to learn phase coherence as a discrimination task,
+preventing collapse mode where the model treats both identically.
 
 Usage:
     cd bifrost
@@ -16,14 +16,15 @@ Usage:
     python scripts/train_phase_coherence.py --epochs 200 --harmonic-binding --device cuda
 
 Diagnostic output every epoch:
-  - loss:              next-frame prediction MSE (lower = better temporal prediction)
-  - coherence_var:     variance across attention matrix (higher = more structured attention)
-  - diag_ratio:        diagonal vs off-diagonal mean coherence (>1 = self-coherence dominant)
+  - loss:              contrastive loss (lower = better discrimination)
+  - gap:               coherence_real - coherence_noise (should be positive)
+  - ratio:             coherence_real / coherence_noise (should be > 1.0)
+  - diag_ratio:        diagonal attention ratio (>1.2 = phase coherence learned)
 
-Expected progression (complex SSM, d_model=128):
-  Epoch   0: loss ~0.5,  coherence_var ~0.001, diag_ratio ~1.06
-  Epoch  50: loss ~0.3,  coherence_var ~0.003, diag_ratio ~1.15
-  Epoch 100: loss ~0.15, coherence_var ~0.005, diag_ratio ~1.2–1.5
+Expected progression (complex SSM, d_model=128, contrastive loss):
+  Epoch   0: loss ~0.7,  gap ~0.0,  ratio ~1.0,  diag_ratio ~0.5
+  Epoch  50: loss ~0.3,  gap ~0.2,  ratio ~1.5,  diag_ratio ~1.1
+  Epoch 100: loss ~0.1,  gap ~0.5,  ratio ~2.0,  diag_ratio ~1.3+
 """
 
 from __future__ import annotations
@@ -45,6 +46,7 @@ sys.path.insert(0, str(_repo_root / "src"))
 
 from bifrost import BifrostPipeline
 from bifrost.training import FBCTrainer as BifrostTrainer
+from bifrost.contrastive_loss import ContrastivePhaseLoss, compute_coherence_discrimination_gap
 
 
 # ── Signal generation ────────────────────────────────────────────────────────
@@ -174,26 +176,36 @@ def build_dataset(
 
 # ── Metrics ──────────────────────────────────────────────────────────────────
 
-def _coherence_metrics(coherence: torch.Tensor) -> Tuple[float, float]:
+def _coherence_metrics(coherence: torch.Tensor, tau: float = 1.0) -> Tuple[float, float, torch.Tensor]:
     """
     Compute variance and diagonal ratio of coherence matrix.
 
     Args:
-        coherence: (B, H, T, T) attention weights.
+        coherence: (B, H, T, T) pre-softmax coherence scores (range ~[-0.5, 1.0]).
+        tau: Temperature for softmax scaling (default 1.0).
 
     Returns:
-        (variance, diag_ratio): Variance across all entries; mean diagonal
-        divided by mean off-diagonal. diag_ratio > 1 means the model
-        attends to the same temporal position more than cross-positions.
+        (variance, diag_ratio, attn_weights): 
+        - variance: of post-softmax attention weights
+        - diag_ratio: mean diagonal / mean off-diagonal of attention weights
+                      diag_ratio > 1.2 indicates phase coherence learned
+        - attn_weights: post-softmax attention for visualization
     """
-    var = coherence.var().item()
+    # Convert pre-softmax coherence to post-softmax attention weights
+    # This gives us proper probabilities in [0, 1] range
+    attn_weights = torch.softmax(coherence / max(tau, 0.1), dim=-1)
+    
+    var = attn_weights.var().item()
     if coherence.shape[-1] < 2:
-        return var, 1.0
-    diag = torch.diagonal(coherence, dim1=-2, dim2=-1).mean().item()
-    mask = ~torch.eye(coherence.shape[-1], dtype=torch.bool, device=coherence.device)
-    off_diag = coherence[..., mask].mean().item()
+        return var, 1.0, attn_weights
+    
+    # Compute diagonal ratio on post-softmax weights (always positive)
+    diag = torch.diagonal(attn_weights, dim1=-2, dim2=-1).mean().item()
+    mask = ~torch.eye(attn_weights.shape[-1], dtype=torch.bool, device=attn_weights.device)
+    off_diag = attn_weights[..., mask].mean().item()
     ratio = diag / (off_diag + 1e-8)
-    return var, ratio
+    
+    return var, ratio, attn_weights
 
 
 # ── Training loop ────────────────────────────────────────────────────────────
@@ -234,11 +246,11 @@ def train(args: argparse.Namespace) -> None:
     print(f"  ssm_type:         {pipeline.ssm_type}")
     print()
 
-    trainer = BifrostTrainer(
-        pipeline=pipeline,
-        lr=args.lr,
-        device=device,
-        warmup_steps=max(1, args.epochs * args.n_batches // 10),
+    # Contrastive loss: forces discrimination between real and phase-randomized
+    contrastive_loss = ContrastivePhaseLoss(margin=0.5, temperature=0.1).to(device)
+    optimizer = torch.optim.AdamW(pipeline.parameters(), lr=args.lr, weight_decay=0.01)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer, T_0=10, T_mult=2
     )
 
     dataloader = build_dataset(
@@ -270,40 +282,56 @@ def train(args: argparse.Namespace) -> None:
 
         for batch in dataloader:
             batch = batch.to(device)
-            loss_val = trainer.train_step(batch)
-            losses.append(loss_val if loss_val == loss_val else 0.0)  # nan→0 for mean
+            optimizer.zero_grad()
 
-            # Track feature amplitude gap: real signal vs STFT-phase-randomised version
-            pipeline.eval()
+            # === CONTRASTIVE TRAINING ===
+            # Real signals: harmonic with coherent phase
+            bound_real, coh_real = pipeline(batch)
+
+            # Create phase-randomized version (same amplitude, random phase)
+            _n_fft, _hop = 1024, 256
+            _win = torch.hann_window(_n_fft, device=batch.device)
+            _spec = torch.stft(
+                batch,
+                n_fft=_n_fft,
+                hop_length=_hop,
+                return_complex=True,
+                window=_win,
+                pad_mode='reflect',
+            )
+            _rph = torch.rand_like(_spec.real) * 2.0 * math.pi
+            _nspec = torch.polar(_spec.abs(), _rph)
+            _phase_rand = torch.istft(
+                _nspec,
+                n_fft=_n_fft,
+                hop_length=_hop,
+                window=_win,
+                length=batch.shape[-1],
+            )
+
+            # Phase-randomized signals through pipeline
+            bound_noise, coh_noise = pipeline(_phase_rand)
+
+            # Contrastive loss: maximize gap between real and noise coherence
+            loss = contrastive_loss(coh_real, coh_noise)
+
+            if torch.isfinite(loss) and loss > 0:
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(pipeline.parameters(), 1.0)
+                optimizer.step()
+
+            scheduler.step()
+            loss_val = loss.item() if torch.isfinite(loss) else 0.0
+            losses.append(loss_val)
+
+            # === METRICS ===
             with torch.no_grad():
-                bound_real, coh_real = pipeline(batch)
-                _n_fft, _hop = 1024, 256
-                _win = torch.hann_window(_n_fft, device=batch.device)
-                _spec = torch.stft(
-                    batch,
-                    n_fft=_n_fft,
-                    hop_length=_hop,
-                    return_complex=True,
-                    window=_win,
-                    pad_mode='reflect',
-                )
-                _rph = torch.rand_like(_spec.real) * 2.0 * math.pi
-                _nspec = torch.polar(_spec.abs(), _rph)
-                _phase_rand = torch.istft(
-                    _nspec,
-                    n_fft=_n_fft,
-                    hop_length=_hop,
-                    window=_win,
-                    length=batch.shape[-1],
-                )
-                bound_noise, _ = pipeline(_phase_rand)
-            pipeline.train()
-
-            coh_reals.append(bound_real.amplitude.var().item())
-            coh_noises.append(bound_noise.amplitude.var().item())
-            coh_var, diag_ratio = _coherence_metrics(coh_real)
-            coh_vars.append(coh_var)
-            diag_ratios.append(diag_ratio)
+                disc_metrics = compute_coherence_discrimination_gap(coh_real, coh_noise)
+                coh_reals.append(disc_metrics["real_mean"])
+                coh_noises.append(disc_metrics["noise_mean"])
+                coh_var, diag_ratio, _ = _coherence_metrics(coh_real, tau=1.0)
+                coh_vars.append(coh_var)
+                diag_ratios.append(diag_ratio)
 
         epoch_loss = sum(losses) / max(len(losses), 1)
         epoch_var = sum(coh_vars) / max(len(coh_vars), 1)
@@ -317,14 +345,16 @@ def train(args: argparse.Namespace) -> None:
         if improved:
             best_loss = epoch_loss
 
-        mean_var_real = sum(coh_reals) / max(len(coh_reals), 1)
-        mean_var_noise = sum(coh_noises) / max(len(coh_noises), 1)
+        mean_coh_real = sum(coh_reals) / max(len(coh_reals), 1)
+        mean_coh_noise = sum(coh_noises) / max(len(coh_noises), 1)
+        coh_ratio = mean_coh_real / (mean_coh_noise + 1e-8)
         print(
             f"Epoch {epoch:4d}/{args.epochs} | "
             f"loss={epoch_loss:.5f} {'↓' if improved else ' '} | "
-            f"var_real={mean_var_real:.2e} | "
-            f"var_noise={mean_var_noise:.2e} | "
-            f"gap={epoch_coh_gap:+.2e} | "
+            f"coh_real={mean_coh_real:.3f} | "
+            f"coh_noise={mean_coh_noise:.3f} | "
+            f"gap={epoch_coh_gap:+.3f} | "
+            f"ratio={coh_ratio:.2f} | "
             f"diag={epoch_ratio:.3f} | "
             f"{elapsed:.1f}s"
         )
@@ -354,7 +384,7 @@ def train(args: argparse.Namespace) -> None:
         half = eval_batch.shape[-1] // 2
         st, coh = pipeline(eval_batch[..., :half])
 
-    coh_var, diag_ratio = _coherence_metrics(coh)
+    coh_var, diag_ratio, _ = _coherence_metrics(coh, tau=1.0)
     print(f"  Final loss (best):  {best_loss:.5f}")
     print(f"  Coherence variance: {coh_var:.6f}")
     print(f"  Diagonal ratio:     {diag_ratio:.4f}")
@@ -372,12 +402,12 @@ def train(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Train Bifröst complex SSM for phase coherence via next-frame prediction."
+        description="Train Bifröst complex SSM for phase coherence via contrastive discrimination."
     )
-    parser.add_argument("--epochs",            type=int,   default=100,                    help="Training epochs")
-    parser.add_argument("--lr",                type=float, default=1e-4,                   help="Learning rate")
-    parser.add_argument("--batch-size",        type=int,   default=4,                      help="Batch size")
-    parser.add_argument("--n-batches",         type=int,   default=20,                     help="Batches per epoch")
+    parser.add_argument("--epochs",            type=int,   default=200,                    help="Training epochs (200+ recommended for phase coherence)")
+    parser.add_argument("--lr",                type=float, default=3e-5,                   help="Learning rate (3e-5 stable for phase coherence)")
+    parser.add_argument("--batch-size",        type=int,   default=8,                      help="Batch size (8+ for stable gradients)")
+    parser.add_argument("--n-batches",         type=int,   default=50,                     help="Batches per epoch (50+ for meaningful variance estimates)")
     parser.add_argument("--d-model",           type=int,   default=128,                    help="Model hidden dimension")
     parser.add_argument("--device",            type=str,   default=None,                   help="cuda or cpu (auto-detect if omitted)")
     parser.add_argument("--harmonic-binding",  action="store_true",                        help="Use HarmonicBinding (explicit 440↔880Hz grid)")
