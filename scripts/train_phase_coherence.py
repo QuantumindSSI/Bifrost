@@ -2,13 +2,13 @@
 """
 Train Bifröst pipeline for phase coherence learning.
 
-Training objective: CONTRASTIVE PHASE DISCRIMINATION.
+Training objective: VARIANCE-BASED CONTRASTIVE DISCRIMINATION.
   - Real signals: harmonic with coherent phase relationships
   - Noise signals: same amplitude spectrum, randomized phase
-  - Loss: contrastive - maximize gap between real and noise coherence
+  - Loss: contrastive - real signals should have LOWER attention variance
 
-This forces the model to learn phase coherence as a discrimination task,
-preventing collapse mode where the model treats both identically.
+Strategy: Phase-coherent signals produce more focused (lower variance) attention
+patterns, while phase-randomized signals produce diffuse (higher variance) patterns.
 
 Usage:
     cd bifrost
@@ -17,14 +17,15 @@ Usage:
 
 Diagnostic output every epoch:
   - loss:              contrastive loss (lower = better discrimination)
-  - gap:               coherence_real - coherence_noise (should be positive)
-  - ratio:             coherence_real / coherence_noise (should be > 1.0)
+  - var_real:          attention variance for real signals (target: lower)
+  - var_noise:         attention variance for noise signals (target: higher)
+  - gap:               var_noise - var_real (should be positive)
   - diag_ratio:        diagonal attention ratio (>1.2 = phase coherence learned)
 
-Expected progression (complex SSM, d_model=128, contrastive loss):
-  Epoch   0: loss ~0.7,  gap ~0.0,  ratio ~1.0,  diag_ratio ~0.5
-  Epoch  50: loss ~0.3,  gap ~0.2,  ratio ~1.5,  diag_ratio ~1.1
-  Epoch 100: loss ~0.1,  gap ~0.5,  ratio ~2.0,  diag_ratio ~1.3+
+Expected progression (complex SSM, d_model=128, variance-based loss):
+  Epoch   0: loss ~0.5,  var_real ~0.03,  var_noise ~0.03,  gap ~0.0,  diag ~2.5
+  Epoch  50: loss ~0.2,  var_real ~0.02,  var_noise ~0.04,  gap ~0.02, diag ~2.7
+  Epoch 100: loss ~0.05, var_real ~0.01,  var_noise ~0.05,  gap ~0.04, diag ~3.0
 """
 
 from __future__ import annotations
@@ -46,7 +47,7 @@ sys.path.insert(0, str(_repo_root / "src"))
 
 from bifrost import BifrostPipeline
 from bifrost.training import FBCTrainer as BifrostTrainer
-from bifrost.contrastive_loss import ContrastivePhaseLoss, compute_coherence_discrimination_gap
+from bifrost.contrastive_loss import ContrastivePhaseLoss
 
 
 # ── Signal generation ────────────────────────────────────────────────────────
@@ -246,8 +247,12 @@ def train(args: argparse.Namespace) -> None:
     print(f"  ssm_type:         {pipeline.ssm_type}")
     print()
 
+    # Move pipeline to device
+    pipeline = pipeline.to(device)
+
     # Contrastive loss: forces discrimination between real and phase-randomized
-    contrastive_loss = ContrastivePhaseLoss(margin=0.5, temperature=0.1).to(device)
+    # Uses variance-based discrimination (real signals should have more focused attention)
+    contrastive_loss = ContrastivePhaseLoss(margin=0.01, temperature=0.5).to(device)
     optimizer = torch.optim.AdamW(pipeline.parameters(), lr=args.lr, weight_decay=0.01)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer, T_0=10, T_mult=2
@@ -326,9 +331,13 @@ def train(args: argparse.Namespace) -> None:
 
             # === METRICS ===
             with torch.no_grad():
-                disc_metrics = compute_coherence_discrimination_gap(coh_real, coh_noise)
-                coh_reals.append(disc_metrics["real_mean"])
-                coh_noises.append(disc_metrics["noise_mean"])
+                # Compute variance of attention weights (post-softmax)
+                attn_real = torch.softmax(coh_real, dim=-1)
+                attn_noise = torch.softmax(coh_noise, dim=-1)
+                var_real = attn_real.var(dim=-1).mean().item()
+                var_noise = attn_noise.var(dim=-1).mean().item()
+                coh_reals.append(var_real)
+                coh_noises.append(var_noise)
                 coh_var, diag_ratio, _ = _coherence_metrics(coh_real, tau=1.0)
                 coh_vars.append(coh_var)
                 diag_ratios.append(diag_ratio)
@@ -336,8 +345,8 @@ def train(args: argparse.Namespace) -> None:
         epoch_loss = sum(losses) / max(len(losses), 1)
         epoch_var = sum(coh_vars) / max(len(coh_vars), 1)
         epoch_ratio = sum(diag_ratios) / max(len(diag_ratios), 1)
-        epoch_coh_gap = (sum(coh_reals) / max(len(coh_reals), 1)) - \
-                        (sum(coh_noises) / max(len(coh_noises), 1))
+        epoch_coh_gap = (sum(coh_noises) / max(len(coh_noises), 1)) - \
+                        (sum(coh_reals) / max(len(coh_reals), 1))  # Positive when real has lower variance
         elapsed = time.time() - t0
         epoch_losses.append(epoch_loss)
 
@@ -347,14 +356,13 @@ def train(args: argparse.Namespace) -> None:
 
         mean_coh_real = sum(coh_reals) / max(len(coh_reals), 1)
         mean_coh_noise = sum(coh_noises) / max(len(coh_noises), 1)
-        coh_ratio = mean_coh_real / (mean_coh_noise + 1e-8)
+        coh_gap = mean_coh_noise - mean_coh_real  # Positive when real has lower variance
         print(
             f"Epoch {epoch:4d}/{args.epochs} | "
             f"loss={epoch_loss:.5f} {'↓' if improved else ' '} | "
-            f"coh_real={mean_coh_real:.3f} | "
-            f"coh_noise={mean_coh_noise:.3f} | "
-            f"gap={epoch_coh_gap:+.3f} | "
-            f"ratio={coh_ratio:.2f} | "
+            f"var_real={mean_coh_real:.4f} | "
+            f"var_noise={mean_coh_noise:.4f} | "
+            f"gap={coh_gap:+.4f} | "
             f"diag={epoch_ratio:.3f} | "
             f"{elapsed:.1f}s"
         )

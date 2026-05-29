@@ -189,16 +189,19 @@ class SpectralCanonicalizer(nn.Module):
         """
         n_samples = signal.shape[-1]
 
+        # Ensure window is on the same device as signal
+        window = self.window.to(signal.device)
+
         if n_samples <= self.n_fft:
             # Zero-pad and do a single FFT
             padded = torch.nn.functional.pad(signal, (0, self.n_fft - n_samples))
-            windowed = padded * self.window
+            windowed = padded * window
             spectrum = torch.fft.rfft(windowed, n=self.n_fft, dim=-1)
         else:
             # STFT: unfold into overlapping frames → FFT
             frames = signal.unfold(dimension=-1, size=self.n_fft, step=self.hop_length)
             # frames: (…, n_frames, n_fft)
-            windowed = frames * self.window
+            windowed = frames * window
             spectrum = torch.fft.rfft(windowed, n=self.n_fft, dim=-1)
             # (…, n_frames, n_freq)
             if not self.preserve_frames:

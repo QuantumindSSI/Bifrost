@@ -16,24 +16,27 @@ class ContrastivePhaseLoss(nn.Module):
     """
     Contrastive loss for phase coherence discrimination.
 
-    Maximizes the gap between phase-coherent and phase-incoherent signals:
-        L = -log(σ(coherence_real - coherence_noise))
+    Uses variance ratio: phase-coherent signals should have LOWER variance
+    in their attention patterns (more focused) compared to phase-randomized.
 
-    This forces the model to output HIGHER coherence for structured signals.
+    This forces the model to learn structured attention for real signals.
     """
 
-    def __init__(self, margin: float = 0.5, temperature: float = 1.0) -> None:
+    def __init__(self, margin: float = 0.1, temperature: float = 0.5) -> None:
         super().__init__()
         self.margin = margin
         self.temperature = temperature
 
     def forward(
         self,
-        coherence_real: torch.Tensor,  # (B, H, T, T) from harmonic signals
+        coherence_real: torch.Tensor,  # (B, H, T, T) from harmonic signals (pre-softmax)
         coherence_noise: torch.Tensor,  # (B, H, T, T) from phase-randomized signals
     ) -> torch.Tensor:
         """
-        Compute contrastive phase loss.
+        Compute contrastive phase loss using variance of attention.
+
+        Strategy: Real signals should produce more focused (lower variance)
+        attention patterns compared to randomized phase signals.
 
         Args:
             coherence_real: Coherence from phase-consistent (harmonic) signals
@@ -42,18 +45,31 @@ class ContrastivePhaseLoss(nn.Module):
         Returns:
             Scalar loss (lower = better discrimination)
         """
-        # Mean coherence per sample (before softmax)
-        real_mean = coherence_real.mean(dim=(-2, -1))  # (B, H)
-        noise_mean = coherence_noise.mean(dim=(-2, -1))  # (B, H)
+        # Apply softmax to get proper attention weights
+        attn_real = torch.softmax(coherence_real / self.temperature, dim=-1)
+        attn_noise = torch.softmax(coherence_noise / self.temperature, dim=-1)
 
-        # Contrastive: real should be higher than noise by margin
-        # Using hinge loss formulation
-        diff = real_mean - noise_mean - self.margin  # (B, H)
+        # Compute variance of attention weights (lower = more focused)
+        real_var = attn_real.var(dim=-1).mean()  # Scalar
+        noise_var = attn_noise.var(dim=-1).mean()  # Scalar
 
-        # Soft hinge: smooth transition at margin boundary
-        loss = F.softplus(-diff / self.temperature).mean()
+        # Real should have LOWER variance than noise
+        # Loss: penalize when real_var >= noise_var - margin
+        var_diff = noise_var - real_var - self.margin
 
-        return loss
+        # Hinge loss: we want noise_var - real_var > margin
+        loss = F.relu(-var_diff)
+
+        # Add regularization to prevent collapse
+        entropy_real = -(attn_real * torch.log(attn_real + 1e-8)).sum(dim=-1).mean()
+        entropy_noise = -(attn_noise * torch.log(attn_noise + 1e-8)).sum(dim=-1).mean()
+
+        # Penalize uniform attention (high entropy)
+        entropy_penalty = F.relu(entropy_real - 2.0) + F.relu(entropy_noise - 2.0)
+
+        total_loss = loss + 0.1 * entropy_penalty
+
+        return total_loss
 
 
 class InfoNCESpectralLoss(nn.Module):
