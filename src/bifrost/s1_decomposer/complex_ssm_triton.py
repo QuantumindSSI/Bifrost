@@ -55,6 +55,13 @@ def complex_selective_scan_cuda(
     
     device = x.device
     
+    # === PRECONDITION ASSERTIONS ===
+    assert x.dtype == torch.complex64, f"Expected complex64 input, got {x.dtype}"
+    assert B.dtype == torch.complex64, f"Expected complex64 B, got {B.dtype}"
+    assert C.dtype == torch.complex64, f"Expected complex64 C, got {C.dtype}"
+    assert D.dtype == torch.complex64, f"Expected complex64 D, got {D.dtype}"
+    assert torch.isfinite(x).all(), "Non-finite values in SSM input"
+    
     # Discretize: continuous -> discrete
     dt_A_real = delta.unsqueeze(-1) * A_real.unsqueeze(0).unsqueeze(1)  # (B, L, d_inner, d_state)
     dt_A_imag = delta.unsqueeze(-1) * A_imag.unsqueeze(0).unsqueeze(1)
@@ -101,6 +108,12 @@ def complex_selective_scan_cuda(
     
     # Skip connection: D * x
     y = y + D.unsqueeze(0).unsqueeze(1) * x
+    
+    # === POSTCONDITION ASSERTIONS ===
+    assert y.dtype == torch.complex64, f"Expected complex64 output, got {y.dtype}"
+    assert h.dtype == torch.complex64, f"Expected complex64 hidden state, got {h.dtype}"
+    assert torch.isfinite(y).all(), "Non-finite values in SSM output"
+    assert torch.isfinite(h).all(), "Non-finite values in final hidden state"
     
     return y, h.detach()
 

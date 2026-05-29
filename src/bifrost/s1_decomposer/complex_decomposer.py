@@ -167,15 +167,8 @@ class ComplexSelectiveScan(nn.Module):
         B_batch, L, _ = x.shape
 
         if CUDA_BACKENDS_AVAILABLE and x.is_cuda:
-            if TRITON_AVAILABLE and L >= 64:
-                # Use Triton kernel for long sequences on GPU
-                try:
-                    return complex_selective_scan_triton(x, delta, A_real, A_imag, B, C, D, h_0)
-                except Exception:
-                    # Fallback to CUDA PyTorch if Triton fails
-                    pass
-
-            # Use CUDA-optimized PyTorch operations
+            # NOTE: Triton backend disabled - complex number support incomplete
+            # Use CUDA-optimized PyTorch operations (fully functional)
             return complex_selective_scan_cuda(x, delta, A_real, A_imag, B, C, D, h_0)
 
         # CPU fallback: naive Python loop (slow but correct)
@@ -332,6 +325,10 @@ class ComplexSpectralDecomposer(nn.Module):
         # Get complex spectrum: z = amplitude * exp(i * phase)
         z = st.complex_spectrum()  # (B, n_freq), (B, T, n_freq), or (B, C, T, n_freq) complex
 
+        # === PRECONDITION CHECK: Input must be complex ===
+        assert z.dtype == torch.complex64, f"Expected complex64 input to ComplexSpectralDecomposer, got {z.dtype}"
+        assert torch.isfinite(z).all(), "Non-finite values in input complex spectrum"
+
         if z.dim() == 1:
             z = z.unsqueeze(0)
 
@@ -376,6 +373,9 @@ class ComplexSpectralDecomposer(nn.Module):
         # Project to d_model (complex)
         h = self.input_proj(z_frames)  # (B, T, d_model) complex
 
+        # === INVARIANT CHECK: Complex dtype after projection ===
+        assert h.dtype == torch.complex64, f"Expected complex64 after input projection, got {h.dtype}"
+
         # Complex layer norm
         h_real = self.norm_real(h.real)
         h_imag = self.norm_imag(h.imag)
@@ -384,8 +384,16 @@ class ComplexSpectralDecomposer(nn.Module):
         # Complex SSM - returns (output, h_T)
         h, h_T = self.ssm(h, h_0)  # (B, T, d_model) complex with learned phase coherence
 
+        # === INVARIANT CHECK: Complex dtype and finite values after SSM ===
+        assert h.dtype == torch.complex64, f"Expected complex64 after SSM, got {h.dtype}"
+        assert torch.isfinite(h).all(), "Non-finite values in SSM hidden state"
+
         # Output projection
         z_out = self.output_proj(h)  # (B, T, d_model) complex
+
+        # === INVARIANT CHECK: Complex dtype preserved through pipeline ===
+        assert z_out.dtype == torch.complex64, f"Expected complex64 output from SSM, got {z_out.dtype}"
+        assert torch.isfinite(z_out).all(), "Non-finite values in SSM output - numerical instability detected"
 
         # Extract amplitude and phase
         amplitude = z_out.abs()  # (B, T, d_model)
