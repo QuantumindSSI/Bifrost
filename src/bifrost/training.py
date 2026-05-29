@@ -35,28 +35,28 @@ from .pipeline import FBCPipeline
 
 class ContrastiveCoherenceLoss(nn.Module):
     """
-    Contrastive phase coherence loss.
+    Contrastive ratio loss: maximise var_real / var_noise.
 
-    Trains the pipeline to produce HIGH coherence for the input signal
-    and LOW coherence for a phase-randomised version of the same signal.
-    This is a non-collapsible objective: the model cannot drive both
-    terms to zero simultaneously.
+    Trains the pipeline to produce higher output variance for harmonic
+    signals (structured coherence) than for phase-randomised noise
+    (uniform coherence). Uses a ratio formulation to prevent the model
+    from increasing both variances together, which collapses the gap.
 
-    Loss = -log(sigma(coh_real - coh_noise - margin))
+    Loss = log(var_noise) - log(var_real) = -log(var_real / var_noise)
 
-    where coh_real = mean coherence on real harmonic signal,
-          coh_noise = mean coherence on phase-randomised noise,
-          margin = target separation (default 0.1).
+    Minimising this maximises the variance ratio. The noise variance is
+    detached (fixed baseline), so gradients flow only to increase real
+    variance relative to noise.
 
     Parameters
     ----------
     margin : float
-        Minimum required coherence gap between real and noise (default 0.1).
+        Unused (kept for API compatibility).
     """
 
-    def __init__(self, margin: float = 0.1) -> None:
+    def __init__(self, margin: float = 0.0) -> None:
         super().__init__()
-        self.margin = margin
+        # Margin kept for API compatibility; not used in ratio loss.
 
     def forward(
         self,
@@ -86,9 +86,15 @@ class ContrastiveCoherenceLoss(nn.Module):
         amp_real = feat_real.amplitude if hasattr(feat_real, 'amplitude') else feat_real
         amp_noise = feat_noise.amplitude if hasattr(feat_noise, 'amplitude') else feat_noise
         var_real = amp_real.var()
-        # Detach noise: fixed reference baseline, not a gradient target.
         var_noise = amp_noise.var().detach()
-        loss = -var_real + var_noise + self.margin
+        # Normalised gap loss: maximise var_real / var_noise, not var_real alone.
+        # Raw variance loss (-var_real + var_noise) allows both to increase together,
+        # collapsing the gap. Ratio loss forces discrimination: increasing var_real
+        # while var_noise stays fixed maximises the ratio.
+        # Loss = -log(var_real / var_noise) = log(var_noise) - log(var_real).
+        # Minimising this maximises the ratio. Epsilon prevents log(0).
+        eps = 1e-8
+        loss = (var_noise + eps).log() - (var_real + eps).log()
         return loss
 
 
@@ -158,10 +164,9 @@ class FBCTrainer:
         self.grad_clip = grad_clip
         self.warmup_steps = warmup_steps
 
-        # Criterion: contrastive coherence loss on output feature amplitudes.
-        # amp.var() is O(0.1-1.0); margin=0.01 is always-active at epoch 1
-        # without being trivially satisfied.
-        self.criterion = ContrastiveCoherenceLoss(margin=0.01)
+        # Criterion: contrastive ratio loss on output feature amplitudes.
+        # Maximises var_real / var_noise, preventing joint variance increase.
+        self.criterion = ContrastiveCoherenceLoss()
 
         # Freeze band_weights only. tau is now UNFROZEN.
         # With parameter-free coherence (from canonical STFT phase), tau cannot collapse
