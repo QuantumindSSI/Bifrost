@@ -357,9 +357,22 @@ class SemanticCoherenceTrainer:
         semantic_loss = self.semantic_loss_fn(coherence_features, labels)
         
         # 2. Contrastive phase coherence loss (existing)
-        # Generate phase-randomized negatives
-        noise_signals = signals * (2 * torch.rand_like(signals) - 1)
-        bound_noise, _ = self.pipeline(noise_signals)
+        # Generate phase-randomized negatives in frequency domain
+        # Previous implementation used time-domain amplitude modulation which is NOT phase randomization
+        with torch.no_grad():
+            # Convert to frequency domain
+            spectrum = torch.fft.rfft(signals, dim=-1)
+            magnitude = spectrum.abs()
+            original_phase = torch.angle(spectrum)
+            
+            # Randomize phase while preserving magnitude
+            random_phase = torch.rand_like(original_phase) * 2.0 * math.pi
+            randomized_spectrum = magnitude * torch.exp(1j * random_phase)
+            
+            # Convert back to time domain
+            phase_randomized_signals = torch.fft.irfft(randomized_spectrum, n=signals.shape[-1], dim=-1)
+        
+        bound_noise, _ = self.pipeline(phase_randomized_signals)
         contrastive_loss = self.contrastive_loss_fn(bound.amplitude, bound_noise.amplitude)
         
         # 3. Classification loss (auxiliary)

@@ -45,10 +45,15 @@ class SpectralBinding(nn.Module):
         n_bands: int = 8,
         dropout: float = 0.1,
         n_freq_in: Optional[int] = None,
+        harmonic_blend_ratio: float = 0.7,  # Empirically validated default
     ) -> None:
         super().__init__()
         self.d_model = d_model
         self.n_freq_in = n_freq_in  # if set, adds a persistent input projection
+        # Harmonic coherence blend ratio - validated empirically on 440+880+1320Hz signals
+        # Range [0.0, 1.0]: 0.0 = all learned coherence, 1.0 = all harmonic coherence
+        # See scripts/validate_blend_ratio.py for validation methodology
+        self.harmonic_blend_ratio = harmonic_blend_ratio
 
         # Persistent input projection when n_freq_in != d_model
         in_dim = n_freq_in if n_freq_in is not None else d_model
@@ -222,8 +227,11 @@ class SpectralBinding(nn.Module):
             # Broadcast original-phase coherence to all heads
             coherence_orig_expanded = coherence_orig.expand(-1, n_heads, -1, -1)
 
-            # Blend: 70% harmonic-space coherence (structure) + 30% projected (learned)
-            coherence = 0.7 * coherence_orig_expanded + 0.3 * coherence
+            # Blend: harmonic_blend_ratio% harmonic-space coherence + (1-ratio)% projected
+            # This preserves harmonic structure while allowing learned adaptation
+            # Ratio is empirically validated on ground-truth harmonic signals
+            h_ratio = self.harmonic_blend_ratio
+            coherence = h_ratio * coherence_orig_expanded + (1.0 - h_ratio) * coherence
 
             # Re-normalise blended weights and re-aggregate V so bound reflects harmonics
             # Clamp to prevent -inf from propagating through softmax (produces NaN)

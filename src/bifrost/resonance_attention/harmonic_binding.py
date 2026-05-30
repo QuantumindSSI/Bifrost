@@ -38,16 +38,21 @@ class HarmonicFrequencyGrid(nn.Module):
         self,
         n_freq: int = 257,  # n_fft // 2 + 1
         sample_rate: float = 16000.0,
-        base_freq: float = 440.0,  # A4
+        base_freq: Optional[float] = None,  # None = auto-detect from signal
         n_octaves: int = 8,
         n_overtones: int = 6,
     ) -> None:
         super().__init__()
         self.n_freq = n_freq
         self.sample_rate = sample_rate
-        self.base_freq = base_freq
+        # Auto-detect base frequency if not provided
+        # When None, the grid will adapt to detected fundamental from input signal
+        self.base_freq = base_freq if base_freq is not None else 100.0  # Conservative default
         self.n_octaves = n_octaves
         self.n_overtones = n_overtones
+        
+        # Store whether we're using auto-detection
+        self.auto_detect_base_freq = base_freq is None
 
         # Create frequency bins (linear scale from 0 to nyquist)
         nyquist = sample_rate / 2
@@ -148,6 +153,71 @@ class HarmonicFrequencyGrid(nn.Module):
             if len(bins) > 0:
                 groups.append(bins)
         return groups
+
+    def detect_base_frequency(
+        self,
+        amplitude_spectrum: torch.Tensor,  # (n_freq,) or (B, n_freq)
+        freq_range_hz: Tuple[float, float] = (50.0, 2000.0),
+    ) -> float:
+        """
+        Auto-detect fundamental frequency from amplitude spectrum.
+        
+        Uses peak detection in the specified frequency range to find
+        the most likely fundamental frequency.
+        
+        Args:
+            amplitude_spectrum: Amplitude values per frequency bin
+            freq_range_hz: Frequency range to search for fundamental (Hz)
+            
+        Returns:
+            Detected base frequency in Hz
+        """
+        if amplitude_spectrum.dim() == 2:
+            # Average over batch
+            amplitude_spectrum = amplitude_spectrum.mean(dim=0)
+        
+        # Convert frequency range to bin indices
+        nyquist = self.sample_rate / 2
+        min_bin = int((freq_range_hz[0] / nyquist) * (self.n_freq - 1))
+        max_bin = int((freq_range_hz[1] / nyquist) * (self.n_freq - 1))
+        
+        min_bin = max(min_bin, 1)  # Exclude DC
+        max_bin = min(max_bin, self.n_freq - 1)
+        
+        # Find peak in range
+        spectrum_slice = amplitude_spectrum[min_bin:max_bin]
+        peak_idx_in_slice = spectrum_slice.argmax().item()
+        peak_bin = min_bin + peak_idx_in_slice
+        
+        # Convert bin to frequency
+        peak_freq = self.freq_bins[peak_bin].item()
+        
+        return peak_freq
+
+    def adapt_to_signal(
+        self,
+        amplitude_spectrum: torch.Tensor,
+    ) -> None:
+        """
+        Adapt harmonic grid to detected fundamental of input signal.
+        
+        Only updates if auto_detect_base_freq is True.
+        
+        Args:
+            amplitude_spectrum: Input signal amplitude spectrum
+        """
+        if not self.auto_detect_base_freq:
+            return  # Manual override, do not adapt
+        
+        # Detect fundamental
+        detected_freq = self.detect_base_frequency(amplitude_spectrum)
+        
+        # Update base frequency
+        self.base_freq = detected_freq
+        
+        # Regenerate harmonic structures
+        self.harmonic_mask = self._create_harmonic_mask()
+        self.octave_indices = self._create_octave_indices()
 
 
 class HarmonicAttention(nn.Module):

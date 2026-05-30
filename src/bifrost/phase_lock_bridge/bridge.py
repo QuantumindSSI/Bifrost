@@ -8,8 +8,13 @@ Per Engineering Script §3:
     - When activated, create bridge edges between attractor nodes.
     - Transfer knowledge from source attractor to analogous target.
 
-This is the Phase 1 initial implementation: scoring, gating, and
-candidate identification.  SKG edge creation is deferred to Phase 2.
+This implementation uses TruePhaseLockDetector which verifies:
+    1. Temporal consistency (phase relationship persists over time)
+    2. Frequency matching (oscillators have compatible frequencies)
+    3. Coupling dynamics (Adler equation-based locking range)
+
+Note: Previous implementation used simple phase-alignment (cos(Δφ)) which
+only checks snapshot similarity. True phase-locking requires temporal stability.
 """
 
 from __future__ import annotations
@@ -22,6 +27,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .attractor import FrequencyAttractor
+from .phase_lock_detector import TruePhaseLockDetector, PhaseLockState
 from ..spectral_tensor import SpectralTensor
 
 
@@ -70,15 +76,23 @@ class PhaseLockBridge(nn.Module):
         min_locked_bands: int = 3,
         band_threshold: float = 0.5,
         activation_threshold: float = 0.6,
+        use_true_phase_lock: bool = True,  # Use temporal consistency + coupling
     ) -> None:
         super().__init__()
         self.n_bands = n_bands
         self.min_locked_bands = min_locked_bands
         self.band_threshold = band_threshold
         self.activation_threshold = activation_threshold
+        self.use_true_phase_lock = use_true_phase_lock
 
         # Learnable band importance weights
         self.band_weights = nn.Parameter(torch.ones(n_bands) / n_bands)
+        
+        # True phase-lock detector (replaces simple cos(Δφ) alignment)
+        self.phase_lock_detector = TruePhaseLockDetector(
+            n_bands=n_bands,
+            coupling_strength=0.5,
+        )
 
     # ── Core scoring ───────────────────────────────────────────────────
 
@@ -86,18 +100,39 @@ class PhaseLockBridge(nn.Module):
         self,
         source: FrequencyAttractor,
         target: FrequencyAttractor,
+        source_phase_history: Optional[torch.Tensor] = None,
+        target_phase_history: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
         Per-band phase coherence between two attractors.
 
-        Returns tensor of shape ``(n_bands,)`` with values in [-1, 1].
+        If use_true_phase_lock=True and phase histories are provided,
+        computes true phase-locking score including temporal consistency.
+        Otherwise falls back to simple phase-alignment (cos(Δφ)).
+
+        Returns tensor of shape ``(n_bands,)`` with values in [0, 1].
         """
         n = min(self.n_bands, source.n_bands, target.n_bands)
         src_phase = source.phase_signature[:n]
         tgt_phase = target.phase_signature[:n]
 
-        # cos(Δphase) — 1.0 = perfectly locked, -1.0 = anti-phase
-        band_coh = torch.cos(src_phase - tgt_phase)
+        # True phase-locking detection (when history is available)
+        if (self.use_true_phase_lock 
+            and source_phase_history is not None 
+            and target_phase_history is not None):
+            
+            # Use TruePhaseLockDetector for temporal consistency + coupling
+            alignment, consistency, coupling = self.phase_lock_detector.detect_phase_lock(
+                source_phase_history, target_phase_history
+            )
+            
+            # Overall phase-lock score: weighted combination
+            # Consistency is most important for true phase-lock
+            band_coh = 0.2 * alignment[:n] + 0.5 * consistency[:n] + 0.3 * coupling[:n]
+        else:
+            # Fallback: simple phase-alignment (cos(Δφ))
+            # Maps [-1, 1] to [0, 1] for consistency with true locking scores
+            band_coh = (torch.cos(src_phase - tgt_phase) + 1.0) / 2.0
 
         # Pad if fewer bands available
         if n < self.n_bands:
