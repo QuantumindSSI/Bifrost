@@ -54,6 +54,15 @@ from .semantic_coherence import (
     SemanticCoherenceTrainer,
     train_semantic_coherence,
 )
+from .datasets import (
+    FolderAudioDataset,
+    CSVMetaDataset,
+    SyntheticAudioDataset,
+    AudioSample,
+    load_dataset,
+    auto_detect_dataset,
+    create_data_loader,
+)
 
 # Backward compatibility aliases (FBC naming deprecated)
 FBCPipeline = BifrostPipeline
