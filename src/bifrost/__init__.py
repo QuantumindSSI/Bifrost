@@ -43,49 +43,9 @@ from .complex_training import (
 )
 
 # Backward compatibility aliases (FBC naming deprecated)
-import warnings
-from typing import Any
-
-
-class _FBCPipeline(BifrostPipeline):
-    """Deprecated alias for BifrostPipeline."""
-    def __new__(cls, *args: Any, **kwargs: Any) -> "BifrostPipeline":
-        warnings.warn(
-            "FBCPipeline is deprecated, use BifrostPipeline instead. "
-            "FBC naming will be removed in v0.2.0.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return super().__new__(cls)
-
-
-class _FBCTrainer(BifrostTrainer):
-    """Deprecated alias for BifrostTrainer."""
-    def __new__(cls, *args: Any, **kwargs: Any) -> "BifrostTrainer":
-        warnings.warn(
-            "FBCTrainer is deprecated, use BifrostTrainer instead. "
-            "FBC naming will be removed in v0.2.0.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return super().__new__(cls)
-
-
-class _ComplexFBCTrainer(ComplexBifrostTrainer):
-    """Deprecated alias for ComplexBifrostTrainer."""
-    def __new__(cls, *args: Any, **kwargs: Any) -> "ComplexBifrostTrainer":
-        warnings.warn(
-            "ComplexFBCTrainer is deprecated, use ComplexBifrostTrainer instead. "
-            "FBC naming will be removed in v0.2.0.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return super().__new__(cls)
-
-
-FBCPipeline = _FBCPipeline
-FBCTrainer = _FBCTrainer
-ComplexFBCTrainer = _ComplexFBCTrainer
+FBCPipeline = BifrostPipeline
+FBCTrainer = BifrostTrainer
+ComplexFBCTrainer = ComplexBifrostTrainer
 
 __all__ = [
     "SpectralTensor",
