@@ -141,7 +141,7 @@ class SpectralFusion(nn.Module):
         
         # Gating mechanism: how much to trust spectral vs original
         self.spectral_gate = nn.Sequential(
-            nn.Linear(d_model * 2, d_model),
+            nn.Linear(d_model, d_model),
             nn.Sigmoid(),
         )
     
