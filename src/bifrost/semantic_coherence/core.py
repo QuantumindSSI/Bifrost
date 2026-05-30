@@ -125,34 +125,54 @@ class PhaseCoherenceExtractor(nn.Module):
         
         # 2. Cross-frequency phase coupling
         # Divide into frequency bands
-        band_size = d // self.n_freq_bands
+        band_size = max(1, d // self.n_freq_bands)
         band_phases = []
         for i in range(self.n_freq_bands):
             start = i * band_size
-            end = start + band_size if i < self.n_freq_bands - 1 else d
-            band_phase = phase[:, :, start:end].mean(dim=2)  # (B, T)
-            band_phases.append(band_phase)
+            end = min(start + band_size, d)
+            if start < d:
+                band_phase = phase[:, :, start:end].mean(dim=2)  # (B, T)
+                band_phases.append(band_phase)
+            else:
+                # Pad with zeros if we run out of dimensions
+                band_phases.append(torch.zeros(B, T, device=phase.device))
         
         # Compute phase coupling matrix (cosine similarity between bands)
         band_tensor = torch.stack(band_phases, dim=2)  # (B, T, n_bands)
         # Average over time for stable coupling
         band_mean = band_tensor.mean(dim=1)  # (B, n_bands)
         
-        # Coupling as outer product of phase means
-        for b in range(B):
-            coupling = torch.outer(band_mean[b], band_mean[b])  # (n_bands, n_bands)
-            features.append(coupling.flatten().unsqueeze(0))
+        # Coupling as batched outer product of phase means
+        # (B, n_bands) -> (B, n_bands, n_bands) -> (B, n_bands*n_bands)
+        coupling = torch.bmm(band_mean.unsqueeze(2), band_mean.unsqueeze(1))  # (B, n_bands, n_bands)
+        features.append(coupling.reshape(B, -1))
         
         # 3. Phase stability (low variance = stable)
         for i in range(self.n_freq_bands):
             start = i * band_size
-            end = start + band_size if i < self.n_freq_bands - 1 else d
-            band_phase = phase[:, :, start:end]  # (B, T, band_size)
-            stability = -band_phase.var(dim=(1, 2))  # Negative variance (higher = more stable)
+            end = min(start + band_size, d)
+            if start < d:
+                band_phase = phase[:, :, start:end]  # (B, T, band_size)
+                stability = -band_phase.var(dim=(1, 2))  # Negative variance (higher = more stable)
+            else:
+                stability = torch.zeros(B, device=phase.device)
             features.append(stability.unsqueeze(1))
         
-        # Concatenate all features
-        feature_vector = torch.cat([f if f.dim() == 2 else f.unsqueeze(1) for f in features], dim=1)
+        # Concatenate all features - ensure all are (B, feature_dim)
+        # Normalize feature dimensions to prevent size mismatch
+        feature_list = []
+        for f in features:
+            if f.dim() == 1:
+                f = f.unsqueeze(0).expand(B, -1)
+            elif f.dim() == 2 and f.shape[0] != B:
+                if f.shape[0] == 1:
+                    f = f.expand(B, -1)
+                else:
+                    # Skip features with incompatible batch dimension
+                    continue
+            feature_list.append(f)
+        
+        feature_vector = torch.cat(feature_list, dim=1)
         
         # Project to coherence representation
         coherence = self.feature_projector(feature_vector)
@@ -283,7 +303,8 @@ class SemanticCoherenceTrainer:
         self.lambda_contrastive = lambda_contrastive
         
         # Phase coherence extractor
-        # Get d_model from decomposer (which is S1 stage output dim)
+        # Access decomposer (S1 stage) output dimension for coherence feature extraction
+        # Note: BifrostPipeline uses explicit component names, not s0/s1/s2/s3 numeric references
         decomposer_d_model = getattr(pipeline.decomposer, 'd_model', 128)
         self.coherence_extractor = PhaseCoherenceExtractor(
             d_model=decomposer_d_model,
@@ -293,7 +314,8 @@ class SemanticCoherenceTrainer:
         # Supervised semantic coherence loss
         self.semantic_loss_fn = SupervisedSemanticCoherenceLoss()
         
-        # Contrastive loss (existing)
+        # Contrastive loss - uses amplitude features from decomposer output
+        # This enforces that S1 (decomposer) produces discriminative spectral features
         from ..training import ContrastiveCoherenceLoss
         self.contrastive_loss_fn = ContrastiveCoherenceLoss()
         
