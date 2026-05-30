@@ -250,7 +250,9 @@ class SpectralBinding(nn.Module):
         # Package back into SpectralTensor
         # If amp was projected (n_freq → d_model), scale/uncertainty must
         # be resampled to match the new spectral dimension.
-        orig_d = amp.shape[-1]  # use post-unsqueeze amp shape
+        # CRITICAL: Capture original dimension BEFORE any projection happened.
+        # st.shape[-1] is the canonical S0/S1 frequency dimension (n_freq).
+        orig_d = st.shape[-1]  # Original frequency dimension from input SpectralTensor
         new_d = bound.shape[-1]
 
         if orig_d != new_d:
