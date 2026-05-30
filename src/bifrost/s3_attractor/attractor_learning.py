@@ -74,9 +74,10 @@ class AttractorLearningModule(nn.Module):
         )
         
         # Stability predictor network
-        # Input: [attractor_features, phase_coherence, temporal_variance]
+        # Input: [attractor_features (n_bands), phase_coherence (n_bands), temporal_variance (1)]
+        # Total input size: 2 * n_bands + 1
         self.stability_predictor = nn.Sequential(
-            nn.Linear(d_model + n_bands + 1, 128),
+            nn.Linear(2 * n_bands + 1, 128),
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.Linear(128, 64),
