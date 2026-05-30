@@ -47,24 +47,45 @@ import warnings
 from typing import Any
 
 
-def _deprecated_alias(old_name: str, new_class: type) -> Any:
-    """Factory for deprecated class aliases with warnings."""
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
+class _FBCPipeline(BifrostPipeline):
+    """Deprecated alias for BifrostPipeline."""
+    def __new__(cls, *args: Any, **kwargs: Any) -> "BifrostPipeline":
         warnings.warn(
-            f"{old_name} is deprecated, use {new_class.__name__} instead. "
-            f"FBC naming will be removed in v0.2.0.",
+            "FBCPipeline is deprecated, use BifrostPipeline instead. "
+            "FBC naming will be removed in v0.2.0.",
             DeprecationWarning,
             stacklevel=2
         )
-        return new_class(*args, **kwargs)
-    wrapper.__name__ = old_name
-    wrapper.__doc__ = f"Deprecated alias for {new_class.__name__}."
-    return wrapper
+        return super().__new__(cls)
 
 
-FBCPipeline = _deprecated_alias("FBCPipeline", BifrostPipeline)
-FBCTrainer = _deprecated_alias("FBCTrainer", BifrostTrainer)
-ComplexFBCTrainer = _deprecated_alias("ComplexFBCTrainer", ComplexBifrostTrainer)
+class _FBCTrainer(BifrostTrainer):
+    """Deprecated alias for BifrostTrainer."""
+    def __new__(cls, *args: Any, **kwargs: Any) -> "BifrostTrainer":
+        warnings.warn(
+            "FBCTrainer is deprecated, use BifrostTrainer instead. "
+            "FBC naming will be removed in v0.2.0.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return super().__new__(cls)
+
+
+class _ComplexFBCTrainer(ComplexBifrostTrainer):
+    """Deprecated alias for ComplexBifrostTrainer."""
+    def __new__(cls, *args: Any, **kwargs: Any) -> "ComplexBifrostTrainer":
+        warnings.warn(
+            "ComplexFBCTrainer is deprecated, use ComplexBifrostTrainer instead. "
+            "FBC naming will be removed in v0.2.0.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return super().__new__(cls)
+
+
+FBCPipeline = _FBCPipeline
+FBCTrainer = _FBCTrainer
+ComplexFBCTrainer = _ComplexFBCTrainer
 
 __all__ = [
     "SpectralTensor",
