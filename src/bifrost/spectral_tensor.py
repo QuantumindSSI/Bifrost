@@ -29,9 +29,9 @@ class SpectralTensor:
     # Provenance metadata carried through the pipeline
     metadata: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
-    def __post_init__(self) -> None:
-        """Post-initialization validation: assert invariants on creation."""
-        # === CREATION ASSERTIONS ===
+    def validate(self) -> None:
+        """Validate tensor invariants. Call explicitly when strict checks needed."""
+        # === VALIDATION ASSERTIONS ===
         assert self.amplitude.shape == self.phase.shape, (
             f"SpectralTensor shape mismatch: amplitude {self.amplitude.shape} vs phase {self.phase.shape}"
         )
