@@ -239,8 +239,8 @@ class PhaseCoherenceValidator:
             # Forward - get bound output with amplitude features
             bound_real, coherence_real = self.pipeline(real_signal)
             
-            # Phase-randomized negative
-            noise_signal = real_signal * torch.exp(1j * torch.rand_like(real_signal) * 2 * np.pi)
+            # Phase-randomized negative (keep real-valued for pipeline compatibility)
+            noise_signal = real_signal * (2 * torch.rand_like(real_signal) - 1)  # Random phase flip
             bound_noise, coherence_noise = self.pipeline(noise_signal)
             
             # Loss - ContrastiveCoherenceLoss expects amplitude features, not coherence matrices
