@@ -189,18 +189,19 @@ class ComplexSelectiveScan(nn.Module):
         else:
             h = torch.zeros(B_batch, self.d_inner, self.d_state, dtype=torch.complex64, device=x.device)
 
-        ys = []
-        for t in range(L):
-            h = exp_neg_dt_A[:, t] * h + dt_B_x[:, t]
-            h_abs = h.abs().clamp(min=1e-8)
-            h = h * (h_abs.clamp(max=10.0) / h_abs)
-            C_t = C[:, t].unsqueeze(1)
-            y = (C_t * h).sum(dim=-1)
-            ys.append(y)
-
-        y = torch.stack(ys, dim=1)
-        D_complex = torch.complex(self.D_real, self.D_imag)
-        y = y + D_complex.unsqueeze(0).unsqueeze(1) * x
+        # === PARALLEL ASSOCIATIVE SCAN (Blelloch Algorithm) ===
+        # Replaces O(n) sequential loop with O(log n) depth parallel scan
+        # This is the mathematically correct implementation for SSMs
+        from .associative_scan import complex_associative_scan
+        
+        y, h = complex_associative_scan(
+            exp_neg_dt_A=exp_neg_dt_A,
+            dt_B_x=dt_B_x,
+            C=C,
+            D=torch.complex(self.D_real, self.D_imag),
+            x=x,
+            h_0=h_0,
+        )
 
         return y, h
 

@@ -69,6 +69,32 @@ class BifrostPipeline(nn.Module):
         super().__init__()
         self.use_complex_ssm = use_complex_ssm
         self.use_harmonic_binding = use_harmonic_binding
+        
+        # === CRITICAL AUDIT WARNINGS ===
+        # Per Agentic CTO-Persona policy, these limitations are explicitly disclosed
+        import warnings
+        
+        warnings.warn(
+            "Bifrost Pipeline: S3 (Phase-Lock Bridge) contains placeholder values (stability=0.5). "
+            "True attractor learning not implemented. See CRITICAL_AUDIT.md",
+            UserWarning,
+            stacklevel=2
+        )
+        
+        warnings.warn(
+            "Bifrost Pipeline: S4 (Riemannian Manifold) is NOT IMPLEMENTED. "
+            "Architecture claims 4 stages, delivers 2.5. See CRITICAL_AUDIT.md",
+            UserWarning,
+            stacklevel=2
+        )
+        
+        if not use_complex_ssm:
+            warnings.warn(
+                "Bifrost Pipeline: Real SSM mode uses different architecture than Complex SSM. "
+                "Switching between modes gives non-equivalent results.",
+                UserWarning,
+                stacklevel=2
+            )
 
         self.canonicalizer = SpectralCanonicalizer(
             n_fft=n_fft_s0,
