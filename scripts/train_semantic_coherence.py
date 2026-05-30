@@ -186,11 +186,11 @@ def main():
             
             # Training step
             metrics = trainer.train_step(signals, labels)
-            epoch_loss += metrics.contrastive_loss
+            epoch_loss += metrics['contrastive_loss']
             n_batches += 1
             
             if batch_idx % 10 == 0:
-                print(f"  Epoch {epoch+1}/{args.epochs}, Batch {batch_idx}, Loss: {metrics.contrastive_loss:.4f}")
+                print(f"  Epoch {epoch+1}/{args.epochs}, Batch {batch_idx}, Loss: {metrics['contrastive_loss']:.4f}")
         
         avg_loss = epoch_loss / max(n_batches, 1)
         print(f"  Epoch {epoch+1} complete. Avg loss: {avg_loss:.4f}")
