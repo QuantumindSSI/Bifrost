@@ -134,7 +134,14 @@ class SpectralBinding(nn.Module):
         # It has passed through ZERO learned parameters — it cannot collapse.
         # decomposed.phase passes through output_proj (a learned complex linear layer)
         # which collapses to a constant at equilibrium, making all phase differences → 0.
-        # Resize to (B, T_amp, d_model) to match the amplitude tensor's temporal resolution.
+        #
+        # CRITICAL: For harmonic coherence preservation, we must compute coherence in the
+        # ORIGINAL frequency space (n_freq), NOT in the projected d_model space.
+        # Interpolating phase from n_freq to d_model destroys harmonic frequency relationships
+        # (440Hz, 880Hz, etc. no longer align with distinct bins).
+        #
+        # Solution: Keep canonical_phase at original n_freq dimensions for coherence_orig,
+        # only interpolate if needed for the legacy path (when use_original_phase is False).
         if canonical_phase is not None:
             cp = canonical_phase
             # Normalise to exactly 3D (B, T_s0, n_freq_s0) regardless of input dims.
@@ -143,22 +150,31 @@ class SpectralBinding(nn.Module):
             elif cp.dim() == 4:
                 cp = cp.mean(dim=1)           # (B, C, T, n_freq) → average channels → (B, T, n_freq)
             # cp is now (B, T_s0, n_freq_s0)
-            T_target = amp.shape[1]
-            F_target = self.d_model
-            cp_f = cp.float()
-            # Phase is circular (wraps at ±π). Naive linear interpolation destroys
-            # variance at wrap boundaries (e.g. interpolating +π and -π gives 0).
-            # Correct approach: interpolate cos(φ) and sin(φ) (both smooth, bounded
-            # in [-1,1]), then recover angle via atan2. Preserves circular structure.
-            cos_cp = torch.cos(cp_f).unsqueeze(1)  # (B, 1, T_s0, F_s0)
-            sin_cp = torch.sin(cp_f).unsqueeze(1)
-            cos_r = torch.nn.functional.interpolate(
-                cos_cp, size=(T_target, F_target), mode='bilinear', align_corners=False,
-            ).squeeze(1)  # (B, T_target, F_target)
-            sin_r = torch.nn.functional.interpolate(
-                sin_cp, size=(T_target, F_target), mode='bilinear', align_corners=False,
-            ).squeeze(1)
-            phase_orig = torch.atan2(sin_r, cos_r)  # (B, T_target, F_target) in (-π, π)
+
+            # Keep ORIGINAL n_freq dimensions for harmonic coherence computation
+            # This preserves 440Hz↔880Hz↔1320Hz relationships
+            phase_orig = cp.float()  # (B, T, n_freq) - NOT interpolated
+
+            # For learned coherence path, interpolate to d_model if dimensions differ
+            if cp.shape[-1] != self.d_model:
+                T_target = amp.shape[1]
+                F_target = self.d_model
+                cp_f = cp.float()
+                # Phase is circular (wraps at ±π). Naive linear interpolation destroys
+                # variance at wrap boundaries (e.g. interpolating +π and -π gives 0).
+                # Correct approach: interpolate cos(φ) and sin(φ) (both smooth, bounded
+                # in [-1,1]), then recover angle via atan2. Preserves circular structure.
+                cos_cp = torch.cos(cp_f).unsqueeze(1)  # (B, 1, T_s0, F_s0)
+                sin_cp = torch.sin(cp_f).unsqueeze(1)
+                cos_r = torch.nn.functional.interpolate(
+                    cos_cp, size=(T_target, F_target), mode='bilinear', align_corners=False,
+                ).squeeze(1)  # (B, T_target, F_target)
+                sin_r = torch.nn.functional.interpolate(
+                    sin_cp, size=(T_target, F_target), mode='bilinear', align_corners=False,
+                ).squeeze(1)
+                phase = torch.atan2(sin_r, cos_r)  # (B, T_target, F_target) - for learned path
+            else:
+                phase = phase_orig
         else:
             phase_orig = phase
 
