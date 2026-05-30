@@ -46,6 +46,14 @@ from .validation.empirical_validation import (
     ValidationReport,
     run_empirical_validation,
 )
+from .semantic_coherence import (
+    SemanticCoherenceMetrics,
+    PhaseCoherenceExtractor,
+    SupervisedSemanticCoherenceLoss,
+    SemanticCoherenceHead,
+    SemanticCoherenceTrainer,
+    train_semantic_coherence,
+)
 
 # Backward compatibility aliases (FBC naming deprecated)
 FBCPipeline = BifrostPipeline
@@ -90,4 +98,10 @@ __all__ = [
     "PhaseCoherenceValidator",
     "ValidationReport",
     "run_empirical_validation",
+    "SemanticCoherenceMetrics",
+    "PhaseCoherenceExtractor",
+    "SupervisedSemanticCoherenceLoss",
+    "SemanticCoherenceHead",
+    "SemanticCoherenceTrainer",
+    "train_semantic_coherence",
 ]
