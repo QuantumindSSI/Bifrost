@@ -241,6 +241,10 @@ class BifrostTrainer:
 
         # --- Positive: run real signal through pipeline ---
         bound_real, _ = self.pipeline(signal, metadata)
+        
+        # Get real signal's canonical representation for negative sample construction
+        with torch.no_grad():
+            canonical_real = self.pipeline.canonicalizer(signal, metadata)
 
         # --- Negative: STFT-domain phase randomisation ---
         # Goal: identical per-frame amplitude spectrum, destroyed inter-frame phase coherence.
@@ -295,9 +299,9 @@ class BifrostTrainer:
             canonical_rand = self.pipeline.canonicalizer(noise_signal.detach(), metadata)
             # Get real signal's decomposed representation
             if self.pipeline.use_complex_ssm:
-                decomposed_real_neg, _ = self.pipeline.decomposer(canonical, None)
+                decomposed_real_neg, _ = self.pipeline.decomposer(canonical_real, None)
             else:
-                decomposed_real_neg = self.pipeline.decomposer(canonical)
+                decomposed_real_neg = self.pipeline.decomposer(canonical_real)
             # Bind with real amplitude but random phase → destroyed coherence
             bound_noise, _ = self.pipeline.binding(
                 decomposed_real_neg,
