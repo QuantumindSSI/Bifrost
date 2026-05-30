@@ -238,8 +238,10 @@ class SpectralBinding(nn.Module):
         if self.use_original_phase and phase_orig.shape[-1] != self.d_model:
             # Compute phase coherence in original frequency space (n_freq dimension)
             # This preserves harmonic relationships (440Hz, 880Hz, etc. are distinct)
-            _, coherence_orig = self.resonance_orig(amp, phase=phase_orig)
-            # coherence_orig: (B, 1, T, T) computed from full 513-dim phase
+            # CRITICAL: Use amp_orig (original n_freq dims), not projected amp (d_model dims)
+            # resonance_orig expects input with n_freq dimensions for W_v projection
+            _, coherence_orig = self.resonance_orig(amp_orig, phase=phase_orig)
+            # coherence_orig: (B, 1, T, T) computed from full n_freq-dim phase
 
             # Broadcast original-phase coherence to all heads
             coherence_orig_expanded = coherence_orig.expand(-1, n_heads, -1, -1)
