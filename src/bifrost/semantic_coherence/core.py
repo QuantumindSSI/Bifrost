@@ -30,8 +30,8 @@ import torch.nn.functional as F
 from typing import List, Tuple, Optional, Dict
 from dataclasses import dataclass
 
-from .spectral_tensor import SpectralTensor
-from .pipeline import BifrostPipeline
+from ..spectral_tensor import SpectralTensor
+from ..pipeline import BifrostPipeline
 
 
 @dataclass
@@ -292,7 +292,7 @@ class SemanticCoherenceTrainer:
         self.semantic_loss_fn = SupervisedSemanticCoherenceLoss()
         
         # Contrastive loss (existing)
-        from .training import ContrastiveCoherenceLoss
+        from ..training import ContrastiveCoherenceLoss
         self.contrastive_loss_fn = ContrastiveCoherenceLoss()
         
         # Classification head (optional)
