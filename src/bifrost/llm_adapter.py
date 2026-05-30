@@ -536,7 +536,11 @@ class BifrostEnhancedLLM(nn.Module):
                     logits = outputs.logits
                     coherence_scores.append(outputs.coherence_score or 0.0)
                     if outputs.uncertainty is not None:
-                        uncertainties.append(outputs.uncertainty[:, -1, :].mean().item())
+                        # Handle both 2D and 3D uncertainty tensors
+                        if outputs.uncertainty.dim() == 3:
+                            uncertainties.append(outputs.uncertainty[:, -1, :].mean().item())
+                        else:
+                            uncertainties.append(outputs.uncertainty.mean().item())
                 else:
                     logits = outputs
                 
