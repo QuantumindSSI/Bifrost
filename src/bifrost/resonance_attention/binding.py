@@ -151,13 +151,26 @@ class SpectralBinding(nn.Module):
                 cp = cp.mean(dim=1)           # (B, C, T, n_freq) → average channels → (B, T, n_freq)
             # cp is now (B, T_s0, n_freq_s0)
 
-            # Keep ORIGINAL n_freq dimensions for harmonic coherence computation
-            # This preserves 440Hz↔880Hz↔1320Hz relationships
-            phase_orig = cp.float()  # (B, T, n_freq) - NOT interpolated
+            # CRITICAL: phase_orig must match amp's temporal dimension (T) for matmul
+            # but keep n_freq dimensions for harmonic coherence.
+            # Interpolate temporally (T_s0 → T_amp) but keep frequency dimension n_freq.
+            T_target = amp.shape[1]  # Target temporal dimension from amp
+            if cp.shape[1] != T_target:
+                # Temporal interpolation: (B, T_s0, n_freq) → (B, T_target, n_freq)
+                # Using linear interpolation along time axis
+                cp_f = cp.float()
+                # Reshape for interpolate: (B, C=1, T_s0, n_freq)
+                cp_reshaped = cp_f.unsqueeze(1)  # (B, 1, T_s0, n_freq)
+                cp_interp = F.interpolate(
+                    cp_reshaped, size=(T_target, cp.shape[2]),
+                    mode='bilinear', align_corners=False
+                )  # (B, 1, T_target, n_freq)
+                phase_orig = cp_interp.squeeze(1)  # (B, T_target, n_freq)
+            else:
+                phase_orig = cp.float()
 
-            # For learned coherence path, interpolate to d_model if dimensions differ
-            if cp.shape[-1] != self.d_model:
-                T_target = amp.shape[1]
+            # For learned coherence path, interpolate BOTH temporal AND frequency dimensions
+            if cp.shape[-1] != self.d_model or cp.shape[1] != T_target:
                 F_target = self.d_model
                 cp_f = cp.float()
                 # Phase is circular (wraps at ±π). Naive linear interpolation destroys
@@ -166,10 +179,10 @@ class SpectralBinding(nn.Module):
                 # in [-1,1]), then recover angle via atan2. Preserves circular structure.
                 cos_cp = torch.cos(cp_f).unsqueeze(1)  # (B, 1, T_s0, F_s0)
                 sin_cp = torch.sin(cp_f).unsqueeze(1)
-                cos_r = torch.nn.functional.interpolate(
+                cos_r = F.interpolate(
                     cos_cp, size=(T_target, F_target), mode='bilinear', align_corners=False,
                 ).squeeze(1)  # (B, T_target, F_target)
-                sin_r = torch.nn.functional.interpolate(
+                sin_r = F.interpolate(
                     sin_cp, size=(T_target, F_target), mode='bilinear', align_corners=False,
                 ).squeeze(1)
                 phase = torch.atan2(sin_r, cos_r)  # (B, T_target, F_target) - for learned path
