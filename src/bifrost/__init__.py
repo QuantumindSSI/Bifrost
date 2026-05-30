@@ -41,6 +41,11 @@ from .complex_training import (
     train_complex_bifrost_simple,
     train_complex_fbc_simple,
 )
+from .validation.empirical_validation import (
+    PhaseCoherenceValidator,
+    ValidationReport,
+    run_empirical_validation,
+)
 
 # Backward compatibility aliases (FBC naming deprecated)
 FBCPipeline = BifrostPipeline
@@ -82,4 +87,7 @@ __all__ = [
     "PhaseCoherenceMetrics",
     "train_complex_fbc_simple",
     "train_complex_bifrost_simple",
+    "PhaseCoherenceValidator",
+    "ValidationReport",
+    "run_empirical_validation",
 ]
