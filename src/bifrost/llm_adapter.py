@@ -239,7 +239,7 @@ class BifrostEnhancedLLM(nn.Module):
         # Initialize Bifrost pipeline
         self.bifrost = BifrostPipeline(
             d_model=spectral_dim,
-            n_fft=min(1024, spectral_dim * 4),
+            n_fft_s0=min(1024, spectral_dim * 4),
             use_complex_ssm=True,
         )
         
