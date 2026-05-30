@@ -128,13 +128,9 @@ class AdapterTrainer:
                 max_length=128,
             ).to(self.device)
             
-            # Convert attention_mask to float (required by some LLM implementations)
-            attention_mask = inputs.attention_mask.float() if inputs.attention_mask is not None else None
-            
             # Forward
             outputs = self.model(
                 input_ids=inputs.input_ids,
-                attention_mask=attention_mask,
                 return_spectral=True,
             )
             
@@ -197,12 +193,8 @@ class AdapterTrainer:
                     max_length=128,
                 ).to(self.device)
                 
-                # Convert attention_mask to float
-                attention_mask = inputs.attention_mask.float() if inputs.attention_mask is not None else None
-                
                 outputs = self.model(
                     input_ids=inputs.input_ids,
-                    attention_mask=attention_mask,
                     return_spectral=True,
                 )
                 

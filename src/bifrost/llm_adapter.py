@@ -357,8 +357,11 @@ class BifrostEnhancedLLM(nn.Module):
         num_layers = len(self.llm.layers) if hasattr(self.llm, 'layers') else len(self.llm.h)
         layers = self.llm.layers if hasattr(self.llm, 'layers') else self.llm.h
         
+        # Note: We don't pass attention_mask to individual layers because GPT2's
+        # SDPA attention expects it in a specific format. The model handles
+        # padding via pad_token_id set during tokenizer initialization.
         for i in range(min(self.adapter_layer, num_layers)):
-            layer_outputs = layers[i](hidden, attention_mask=attention_mask)
+            layer_outputs = layers[i](hidden)
             hidden = layer_outputs[0] if isinstance(layer_outputs, tuple) else layer_outputs
         
         # ↓↓↓ SPECTRAL ADAPTER INJECTION ↓↓↓
@@ -373,7 +376,7 @@ class BifrostEnhancedLLM(nn.Module):
         
         # Second half: standard LLM layers
         for i in range(self.adapter_layer, num_layers):
-            layer_outputs = layers[i](hidden, attention_mask=attention_mask)
+            layer_outputs = layers[i](hidden)
             hidden = layer_outputs[0] if isinstance(layer_outputs, tuple) else layer_outputs
         
         # Final layer norm
