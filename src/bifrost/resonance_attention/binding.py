@@ -205,10 +205,11 @@ class SpectralBinding(nn.Module):
         #   Fall through to resonance.forward with phase_orig (may collapse eventually
         #   but keeps the module usable independently of the pipeline).
         if canonical_phase is not None:
-            # phase_orig already set to resized canonical_phase (B, T_target, d_model)
+            # Use interpolated phase (d_model dims) for learned coherence computation
+            # phase_orig (n_freq dims) is reserved for harmonic coherence computation only
             # Compute coherence in (B, 1, T, T) using _phase_coherence with single band
             # — no learned parameters involved.
-            ph = self.resonance._reshape_heads(phase_orig.float())  # (B, H, T, d_head)
+            ph = self.resonance._reshape_heads(phase.float())  # (B, H, T, d_head)
             precomp_coh = self.resonance._phase_coherence(ph, ph)   # (B, H, T, T)
             bound, coherence = self.resonance(
                 amp_proj,
