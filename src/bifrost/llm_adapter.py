@@ -32,6 +32,7 @@ from bifrost import BifrostPipeline, SpectralTensor
 class SpectralAdapterOutput:
     """Output container for spectral-enhanced generation."""
     logits: torch.Tensor
+    hidden_states: torch.Tensor
     spectral: Optional[SpectralTensor] = None
     coherence_score: Optional[float] = None
     uncertainty: Optional[torch.Tensor] = None
@@ -400,11 +401,12 @@ class BifrostEnhancedLLM(nn.Module):
         if return_spectral:
             return SpectralAdapterOutput(
                 logits=logits,
+                hidden_states=hidden,
                 spectral=spectral,
                 coherence_score=coherence,
                 uncertainty=spectral.uncertainty.mean(dim=-1) if spectral else None,
             )
-        
+
         return logits
     
     def _forward_input(

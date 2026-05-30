@@ -134,8 +134,8 @@ class AdapterTrainer:
                 return_spectral=True,
             )
             
-            # Classification (use first token / CLS)
-            logits = self.classifier(outputs.logits[:, 0, :])
+            # Classification (use first token / CLS hidden state, not vocab logits)
+            logits = self.classifier(outputs.hidden_states[:, 0, :])
             
             # Task loss
             labels_tensor = torch.tensor(batch_labels, device=self.device)
@@ -197,8 +197,8 @@ class AdapterTrainer:
                     input_ids=inputs.input_ids,
                     return_spectral=True,
                 )
-                
-                logits = self.classifier(outputs.logits[:, 0, :])
+
+                logits = self.classifier(outputs.hidden_states[:, 0, :])
                 labels_tensor = torch.tensor(batch_labels, device=self.device)
                 
                 pred = logits.argmax(dim=-1)
