@@ -257,10 +257,15 @@ def find_optimal_blend_ratio(
     print(f"Device: {device}")
     print()
     
+    # NOTE: Blend ratio validation requires use_complex_ssm=False
+    # The harmonic_blend_ratio only affects the dual-stream SSM path where
+    # use_original_phase=True (n_freq_in is set, triggering projection).
+    # With complex SSM, the decomposer already outputs d_model dims, so
+    # no projection is needed and the blend ratio has no effect.
     pipeline = BifrostPipeline(
         d_model=d_model,
         n_fft_s0=n_fft,
-        use_complex_ssm=True,
+        use_complex_ssm=False,  # Required for blend ratio testing
     ).to(device)
     pipeline.eval()
     
