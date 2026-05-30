@@ -535,6 +535,25 @@ class SemanticCoherenceTrainer:
             coherence_semantic_correlation=correlation,
         )
 
+    def save_checkpoint(self, path: str):
+        """Save trainer state to checkpoint file."""
+        torch.save({
+            'pipeline_state': self.pipeline.state_dict(),
+            'coherence_extractor': self.coherence_extractor.state_dict(),
+            'classifier': self.classifier.state_dict(),
+            'optimizer': self.optimizer.state_dict(),
+            'metrics_history': self.metrics_history,
+        }, path)
+
+    def load_checkpoint(self, path: str):
+        """Load trainer state from checkpoint file."""
+        checkpoint = torch.load(path, map_location=self.device)
+        self.pipeline.load_state_dict(checkpoint['pipeline_state'])
+        self.coherence_extractor.load_state_dict(checkpoint['coherence_extractor'])
+        self.classifier.load_state_dict(checkpoint['classifier'])
+        self.optimizer.load_state_dict(checkpoint['optimizer'])
+        self.metrics_history = checkpoint.get('metrics_history', [])
+
 
 def train_semantic_coherence(
     pipeline: BifrostPipeline,
