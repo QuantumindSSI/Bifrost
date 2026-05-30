@@ -180,9 +180,9 @@ def main():
             waveforms = waveforms.to(device)
             labels = labels.to(device)
             
-            # Flatten batch for pipeline input
-            B = waveforms.shape[0]
-            signals = [waveforms[i, 0, :] for i in range(B)]
+            # Bifrost pipeline expects (B, T) tensor, not list
+            # waveforms is (B, 1, T), squeeze to (B, T)
+            signals = waveforms.squeeze(1)  # (B, T)
             
             # Training step
             metrics = trainer.train_step(signals, labels)
