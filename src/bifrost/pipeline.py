@@ -271,9 +271,16 @@ class BifrostPipeline(nn.Module):
                 # Add attractor info to metadata
                 bound_st.metadata['s3_attractors'] = len(attractors)
                 bound_st.metadata['attractor_stabilities'] = [a.stability for a in attractors]
-            except Exception:
-                # Silently skip if attractor learning fails
-                pass
+            except Exception as e:
+                # Log error per policy C-02 (no silent failures)
+                import warnings
+                warnings.warn(
+                    f"S3 Attractor Learning failed: {str(e)}. Skipping attractor extraction.",
+                    RuntimeWarning,
+                    stacklevel=2
+                )
+                bound_st.metadata['s3_attractors'] = 0
+                bound_st.metadata['attractor_error'] = str(e)
         
         return bound_st, coherence
 
