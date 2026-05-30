@@ -65,10 +65,12 @@ class BifrostPipeline(nn.Module):
         use_complex_ssm: bool = True,  # Default: complex-valued SSM for true phase coherence
         use_harmonic_binding: bool = False,  # Wire HarmonicBinding (explicit 440Hz↔4880Hz grid)
         sample_rate: float = 16000.0,  # Used by HarmonicBinding frequency grid
+        use_s3_attractor: bool = True,  # Enable learned S3 attractor dynamics (CRITICAL_AUDIT fix)
     ) -> None:
         super().__init__()
         self.use_complex_ssm = use_complex_ssm
         self.use_harmonic_binding = use_harmonic_binding
+        self.use_s3_attractor = use_s3_attractor
         
         # === CRITICAL AUDIT WARNINGS ===
         # Per Agentic CTO-Persona policy, these limitations are explicitly disclosed
@@ -77,7 +79,6 @@ class BifrostPipeline(nn.Module):
         # === S3 ATTRACTOR LEARNING MODULE (OPTIONAL) ===
         # Per CRITICAL_AUDIT.md remediation: Integrate learned attractor dynamics
         # This replaces the placeholder stability=0.5 with learned stability prediction
-        self.use_s3_attractor = True  # Enable by default for new implementations
         if self.use_s3_attractor:
             try:
                 from .s3_attractor.attractor_learning import AttractorLearningModule
