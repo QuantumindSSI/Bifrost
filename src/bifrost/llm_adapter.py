@@ -57,6 +57,12 @@ class SpectralProjector(nn.Module):
         # Project back to d_model
         self.to_hidden = nn.Linear(spectral_dim * 4, d_model)
         
+        # === UNCERTAINTY CALIBRATION ===
+        # Learnable temperature for scaling (initially 1.0, learned during training)
+        self.uncertainty_temperature = nn.Parameter(torch.tensor(1.0))
+        # Learnable bias for shifting uncertainty baseline
+        self.uncertainty_bias = nn.Parameter(torch.tensor(0.0))
+        
         # Initialize with small weights for stability
         nn.init.xavier_uniform_(self.to_spectral.weight, gain=0.01)
         nn.init.xavier_uniform_(self.to_hidden.weight, gain=0.01)
@@ -87,7 +93,12 @@ class SpectralProjector(nn.Module):
         amplitude = spectral_flat[:, :, 0, :].abs() + 1e-8  # Ensure positive
         phase = torch.tanh(spectral_flat[:, :, 1, :]) * 3.14159  # Bound to [-π, π]
         scale = spectral_flat[:, :, 2, :].abs() + 1e-8  # Ensure positive
-        uncertainty = spectral_flat[:, :, 3, :].abs()  # Non-negative
+        
+        # Uncertainty with learned calibration (temperature scaling + bias)
+        raw_uncertainty = spectral_flat[:, :, 3, :]
+        uncertainty = (raw_uncertainty.abs() * F.softplus(self.uncertainty_temperature) 
+                        + self.uncertainty_bias)
+        uncertainty = torch.sigmoid(uncertainty)  # Scale to [0, 1] for probabilistic interpretation
         
         spectral = SpectralTensor(
             amplitude=amplitude,
