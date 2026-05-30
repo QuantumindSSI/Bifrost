@@ -263,6 +263,11 @@ class SpectralBinding(nn.Module):
             # This preserves harmonic structure while allowing learned adaptation
             # Ratio is empirically validated on ground-truth harmonic signals
             h_ratio = self.harmonic_blend_ratio
+            # DEBUG: Print coherence stats to verify blend is working
+            print(f"[DEBUG] blend_ratio={h_ratio:.2f}, coherence_orig_mean={coherence_orig.mean():.4f}, "
+                  f"coherence_learned_mean={coherence.mean():.4f}, "
+                  f"coherence_orig_std={coherence_orig.std():.4f}, "
+                  f"coherence_learned_std={coherence.std():.4f}")
             coherence = h_ratio * coherence_orig_expanded + (1.0 - h_ratio) * coherence
 
             # Re-normalise blended weights and re-aggregate V so bound reflects harmonics
