@@ -25,9 +25,9 @@ from typing import Optional
 import torch
 import numpy as np
 
-from . import FBCPipeline, HarmonicBinding, create_multimodal_pipeline
+from . import BifrostPipeline, HarmonicBinding, create_multimodal_pipeline
 from .spectral_tensor import SpectralTensor
-from .complex_training import ComplexFBCTrainer, PhaseCoherenceMetrics
+from .complex_training import ComplexBifrostTrainer, PhaseCoherenceMetrics
 
 
 def cmd_process(args: argparse.Namespace) -> int:
@@ -42,7 +42,7 @@ def cmd_process(args: argparse.Namespace) -> int:
         import torchaudio
         audio, sr = torchaudio.load(args.input)
         
-        pipeline = FBCPipeline(
+        pipeline = BifrostPipeline(
             n_fft_s0=args.n_fft,
             n_fft_s1=args.n_fft // 2,
             d_model=args.d_model,
@@ -205,7 +205,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
     import torchaudio
     audio, sr = torchaudio.load(args.input)
     
-    pipeline = FBCPipeline(
+    pipeline = BifrostPipeline(
         n_fft_s0=1024,
         n_fft_s1=512,
         d_model=128,

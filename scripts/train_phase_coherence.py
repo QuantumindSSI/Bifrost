@@ -46,7 +46,7 @@ _repo_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_repo_root / "src"))
 
 from bifrost import BifrostPipeline
-from bifrost.training import FBCTrainer as BifrostTrainer
+from bifrost.training import BifrostTrainer as BifrostTrainer
 from bifrost.contrastive_loss import ContrastivePhaseLoss
 
 

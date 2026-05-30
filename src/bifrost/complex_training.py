@@ -181,7 +181,7 @@ class PhaseCoherenceMetrics:
         return normalized_corr
 
 
-class ComplexFBCTrainer:
+class ComplexBifrostTrainer:
     """
     Trainer for ComplexSpectralDecomposer with proper complex-valued objectives.
 
@@ -444,7 +444,7 @@ def train_complex_bifrost_simple(
         >>> loader = DataLoader(dataset, batch_size=8)
         >>> results = train_complex_fbc_simple(decomp, loader, epochs=20)
     """
-    trainer = ComplexFBCTrainer(
+    trainer = ComplexBifrostTrainer(
         decomposer=decomposer,
         lr=1e-4,
         device=device,

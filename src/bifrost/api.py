@@ -31,8 +31,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
-from . import FBCPipeline, HarmonicBinding, create_multimodal_pipeline
-from .complex_training import ComplexFBCTrainer, PhaseCoherenceMetrics
+from . import BifrostPipeline, HarmonicBinding, create_multimodal_pipeline
+from .complex_training import ComplexBifrostTrainer, PhaseCoherenceMetrics
 from .spectral_tensor import SpectralTensor
 
 
@@ -112,7 +112,7 @@ async def process_file(
             # Load audio
             audio_tensor, sr = torchaudio.load(io.BytesIO(contents))
             
-            pipeline = FBCPipeline(
+            pipeline = BifrostPipeline(
                 n_fft_s0=n_fft,
                 n_fft_s1=n_fft // 2,
                 d_model=d_model,

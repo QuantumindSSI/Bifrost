@@ -11,7 +11,7 @@ import torch
 from bifrost.ingest import IngestPipeline, Modality, TextTokenizer
 from bifrost.ingest.decoders.text import TextDecoder, TensorDecoder
 from bifrost.bridge import bridge_to_canonicalizer
-from bifrost.pipeline import FBCPipeline
+from bifrost.pipeline import BifrostPipeline
 
 
 class TestTextDecoder:
@@ -179,7 +179,7 @@ class TestTextPipeline:
         signal, enriched_meta = bridge_to_canonicalizer(array, meta)
 
         # Run through FBC pipeline
-        pipeline = FBCPipeline(
+        pipeline = BifrostPipeline(
             n_fft_s0=64,
             n_fft_s1=32,
             d_model=64,

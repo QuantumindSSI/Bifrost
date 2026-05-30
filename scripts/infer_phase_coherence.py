@@ -15,15 +15,15 @@ import torchaudio
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from bifrost.pipeline import FBCPipeline
+from bifrost.pipeline import BifrostPipeline
 
 
-def load_model(checkpoint_path: str, device: str = "cuda") -> FBCPipeline:
+def load_model(checkpoint_path: str, device: str = "cuda") -> BifrostPipeline:
     """Load trained model from checkpoint."""
     checkpoint = torch.load(checkpoint_path, map_location=device)
     
     d_model = checkpoint.get("d_model", 128)
-    pipeline = FBCPipeline(
+    pipeline = BifrostPipeline(
         d_model=d_model,
         n_fft=1024,
         use_harmonic_binding=False,
@@ -36,7 +36,7 @@ def load_model(checkpoint_path: str, device: str = "cuda") -> FBCPipeline:
     return pipeline
 
 
-def run_inference(pipeline: FBCPipeline, audio_path: str, device: str = "cuda"):
+def run_inference(pipeline: BifrostPipeline, audio_path: str, device: str = "cuda"):
     """Run inference on audio file."""
     # Load audio
     waveform, sample_rate = torchaudio.load(audio_path)

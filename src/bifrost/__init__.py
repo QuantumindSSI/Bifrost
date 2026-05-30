@@ -17,10 +17,10 @@ from .resonance_attention.harmonic_binding import (
     HarmonicFrequencyGrid,
 )
 from .phase_lock_bridge import PhaseLockBridge, FrequencyAttractor
-from .pipeline import FBCPipeline
+from .pipeline import BifrostPipeline
 from .bridge import bridge_to_canonicalizer
 from .ingest import IngestPipeline, Modality as IngestModality
-from .training import FBCTrainer, NextFramePredictionLoss, train_fbc_simple
+from .training import BifrostTrainer, NextFramePredictionLoss, train_fbc_simple
 from .multimodal_pipeline import (
     MultiModalSpectralPipeline,
     Modality,
@@ -35,17 +35,17 @@ from .s1_decomposer.complex_decomposer import (
     ComplexLinear,
 )
 from .complex_training import (
-    ComplexFBCTrainer,
+    ComplexBifrostTrainer,
     ComplexNextStepLoss,
     PhaseCoherenceMetrics,
     train_complex_bifrost_simple,
     train_complex_fbc_simple,
 )
 
-# New Bifröst naming aliases (backward compatibility maintained)
-BifrostPipeline = FBCPipeline
-BifrostTrainer = FBCTrainer
-ComplexBifrostTrainer = ComplexFBCTrainer
+# Backward compatibility aliases (FBC naming deprecated)
+FBCPipeline = BifrostPipeline
+FBCTrainer = BifrostTrainer
+ComplexFBCTrainer = ComplexBifrostTrainer
 
 __all__ = [
     "SpectralTensor",
@@ -58,13 +58,13 @@ __all__ = [
     "HarmonicFrequencyGrid",
     "PhaseLockBridge",
     "FrequencyAttractor",
-    "FBCPipeline",
     "BifrostPipeline",
+    "FBCPipeline",
     "bridge_to_canonicalizer",
     "IngestPipeline",
     "IngestModality",
-    "FBCTrainer",
     "BifrostTrainer",
+    "FBCTrainer",
     "NextFramePredictionLoss",
     "train_fbc_simple",
     "MultiModalSpectralPipeline",
@@ -76,8 +76,8 @@ __all__ = [
     "ComplexSpectralDecomposer",
     "ComplexSelectiveScan",
     "ComplexLinear",
-    "ComplexFBCTrainer",
     "ComplexBifrostTrainer",
+    "ComplexFBCTrainer",
     "ComplexNextStepLoss",
     "PhaseCoherenceMetrics",
     "train_complex_fbc_simple",

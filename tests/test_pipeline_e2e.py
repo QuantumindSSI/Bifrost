@@ -4,13 +4,13 @@ import pytest
 import numpy as np
 import torch
 
-from bifrost.pipeline import FBCPipeline
+from bifrost.pipeline import BifrostPipeline
 from bifrost.spectral_tensor import SpectralTensor
 
 
 @pytest.fixture
 def pipeline():
-    return FBCPipeline(
+    return BifrostPipeline(
         n_fft_s0=256,
         n_fft_s1=256,
         n_scales=4,
@@ -21,7 +21,7 @@ def pipeline():
     )
 
 
-class TestFBCPipelineE2E:
+class TestBifrostPipelineE2E:
     def test_sine_wave(self, pipeline):
         sr = 16000
         t = torch.linspace(0, 1.0, sr)

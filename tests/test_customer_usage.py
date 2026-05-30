@@ -13,11 +13,11 @@ Run: python tests/test_customer_usage.py
 import torch
 import numpy as np
 from bifrost import (
-    FBCPipeline,
+    BifrostPipeline,
     create_multimodal_pipeline,
     HarmonicBinding,
     PhaseCoherenceMetrics,
-    ComplexFBCTrainer,
+    ComplexBifrostTrainer,
 )
 from bifrost.spectral_tensor import SpectralTensor
 
@@ -29,7 +29,7 @@ def test_basic_fbc_pipeline():
     print("="*60)
 
     # Create pipeline (complex SSM is now default!)
-    pipeline = FBCPipeline(
+    pipeline = BifrostPipeline(
         n_fft_s0=1024,
         n_fft_s1=512,
         d_model=128,

@@ -28,7 +28,7 @@ from .resonance_attention import ResonanceAttention, SpectralBinding
 from .resonance_attention.harmonic_binding import HarmonicBinding
 
 
-class FBCPipeline(nn.Module):
+class BifrostPipeline(nn.Module):
     """
     Full canonicalize → decompose → bind pipeline.
 

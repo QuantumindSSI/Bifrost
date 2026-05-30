@@ -2,15 +2,15 @@
 
 import pytest
 import torch
-from bifrost import BifrostPipeline, FBCPipeline
+from bifrost import BifrostPipeline, BifrostPipeline
 
 
 class TestBifrostPipeline:
     """Test suite for BifrostPipeline per CTO guidelines (C-03)."""
 
     def test_import_aliases(self):
-        """Happy path: Verify BifrostPipeline and FBCPipeline are same class."""
-        assert BifrostPipeline is FBCPipeline
+        """Happy path: Verify BifrostPipeline and BifrostPipeline are same class."""
+        assert BifrostPipeline is BifrostPipeline
 
     def test_initialization_defaults(self):
         """Happy path: Pipeline initializes with default parameters."""

@@ -5,8 +5,8 @@ Self-supervised next-frame prediction enables the dual-stream SSM
 to learn temporal phase coherence patterns.
 
 Usage:
-    from bifrost.training import FBCTrainer, BifrostTrainer
-    from bifrost.pipeline import FBCPipeline, BifrostPipeline
+    from bifrost.training import BifrostTrainer, BifrostTrainer
+    from bifrost.pipeline import BifrostPipeline, BifrostPipeline
 
     pipeline = BifrostPipeline(d_model=128, use_mamba=True)
     trainer = BifrostTrainer(pipeline, lr=1e-3)
@@ -30,7 +30,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import LambdaLR
 
 from .spectral_tensor import SpectralTensor
-from .pipeline import FBCPipeline
+from .pipeline import BifrostPipeline
 
 
 class ContrastiveCoherenceLoss(nn.Module):
@@ -124,7 +124,7 @@ class NextFramePredictionLoss(nn.Module):
         return amp_loss + self.phase_weight * phase_loss
 
 
-class FBCTrainer:
+class BifrostTrainer:
     """
     Basic trainer for Bifröst pipeline with phase coherence learning.
 
@@ -133,7 +133,7 @@ class FBCTrainer:
 
     Parameters
     ----------
-    pipeline : FBCPipeline
+    pipeline : BifrostPipeline
         The Bifröst pipeline to train
     lr : float
         Learning rate (default: 1e-3)
@@ -149,7 +149,7 @@ class FBCTrainer:
 
     def __init__(
         self,
-        pipeline: FBCPipeline,
+        pipeline: BifrostPipeline,
         lr: float = 1e-3,
         weight_decay: float = 0.01,
         grad_clip: float = 1.0,
@@ -415,24 +415,24 @@ class FBCTrainer:
 
 
 def train_fbc_simple(
-    pipeline: FBCPipeline,
+    pipeline: BifrostPipeline,
     dataloader: Any,
     epochs: int = 100,
     device: Optional[str] = None,
-) -> FBCTrainer:
+) -> BifrostTrainer:
     """
     Simple training loop for Bifröst pipeline.
 
     Args:
-        pipeline: FBCPipeline instance
+        pipeline: BifrostPipeline instance
         dataloader: PyTorch DataLoader with audio sequences
         epochs: Number of training epochs
         device: Device to train on
 
     Returns:
-        Trained FBCTrainer instance
+        Trained BifrostTrainer instance
     """
-    trainer = FBCTrainer(pipeline, device=device)
+    trainer = BifrostTrainer(pipeline, device=device)
 
     for epoch in range(epochs):
         epoch_losses = []

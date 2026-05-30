@@ -101,10 +101,10 @@ def test_fbc_mamba_integration():
 
     sys.path.insert(0, "/workspace/fbc-core/src")
 
-    from bifrost.pipeline import FBCPipeline
+    from bifrost.pipeline import BifrostPipeline
 
     # Create pipeline with Mamba enabled
-    pipeline = FBCPipeline(
+    pipeline = BifrostPipeline(
         n_fft_s0=512,
         n_fft_s1=256,
         d_model=128,
