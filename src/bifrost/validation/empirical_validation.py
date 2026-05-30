@@ -224,10 +224,10 @@ class PhaseCoherenceValidator:
         Returns:
             Stability score (0 to 1, 1 = perfectly stable)
         """
-        from ..training import ContrastivePhaseLoss
+        from ..training import ContrastiveCoherenceLoss
         
         optimizer = torch.optim.Adam(self.pipeline.parameters(), lr=learning_rate)
-        criterion = ContrastivePhaseLoss()
+        criterion = ContrastiveCoherenceLoss()
         
         losses = []
         grad_norms = []
@@ -236,15 +236,15 @@ class PhaseCoherenceValidator:
             # Generate synthetic batch
             real_signal = torch.randn(2, 512).to(self.device)
             
-            # Forward
-            bound, coherence_real = self.pipeline(real_signal)
+            # Forward - get bound output with amplitude features
+            bound_real, coherence_real = self.pipeline(real_signal)
             
             # Phase-randomized negative
             noise_signal = real_signal * torch.exp(1j * torch.rand_like(real_signal) * 2 * np.pi)
-            _, coherence_noise = self.pipeline(noise_signal)
+            bound_noise, coherence_noise = self.pipeline(noise_signal)
             
-            # Loss
-            loss = criterion(coherence_real, coherence_noise)
+            # Loss - ContrastiveCoherenceLoss expects amplitude features, not coherence matrices
+            loss = criterion(bound_real.amplitude, bound_noise.amplitude)
             
             # Backward
             optimizer.zero_grad()
