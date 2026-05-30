@@ -283,8 +283,10 @@ class SemanticCoherenceTrainer:
         self.lambda_contrastive = lambda_contrastive
         
         # Phase coherence extractor
+        # Get d_model from decomposer (which is S1 stage output dim)
+        decomposer_d_model = getattr(pipeline.decomposer, 'd_model', 128)
         self.coherence_extractor = PhaseCoherenceExtractor(
-            d_model=pipeline.s2.d_model,
+            d_model=decomposer_d_model,
             coherence_dim=256,
         ).to(device)
         
