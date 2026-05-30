@@ -154,22 +154,32 @@ class SpectralFusion(nn.Module):
         Fuse original and spectral representations.
         
         Args:
-            original: (B, T, d_model) from LLM
-            spectral: (B, T, d_model) from Bifrost processing
+            original: (B, T_orig, d_model) from LLM
+            spectral: (B, T_spectral, d_model) from Bifrost processing
             
         Returns:
-            fused: (B, T, d_model) combined representation
+            fused: (B, T_orig, d_model) combined representation
         """
         # Cross-attention: spectral queries, original keys/values
+        # This allows spectral (potentially different length) to attend to original
         attn_out, _ = self.cross_attn(
             query=spectral,
             key=original,
             value=original,
         )
         
-        # Gating: dynamic weight based on content
-        gate_input = torch.cat([original, spectral], dim=-1)
-        gate = self.spectral_gate(gate_input)
+        # Project attn_out back to original length if needed
+        if attn_out.shape[1] != original.shape[1]:
+            # Interpolate to match original sequence length
+            attn_out = torch.nn.functional.interpolate(
+                attn_out.transpose(1, 2),  # (B, d_model, T_spectral)
+                size=original.shape[1],
+                mode='linear',
+                align_corners=False,
+            ).transpose(1, 2)  # (B, T_orig, d_model)
+        
+        # Gating: use original for gate computation
+        gate = self.spectral_gate(original)
         
         # Gated fusion
         fused = gate * attn_out + (1 - gate) * original
