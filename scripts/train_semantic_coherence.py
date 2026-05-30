@@ -210,10 +210,12 @@ def main():
         if len(test_signals) >= 30:
             break
     
-    eval_metrics = trainer.evaluate_semantic_coherence(test_signals, test_labels)
-    print(f"  Semantic correlation: {eval_metrics.coherence_semantic_correlation:.3f}")
-    print(f"  Retrieval recall@5: {eval_metrics.semantic_retrieval_recall:.3f}")
-    print(f"  Phase similarity accuracy: {eval_metrics.phase_similarity_accuracy:.3f}")
+    # Stack list of tensors into a single tensor for evaluation
+    test_signals_tensor = torch.stack(test_signals)
+    eval_metrics = trainer.evaluate_semantic_coherence(test_signals_tensor, torch.tensor(test_labels))
+    print(f"  Semantic correlation: {eval_metrics['coherence_semantic_correlation']:.3f}")
+    print(f"  Retrieval recall@5: {eval_metrics['semantic_retrieval_recall']:.3f}")
+    print(f"  Phase similarity accuracy: {eval_metrics['phase_similarity_accuracy']:.3f}")
     
     # Save
     save_path = Path(args.save_path)
@@ -222,7 +224,7 @@ def main():
     print(f"\nModel saved to: {save_path}")
     
     # Target check
-    if eval_metrics.coherence_semantic_correlation > 0.3:
+    if eval_metrics['coherence_semantic_correlation'] > 0.3:
         print(f"\n✅ TARGET ACHIEVED: Correlation > 0.3")
     else:
         print(f"\n⚠️  Below target (0.3). Consider:")
@@ -231,7 +233,7 @@ def main():
         print(f"   - Higher d_model")
         print(f"   - Real labeled data")
     
-    return 0 if eval_metrics.coherence_semantic_correlation > 0.3 else 1
+    return 0 if eval_metrics['coherence_semantic_correlation'] > 0.3 else 1
 
 
 if __name__ == "__main__":
