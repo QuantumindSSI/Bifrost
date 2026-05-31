@@ -20,6 +20,7 @@ import torch.nn.functional as F
 
 from ..spectral_tensor import SpectralTensor
 from .attention import ResonanceAttention
+from .harmonic_coherence import HarmonicCoherenceDetector
 
 
 class SpectralBinding(nn.Module):
@@ -63,14 +64,14 @@ class SpectralBinding(nn.Module):
         self.use_original_phase = n_freq_in is not None and n_freq_in != d_model
 
         if self.use_original_phase:
-            # Separate resonance attention for original-phase coherence
-            # Use n_heads=1 since 513 (n_freq) may not be divisible by n_heads
-            # We only need coherence computation, not multi-head attention
-            self.resonance_orig = ResonanceAttention(
-                d_model=in_dim,  # n_freq dimension for phase coherence
-                n_heads=1,  # Single head for coherence in original frequency space
-                n_bands=min(n_bands, in_dim),  # can't have more bands than features
-                dropout=0.0,  # No dropout for coherence computation
+            # Harmonic coherence detector: measures energy at harmonic frequency bins
+            # This distinguishes harmonic signals (440Hz, 880Hz, 1320Hz, etc.)
+            # from inharmonic signals (energy spread across non-harmonic frequencies)
+            self.harmonic_coherence = HarmonicCoherenceDetector(
+                n_freq=in_dim,
+                n_harmonics=5,  # f, 2f, 3f, 4f, 5f
+                base_freq=None,  # Auto-detect from amplitude spectrum
+                sample_rate=16000.0,  # Default sample rate
             )
             # Linear layer to map coherence from n_freq space to d_model for aggregation
             self.coherence_proj = nn.Linear(in_dim, d_model)
@@ -249,12 +250,12 @@ class SpectralBinding(nn.Module):
 
         # Compute coherence in ORIGINAL n_freq space to preserve harmonic structure
         if self.use_original_phase and phase_orig.shape[-1] != self.d_model:
-            # Compute phase coherence in original frequency space (n_freq dimension)
-            # This preserves harmonic relationships (440Hz, 880Hz, etc. are distinct)
+            # Compute harmonic coherence: energy concentration at harmonic frequency bins
+            # This distinguishes harmonic signals (440Hz, 880Hz, 1320Hz, etc.)
+            # from inharmonic signals (energy spread across non-harmonic frequencies)
             # CRITICAL: Use amp_orig (original n_freq dims), not projected amp (d_model dims)
-            # resonance_orig expects input with n_freq dimensions for W_v projection
-            _, coherence_orig = self.resonance_orig(amp_orig, phase=phase_orig)
-            # coherence_orig: (B, 1, T, T) computed from full n_freq-dim phase
+            _, coherence_orig = self.harmonic_coherence(amp_orig, phase=phase_orig, n_fft=512)
+            # coherence_orig: (B, 1, T, T) computed from harmonic energy concentration
 
             # Broadcast original-phase coherence to all heads
             coherence_orig_expanded = coherence_orig.expand(-1, n_heads, -1, -1)
