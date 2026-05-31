@@ -209,15 +209,17 @@ class SpectralBinding(nn.Module):
             else:
                 phase_orig = cp.float()
 
-            # For learned coherence path, interpolate BOTH temporal AND frequency dimensions
-            if cp.shape[-1] != self.d_model or cp.shape[1] != T_target:
+            # For learned coherence path, interpolate frequency dimension if needed
+            # Temporal dimension already matched above (lines 198-208)
+            if cp.shape[-1] != self.d_model:
                 F_target = self.d_model
                 cp_f = cp.float()
                 # Phase is circular (wraps at ±π). Naive linear interpolation destroys
                 # variance at wrap boundaries (e.g. interpolating +π and -π gives 0).
                 # Correct approach: interpolate cos(φ) and sin(φ) (both smooth, bounded
                 # in [-1,1]), then recover angle via atan2. Preserves circular structure.
-                cos_cp = torch.cos(cp_f).unsqueeze(1)  # (B, 1, T_s0, F_s0)
+                # Temporal dimension already matched (T_target), only interpolate frequency.
+                cos_cp = torch.cos(cp_f).unsqueeze(1)  # (B, 1, T_target, F_s0)
                 sin_cp = torch.sin(cp_f).unsqueeze(1)
                 cos_r = F.interpolate(
                     cos_cp, size=(T_target, F_target), mode='bilinear', align_corners=False,
