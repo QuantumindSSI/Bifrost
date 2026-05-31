@@ -261,6 +261,7 @@ class BifrostPipeline(nn.Module):
                 decomposed,
                 input_proj=self._decomp_to_bind_proj,
                 canonical_phase=canonical.phase,
+                canonical_amplitude=canonical.amplitude,  # Raw STFT amplitude for harmonic detection
             )
         
         # === S3 ATTRACTOR LEARNING (Optional) ===

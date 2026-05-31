@@ -88,6 +88,7 @@ class SpectralBinding(nn.Module):
         st: SpectralTensor,
         input_proj: Optional[nn.Linear] = None,
         canonical_phase: Optional[torch.Tensor] = None,
+        canonical_amplitude: Optional[torch.Tensor] = None,
     ) -> Tuple[SpectralTensor, torch.Tensor]:
         """
         Parameters
@@ -98,6 +99,9 @@ class SpectralBinding(nn.Module):
             External projection layer if n_freq != d_model.
         canonical_phase : torch.Tensor, optional
             Raw STFT phase from S0 Canonicaliser (B, n_freq) or (B, T, n_freq).
+        canonical_amplitude : torch.Tensor, optional
+            Raw STFT amplitude from S0 Canonicaliser (B, n_freq) or (B, T, n_freq).
+            Used for harmonic coherence detection to preserve harmonic structure.
             When supplied, this is used for coherence computation instead of
             st.phase — it has passed through zero learned projections and
             cannot collapse to a constant, making it collapse-proof.
@@ -253,8 +257,21 @@ class SpectralBinding(nn.Module):
             # Compute harmonic coherence: energy concentration at harmonic frequency bins
             # This distinguishes harmonic signals (440Hz, 880Hz, 1320Hz, etc.)
             # from inharmonic signals (energy spread across non-harmonic frequencies)
-            # CRITICAL: Use amp_orig (original n_freq dims), not projected amp (d_model dims)
-            _, coherence_orig = self.harmonic_coherence(amp_orig, phase=phase_orig, n_fft=512)
+            # CRITICAL: Use canonical_amplitude (raw STFT amplitude from S0), not decomposed amplitude
+            # The decomposed amplitude has been transformed by S1 and may not preserve harmonic structure
+            if canonical_amplitude is not None:
+                # Use raw STFT amplitude for harmonic detection
+                amp_for_harmonic = canonical_amplitude
+                # Temporally interpolate to match phase_orig dimensions if needed
+                if amp_for_harmonic.shape[1] != phase_orig.shape[1]:
+                    amp_for_harmonic = F.interpolate(
+                        amp_for_harmonic.unsqueeze(1), size=(phase_orig.shape[1], amp_for_harmonic.shape[-1]),
+                        mode='bilinear', align_corners=False
+                    ).squeeze(1)
+            else:
+                # Fallback to amp_orig if canonical_amplitude not available
+                amp_for_harmonic = amp_orig
+            _, coherence_orig = self.harmonic_coherence(amp_for_harmonic, phase=phase_orig, n_fft=512)
             # coherence_orig: (B, 1, T, T) computed from harmonic energy concentration
 
             # Broadcast original-phase coherence to all heads
