@@ -118,6 +118,101 @@ class SpectralProjector(nn.Module):
         
         return spectral, reconstructed
     
+    def compute_uncertainty_calibration_loss(
+        self,
+        predictions: torch.Tensor,
+        targets: torch.Tensor,
+        uncertainties: torch.Tensor,
+        n_bins: int = 10,
+    ) -> Tuple[torch.Tensor, Dict[str, float]]:
+        """
+        Compute uncertainty calibration loss using Expected Calibration Error (ECE).
+        
+        Encourages predicted uncertainty to match actual prediction error.
+        Higher uncertainty should correlate with higher error.
+        
+        Args:
+            predictions: (B, T, d_model) model predictions
+            targets: (B, T, d_model) ground truth targets
+            uncertainties: (B, T, d_model) predicted uncertainties in [0, 1]
+            n_bins: Number of bins for ECE computation
+            
+        Returns:
+            calibration_loss: Scalar loss for backprop
+            metrics: Dict with ECE, reliability diagram stats
+        """
+        # Compute absolute error
+        errors = (predictions - targets).abs()  # (B, T, d_model)
+        
+        # Normalize errors to [0, 1] for comparison with uncertainty
+        error_max = errors.max() + 1e-8
+        errors_normalized = errors / error_max
+        
+        # Compute Expected Calibration Error (ECE)
+        # Bin predictions by uncertainty, compute accuracy vs confidence
+        bin_boundaries = torch.linspace(0, 1, n_bins + 1, device=predictions.device)
+        bin_lowers = bin_boundaries[:-1]
+        bin_uppers = bin_boundaries[1:]
+        
+        ece = 0.0
+        bin_metrics = []
+        
+        for bin_lower, bin_upper in zip(bin_lowers, bin_uppers):
+            # Mask for samples in this bin
+            in_bin = (uncertainties >= bin_lower) & (uncertainties < bin_upper)
+            bin_count = in_bin.sum().item()
+            
+            if bin_count > 0:
+                # Average uncertainty (confidence) in bin
+                avg_uncertainty = uncertainties[in_bin].mean().item()
+                # Average error in bin
+                avg_error = errors_normalized[in_bin].mean().item()
+                # Weight by bin size
+                bin_weight = bin_count / uncertainties.numel()
+                # ECE contribution: |confidence - accuracy| * weight
+                ece += abs(avg_uncertainty - avg_error) * bin_weight
+                
+                bin_metrics.append({
+                    "bin_lower": bin_lower.item(),
+                    "bin_upper": bin_upper.item(),
+                    "count": bin_count,
+                    "avg_uncertainty": avg_uncertainty,
+                    "avg_error": avg_error,
+                })
+        
+        # Calibration loss: minimize ECE + encourage proper uncertainty ordering
+        # Loss 1: ECE (direct calibration)
+        ece_loss = torch.tensor(ece, device=predictions.device)
+        
+        # Loss 2: Ranking loss - higher uncertainty should correlate with higher error
+        # Use Spearman correlation approximation
+        error_flat = errors_normalized.flatten()
+        uncertainty_flat = uncertainties.flatten()
+        
+        # Compute correlation
+        error_mean = error_flat.mean()
+        uncertainty_mean = uncertainty_flat.mean()
+        error_std = error_flat.std() + 1e-8
+        uncertainty_std = uncertainty_flat.std() + 1e-8
+        
+        correlation = ((error_flat - error_mean) * (uncertainty_flat - uncertainty_mean)).mean()
+        correlation = correlation / (error_std * uncertainty_std)
+        
+        # We want positive correlation (higher uncertainty = higher error)
+        correlation_loss = -correlation  # Negative because we want to maximize correlation
+        
+        # Total loss
+        total_loss = ece_loss + 0.1 * correlation_loss
+        
+        metrics = {
+            "ece": ece,
+            "correlation": correlation.item(),
+            "avg_uncertainty": uncertainties.mean().item(),
+            "avg_error": errors_normalized.mean().item(),
+        }
+        
+        return total_loss, metrics
+    
     def spectral_to_hidden(self, spectral: SpectralTensor) -> torch.Tensor:
         """Convert SpectralTensor back to hidden representation."""
         spectral_flat = torch.cat([

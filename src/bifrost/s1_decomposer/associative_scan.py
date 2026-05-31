@@ -127,16 +127,13 @@ def complex_associative_scan(
         a = a[:, :L, :, :]
         b = b[:, :L, :, :]
     
-    # === COMPUTE OUTPUTS ===
-    # h_t = a_t * h_prev + b_t (where h_prev is h_{t-1})
-    h_states = []
-    h = h_prev
+    # === PARALLEL OUTPUT COMPUTATION ===
+    # After down-sweep, a[t] and b[t] represent the cumulative transformation
+    # from initial state to time t: h_t = a_t * h_0 + b_t
+    # This is computed in parallel - no loop needed
     
-    for t in range(L):
-        h = a[:, t] * h + b[:, t]
-        h_states.append(h)
-    
-    h_seq = torch.stack(h_states, dim=1)  # (B, L, d_inner, d_state)
+    # h_seq[t] = a[t] * h_0 + b[t] for all t in parallel
+    h_seq = a * h_prev.unsqueeze(1) + b  # (B, L, d_inner, d_state)
     
     # Output: y_t = C_t @ h_t + D @ x_t
     y = torch.einsum('bls,blds->bld', C, h_seq)  # (B, L, d_inner)

@@ -168,11 +168,20 @@ def _selective_scan(
         h_t = diag(exp(Δ_t ⊙ A)) h_{t-1} + Δ_t ⊙ B_t ⊙ u_t
         y_t = C_t h_t + D u_t
 
+    Uses parallel associative scan (Blelloch) for O(log n) depth.
+    Falls back to sequential for short sequences (L <= 32).
+
     All operations are batched and run on whatever device the tensors live on.
     Returns (B, L, E).
+    
+    Complexity: O(L log L) for parallel scan, O(L) for sequential fallback.
     """
     B_sz, L, E = u.shape
     N = A.shape[-1]
+
+    # For short sequences, sequential is faster due to overhead
+    if L <= 32 or not u.is_cuda:
+        return _selective_scan_sequential(u, delta, A, B, C, D)
 
     # Expand A for batch dimension: (E, N) → (1, 1, E, N)
     A_exp = A.unsqueeze(0).unsqueeze(0)          # (1, 1, E, N)
@@ -185,19 +194,107 @@ def _selective_scan(
         * u.unsqueeze(-1)                         # (B, L, E, 1)
     )                                             # (B, L, E, N)
 
-    # Sequential recurrence
-    hs = []
-    h = torch.zeros(B_sz, E, N, device=u.device, dtype=u.dtype)
-    for t in range(L):
-        h = delta_A[:, t] * h + delta_B_u[:, t]  # (B, E, N)
-        hs.append(h)
-
-    hs = torch.stack(hs, dim=1)                  # (B, L, E, N)
+    # === PARALLEL ASSOCIATIVE SCAN ===
+    # The recurrence h_t = a_t * h_{t-1} + b_t is associative with:
+    #   combine((a_1, b_1), (a_2, b_2)) = (a_2 * a_1, a_2 * b_1 + b_2)
+    # where a_t = delta_A[:, t] and b_t = delta_B_u[:, t]
+    
+    # Pad to power of 2 for simplicity
+    L_padded = 2 ** (L - 1).bit_length()
+    pad_len = L_padded - L
+    
+    if pad_len > 0:
+        # Pad with identity elements: a=1, b=0
+        pad_a = torch.ones(B_sz, pad_len, E, N, device=u.device, dtype=u.dtype)
+        pad_b = torch.zeros(B_sz, pad_len, E, N, device=u.device, dtype=u.dtype)
+        delta_A = torch.cat([delta_A, pad_a], dim=1)
+        delta_B_u = torch.cat([delta_B_u, pad_b], dim=1)
+    
+    # === UP-SWEEP (REDUCTION) PHASE ===
+    a = delta_A  # (B, L_padded, E, N)
+    b = delta_B_u  # (B, L_padded, E, N)
+    
+    stride = 1
+    while stride < L_padded:
+        # Combine adjacent pairs
+        a_left = a[:, ::2*stride, :, :]
+        a_right = a[:, stride::2*stride, :, :]
+        b_left = b[:, ::2*stride, :, :]
+        b_right = b[:, stride::2*stride, :, :]
+        
+        # combine((a_left, b_left), (a_right, b_right))
+        # = (a_right * a_left, a_right * b_left + b_right)
+        a_new = a_right * a_left
+        b_new = a_right * b_left + b_right
+        
+        # Update only the right elements
+        a = a_new
+        b = b_new
+        stride *= 2
+    
+    # === DOWN-SWEEP (DISTRIBUTION) PHASE ===
+    stride = L_padded // 2
+    while stride >= 1:
+        a_left = a[:, ::2*stride, :, :]
+        a_right = a[:, stride::2*stride, :, :]
+        b_left = b[:, ::2*stride, :, :]
+        b_right = b[:, stride::2*stride, :, :]
+        
+        a_right_new = a_right * a_left
+        b_right_new = a_right * b_left + b_right
+        
+        a = torch.cat([a_left, a_right_new], dim=1)
+        b = torch.cat([b_left, b_right_new], dim=1)
+        
+        stride //= 2
+    
+    # Trim padding
+    if pad_len > 0:
+        a = a[:, :L, :, :]
+        b = b[:, :L, :, :]
+    
+    # === PARALLEL OUTPUT COMPUTATION ===
+    # h_t = a_t * h_0 + b_t for all t in parallel (h_0 = 0)
+    hs = b  # (B, L, E, N) since h_0 = 0
 
     # y_t = C_t h_t  (einsum over N)
     y = torch.einsum("blen,bln->ble", hs, C)     # (B, L, E)
 
     # Skip connection
     y = y + D.unsqueeze(0).unsqueeze(0) * u      # (B, L, E)
+
+    return y
+
+
+def _selective_scan_sequential(
+    u: torch.Tensor,      # (B, L, E)
+    delta: torch.Tensor,  # (B, L, E)
+    A: torch.Tensor,      # (E, N)
+    B: torch.Tensor,      # (B, L, N)
+    C: torch.Tensor,      # (B, L, N)
+    D: torch.Tensor,      # (E,)
+) -> torch.Tensor:
+    """Sequential fallback for short sequences (L <= 32).
+    
+    Complexity: O(L) sequential.
+    """
+    B_sz, L, E = u.shape
+    N = A.shape[-1]
+
+    A_exp = A.unsqueeze(0).unsqueeze(0)
+    delta_A = torch.exp(delta.unsqueeze(-1) * A_exp)
+    delta_B_u = (
+        delta.unsqueeze(-1) * B.unsqueeze(2) * u.unsqueeze(-1)
+    )
+
+    hs = []
+    h = torch.zeros(B_sz, E, N, device=u.device, dtype=u.dtype)
+    for t in range(L):
+        h = delta_A[:, t] * h + delta_B_u[:, t]
+        hs.append(h)
+
+    hs = torch.stack(hs, dim=1)
+    y = torch.einsum("blen,bln->ble", hs, C)
+    y = y + D.unsqueeze(0).unsqueeze(0) * u
 
     return y

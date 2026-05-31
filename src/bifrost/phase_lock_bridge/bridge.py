@@ -29,6 +29,7 @@ import torch.nn.functional as F
 from .attractor import FrequencyAttractor
 from .phase_lock_detector import TruePhaseLockDetector, PhaseLockState
 from ..spectral_tensor import SpectralTensor
+from ..s3_attractor.attractor_learning import AttractorLearningModule
 
 
 @dataclass
@@ -77,6 +78,9 @@ class PhaseLockBridge(nn.Module):
         band_threshold: float = 0.5,
         activation_threshold: float = 0.6,
         use_true_phase_lock: bool = True,  # Use temporal consistency + coupling
+        d_model: int = 768,
+        n_attractors: int = 16,
+        use_learned_stability: bool = True,  # Use S3 learned stability instead of placeholder
     ) -> None:
         super().__init__()
         self.n_bands = n_bands
@@ -84,6 +88,9 @@ class PhaseLockBridge(nn.Module):
         self.band_threshold = band_threshold
         self.activation_threshold = activation_threshold
         self.use_true_phase_lock = use_true_phase_lock
+        self.use_learned_stability = use_learned_stability
+        self.d_model = d_model
+        self.n_attractors = n_attractors
 
         # Learnable band importance weights
         self.band_weights = nn.Parameter(torch.ones(n_bands) / n_bands)
@@ -93,6 +100,14 @@ class PhaseLockBridge(nn.Module):
             n_bands=n_bands,
             coupling_strength=0.5,
         )
+        
+        # S3 Attractor Learning Module for learned stability
+        if use_learned_stability:
+            self.attractor_learner = AttractorLearningModule(
+                d_model=d_model,
+                n_bands=n_bands,
+                n_attractors=n_attractors,
+            )
 
     # ── Core scoring ───────────────────────────────────────────────────
 
@@ -221,8 +236,8 @@ class PhaseLockBridge(nn.Module):
 
     # ── S2 output → attractor extraction (bridge to S3) ───────────────
 
-    @staticmethod
     def extract_attractors_from_s2(
+        self,
         st: SpectralTensor,
         n_bands: int = 8,
         domain: str = "unknown",
@@ -232,9 +247,8 @@ class PhaseLockBridge(nn.Module):
         Convert an S2 SpectralTensor into a list of FrequencyAttractors
         (one per channel / sequence position).
 
-        This is the bridge interface between S2 output and S3 attractor
-        identification.  In Phase 2, this will be replaced by a learned
-        attractor discovery module.
+        Uses learned stability from S3 AttractorLearningModule if available,
+        otherwise falls back to placeholder stability=0.5.
         """
         amp = st.amplitude
         phase = st.phase
@@ -253,25 +267,58 @@ class PhaseLockBridge(nn.Module):
         d = amp.shape[-1]
         band_size = max(1, d // n_bands)
 
-        for i in range(amp.shape[0]):
-            # Phase signature: mean phase per band
-            ps_bands = []
-            for b in range(n_bands):
-                start = b * band_size
-                end = start + band_size if b < n_bands - 1 else d
-                ps_bands.append(phase[i, start:end].mean())
-            phase_sig = torch.stack(ps_bands)
-
-            attractors.append(
-                FrequencyAttractor(
-                    centroid=amp[i],
-                    phase_signature=phase_sig,
-                    amplitude_profile=amp[i],
-                    stability=0.5,  # placeholder until S3 refines
-                    domain=domain,
-                    attractor_id=f"{prefix}_{i:04d}",
-                    metadata={**st.metadata, "position": i},
-                )
+        # Use learned stability if attractor_learner is available
+        if self.use_learned_stability and hasattr(self, 'attractor_learner'):
+            # Create a temporary SpectralTensor for the learner
+            temp_spectral = SpectralTensor(
+                amplitude=amp,
+                phase=phase,
+                scale=st.scale if hasattr(st, 'scale') else torch.ones_like(amp),
+                uncertainty=st.uncertainty if hasattr(st, 'uncertainty') else torch.zeros_like(amp),
+                metadata=st.metadata,
             )
+            learned_attractors, _ = self.attractor_learner(temp_spectral)
+            
+            # Map learned attractors to our extracted ones
+            for i in range(min(amp.shape[0], len(learned_attractors))):
+                ps_bands = []
+                for b in range(n_bands):
+                    start = b * band_size
+                    end = start + band_size if b < n_bands - 1 else d
+                    ps_bands.append(phase[i, start:end].mean())
+                phase_sig = torch.stack(ps_bands)
+
+                attractors.append(
+                    FrequencyAttractor(
+                        centroid=amp[i],
+                        phase_signature=phase_sig,
+                        amplitude_profile=amp[i],
+                        stability=learned_attractors[i].stability,  # Learned stability
+                        domain=domain,
+                        attractor_id=f"{prefix}_{i:04d}",
+                        metadata={**st.metadata, "position": i, "stability_source": "learned"},
+                    )
+                )
+        else:
+            # Fallback to placeholder stability
+            for i in range(amp.shape[0]):
+                ps_bands = []
+                for b in range(n_bands):
+                    start = b * band_size
+                    end = start + band_size if b < n_bands - 1 else d
+                    ps_bands.append(phase[i, start:end].mean())
+                phase_sig = torch.stack(ps_bands)
+
+                attractors.append(
+                    FrequencyAttractor(
+                        centroid=amp[i],
+                        phase_signature=phase_sig,
+                        amplitude_profile=amp[i],
+                        stability=0.5,  # placeholder until S3 refines
+                        domain=domain,
+                        attractor_id=f"{prefix}_{i:04d}",
+                        metadata={**st.metadata, "position": i, "stability_source": "placeholder"},
+                    )
+                )
 
         return attractors
