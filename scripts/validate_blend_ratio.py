@@ -193,6 +193,8 @@ def test_blend_ratio(
     try:
         # Test on harmonic signal (should preserve structure)
         harmonic_signal = generate_harmonic_chord(base_freq=440.0).to(device)
+        if not torch.isfinite(harmonic_signal).all():
+            raise ValueError("harmonic_signal contains NaN or Inf values")
 
         with torch.no_grad():
             harmonic_spectral, harmonic_coherence = pipeline(harmonic_signal)
@@ -203,6 +205,8 @@ def test_blend_ratio(
 
         # Test on inharmonic signal (should show different response)
         inharmonic_signal = generate_inharmonic_chord().to(device)
+        if not torch.isfinite(inharmonic_signal).all():
+            raise ValueError("inharmonic_signal contains NaN or Inf values")
 
         with torch.no_grad():
             inharmonic_spectral, inharmonic_coherence = pipeline(inharmonic_signal)
@@ -210,6 +214,13 @@ def test_blend_ratio(
         inharmonic_metrics = measure_harmonic_preservation(
             inharmonic_spectral, base_freq=440.0, sample_rate=16000
         )
+
+        # Validate coherence tensors have same shape
+        if harmonic_coherence.shape != inharmonic_coherence.shape:
+            raise ValueError(
+                f"Coherence shape mismatch: harmonic {harmonic_coherence.shape} vs "
+                f"inharmonic {inharmonic_coherence.shape}"
+            )
 
         # Discrimination score: how well does it separate harmonic from inharmonic?
         # Measure coherence difference directly (what the blend ratio affects)

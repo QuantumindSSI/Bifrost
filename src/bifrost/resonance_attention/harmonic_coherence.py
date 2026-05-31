@@ -44,6 +44,43 @@ class HarmonicCoherenceDetector(nn.Module):
         base_freq: Optional[float] = None,
         sample_rate: float = 16000.0,
     ) -> None:
+        """
+        Initialize harmonic coherence detector.
+
+        Parameters
+        ----------
+        n_freq : int
+            Number of frequency bins (e.g., 257 for n_fft=512). Must be > 0.
+        n_harmonics : int
+            Number of harmonics to consider (e.g., 5 for f, 2f, 3f, 4f, 5f). Must be > 0.
+        base_freq : float, optional
+            Base frequency in Hz. If None, auto-detected from amplitude spectrum.
+            Must be > 0 if provided.
+        sample_rate : float
+            Sample rate in Hz (default: 16000). Must be > 0.
+
+        Raises
+        ------
+        ValueError
+            If n_freq <= 0, n_harmonics <= 0, sample_rate <= 0, or base_freq <= 0.
+
+        Complexity
+        ----------
+        O(1) - initialization only.
+
+        Side Effects
+        ------------
+        Registers learnable parameter or buffer for base frequency.
+        """
+        if n_freq <= 0:
+            raise ValueError(f"n_freq must be > 0, got {n_freq}")
+        if n_harmonics <= 0:
+            raise ValueError(f"n_harmonics must be > 0, got {n_harmonics}")
+        if sample_rate <= 0:
+            raise ValueError(f"sample_rate must be > 0, got {sample_rate}")
+        if base_freq is not None and base_freq <= 0:
+            raise ValueError(f"base_freq must be > 0 if provided, got {base_freq}")
+
         super().__init__()
         self.n_freq = n_freq
         self.n_harmonics = n_harmonics
@@ -58,7 +95,22 @@ class HarmonicCoherenceDetector(nn.Module):
             self.learned_base_freq = None
 
     def _get_base_freq(self) -> float:
-        """Get base frequency (learned or fixed)."""
+        """
+        Get base frequency (learned or fixed).
+
+        Returns
+        -------
+        float
+            Base frequency in Hz.
+
+        Complexity
+        ----------
+        O(1) - single item retrieval.
+
+        Side Effects
+        ------------
+        None.
+        """
         if self.learned_base_freq is not None:
             return self.learned_base_freq.item()
         return self.base_freq_buffer.item()
@@ -67,12 +119,32 @@ class HarmonicCoherenceDetector(nn.Module):
         """
         Get frequency bin indices for harmonics of base frequency.
 
-        Args:
-            n_fft: FFT size used to compute frequency resolution.
+        Args
+        ----
+        n_fft : int
+            FFT size used to compute frequency resolution. Must be > 0.
 
-        Returns:
+        Returns
+        -------
+        torch.Tensor
             Tensor of harmonic bin indices (n_harmonics,).
+
+        Raises
+        ------
+        ValueError
+            If n_fft <= 0.
+
+        Complexity
+        ----------
+        O(n_harmonics) - iterates over harmonic indices.
+
+        Side Effects
+        ------------
+        None.
         """
+        if n_fft <= 0:
+            raise ValueError(f"n_fft must be > 0, got {n_fft}")
+
         base = self._get_base_freq()
         freq_resolution = self.sample_rate / n_fft
 
@@ -80,7 +152,7 @@ class HarmonicCoherenceDetector(nn.Module):
         for h in range(1, self.n_harmonics + 1):
             harmonic_freq = h * base
             bin_idx = int(round(harmonic_freq / freq_resolution))
-            if bin_idx < self.n_freq:
+            if 0 <= bin_idx < self.n_freq:
                 harmonic_bins.append(bin_idx)
 
         return torch.tensor(harmonic_bins, dtype=torch.long)
@@ -93,13 +165,43 @@ class HarmonicCoherenceDetector(nn.Module):
         """
         Compute energy at harmonic frequency bins.
 
-        Args:
-            amplitude: (B, T, n_freq) amplitude spectrum.
-            harmonic_bins: (n_harmonics,) bin indices.
+        Args
+        ----
+        amplitude : torch.Tensor
+            (B, T, n_freq) amplitude spectrum. Must be 3D and finite.
+        harmonic_bins : torch.Tensor
+            (n_harmonics,) bin indices. Must be within [0, n_freq).
 
-        Returns:
+        Returns
+        -------
+        torch.Tensor
             (B, T, n_harmonics) energy at harmonic bins.
+
+        Raises
+        ------
+        ValueError
+            If amplitude is not 3D, if harmonic_bins indices are out of bounds,
+            or if amplitude contains NaN/Inf.
+
+        Complexity
+        ----------
+        O(B * T * n_harmonics) - tensor indexing operation.
+
+        Side Effects
+        ------------
+        None.
         """
+        if amplitude.dim() != 3:
+            raise ValueError(f"amplitude must be 3D (B, T, n_freq), got shape {amplitude.shape}")
+        if not torch.isfinite(amplitude).all():
+            raise ValueError("amplitude contains NaN or Inf values")
+        if harmonic_bins.numel() == 0:
+            raise ValueError("harmonic_bins is empty")
+        if (harmonic_bins < 0).any() or (harmonic_bins >= amplitude.shape[-1]).any():
+            raise ValueError(
+                f"harmonic_bins indices out of bounds [0, {amplitude.shape[-1]}): {harmonic_bins.tolist()}"
+            )
+
         # Extract energy at harmonic bins
         harmonic_energy = amplitude[..., harmonic_bins]  # (B, T, n_harmonics)
         return harmonic_energy
@@ -115,12 +217,34 @@ class HarmonicCoherenceDetector(nn.Module):
         High harmonic energy ratio = harmonic signal.
         Low harmonic energy ratio = inharmonic signal.
 
-        Args:
-            harmonic_energy: (B, T, n_harmonics) energy at harmonic bins.
+        Args
+        ----
+        harmonic_energy : torch.Tensor
+            (B, T, n_harmonics) energy at harmonic bins. Must be 3D and finite.
 
-        Returns:
+        Returns
+        -------
+        torch.Tensor
             (B, 1, T, T) coherence matrix.
+
+        Raises
+        ------
+        ValueError
+            If harmonic_energy is not 3D or contains NaN/Inf.
+
+        Complexity
+        ----------
+        O(B * T^2) - batch matrix multiplication for outer product.
+
+        Side Effects
+        ------------
+        None.
         """
+        if harmonic_energy.dim() != 3:
+            raise ValueError(f"harmonic_energy must be 3D (B, T, n_harmonics), got shape {harmonic_energy.shape}")
+        if not torch.isfinite(harmonic_energy).all():
+            raise ValueError("harmonic_energy contains NaN or Inf values")
+
         B, T, H = harmonic_energy.shape
 
         # Compute harmonic energy ratio: sum of harmonic energy / total energy
@@ -146,15 +270,46 @@ class HarmonicCoherenceDetector(nn.Module):
         """
         Compute harmonic coherence matrix.
 
-        Args:
-            amplitude: (B, T, n_freq) amplitude spectrum.
-            phase: (B, T, n_freq) phase spectrum (unused, kept for interface).
-            n_fft: FFT size for frequency resolution.
+        Args
+        ----
+        amplitude : torch.Tensor
+            (B, T, n_freq) amplitude spectrum. Must be 3D and finite.
+        phase : torch.Tensor
+            (B, T, n_freq) phase spectrum (unused, kept for interface compatibility).
+            Must match amplitude shape.
+        n_fft : int
+            FFT size for frequency resolution. Must be > 0.
 
-        Returns:
-            bound: Dummy output (same as amplitude, for interface compatibility).
-            coherence: (B, 1, T, T) harmonic coherence matrix.
+        Returns
+        -------
+        torch.Tensor
+            Dummy output (same as amplitude, for interface compatibility).
+        torch.Tensor
+            (B, 1, T, T) harmonic coherence matrix.
+
+        Raises
+        ------
+        ValueError
+            If amplitude or phase have invalid shapes, contain NaN/Inf,
+            or if n_fft <= 0.
+
+        Complexity
+        ----------
+        O(n_harmonics + B * T * n_harmonics + B * T^2) - bin computation + energy extraction + coherence.
+
+        Side Effects
+        ------------
+        None.
         """
+        if amplitude.dim() != 3:
+            raise ValueError(f"amplitude must be 3D (B, T, n_freq), got shape {amplitude.shape}")
+        if phase.shape != amplitude.shape:
+            raise ValueError(f"phase shape {phase.shape} must match amplitude shape {amplitude.shape}")
+        if not torch.isfinite(amplitude).all():
+            raise ValueError("amplitude contains NaN or Inf values")
+        if not torch.isfinite(phase).all():
+            raise ValueError("phase contains NaN or Inf values")
+
         # Get harmonic frequency bins
         harmonic_bins = self._get_harmonic_bins(n_fft)
 

@@ -257,6 +257,10 @@ class BifrostPipeline(nn.Module):
                     "Provide longer signals for meaningful phase-coherence routing.",
                     stacklevel=2,
                 )
+            # Validate canonical has amplitude attribute
+            if not hasattr(canonical, 'amplitude') or canonical.amplitude is None:
+                raise ValueError("canonical must have amplitude attribute for harmonic coherence detection")
+
             bound_st, coherence = self.binding(
                 decomposed,
                 input_proj=self._decomp_to_bind_proj,

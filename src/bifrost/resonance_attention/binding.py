@@ -91,19 +91,23 @@ class SpectralBinding(nn.Module):
         canonical_amplitude: Optional[torch.Tensor] = None,
     ) -> Tuple[SpectralTensor, torch.Tensor]:
         """
+        Compute coherence-weighted spectral binding with harmonic structure preservation.
+
         Parameters
         ----------
         st : SpectralTensor
             Output of decomposition.  ``st.amplitude`` shape: ``(batch, channels, n_freq)``.
+            Must have amplitude, phase, scale, uncertainty attributes.
         input_proj : nn.Linear, optional
             External projection layer if n_freq != d_model.
         canonical_phase : torch.Tensor, optional
             Raw STFT phase from S0 Canonicaliser (B, n_freq) or (B, T, n_freq).
+            Used for harmonic coherence computation to preserve harmonic structure.
         canonical_amplitude : torch.Tensor, optional
             Raw STFT amplitude from S0 Canonicaliser (B, n_freq) or (B, T, n_freq).
             Used for harmonic coherence detection to preserve harmonic structure.
             When supplied, this is used for coherence computation instead of
-            st.phase — it has passed through zero learned projections and
+            st.amplitude — it has passed through zero learned projections and
             cannot collapse to a constant, making it collapse-proof.
 
         Returns
@@ -112,11 +116,40 @@ class SpectralBinding(nn.Module):
             Coherence-weighted spectral embedding.
         coherence : torch.Tensor
             (batch, n_heads, seq, seq) coherence weights for diagnostics.
+
+        Raises
+        ------
+        ValueError
+            If st is not a SpectralTensor, if required attributes are None,
+            if input tensors have invalid shapes, or if tensors contain NaN/Inf.
+
+        Complexity
+        ----------
+        O(B * T^2 * d_model) - attention computation with coherence weighting.
+
+        Side Effects
+        ------------
+        Modifies internal resonance attention state.
         """
+        # Input validation
+        if not hasattr(st, 'amplitude') or st.amplitude is None:
+            raise ValueError("st must have amplitude attribute")
+        if not hasattr(st, 'phase') or st.phase is None:
+            raise ValueError("st must have phase attribute")
+        if not hasattr(st, 'scale') or st.scale is None:
+            raise ValueError("st must have scale attribute")
+        if not hasattr(st, 'uncertainty') or st.uncertainty is None:
+            raise ValueError("st must have uncertainty attribute")
+
         amp = st.amplitude   # (B, T, n_freq) or (B, n_freq)
         phase = st.phase
         scale = st.scale
         uncertainty = st.uncertainty
+
+        if not torch.isfinite(amp).all():
+            raise ValueError("amplitude contains NaN or Inf values")
+        if not torch.isfinite(phase).all():
+            raise ValueError("phase contains NaN or Inf values")
 
         # Ensure 3-D: (batch, seq_len, features)
         needs_squeeze = False
@@ -148,6 +181,8 @@ class SpectralBinding(nn.Module):
         # Solution: Keep canonical_phase at original n_freq dimensions for coherence_orig,
         # only interpolate if needed for the legacy path (when use_original_phase is False).
         if canonical_phase is not None:
+            if not torch.isfinite(canonical_phase).all():
+                raise ValueError("canonical_phase contains NaN or Inf values")
             cp = canonical_phase
             # Normalise to exactly 3D (B, T_s0, n_freq_s0) regardless of input dims.
             if cp.dim() == 2:
@@ -260,6 +295,8 @@ class SpectralBinding(nn.Module):
             # CRITICAL: Use canonical_amplitude (raw STFT amplitude from S0), not decomposed amplitude
             # The decomposed amplitude has been transformed by S1 and may not preserve harmonic structure
             if canonical_amplitude is not None:
+                if not torch.isfinite(canonical_amplitude).all():
+                    raise ValueError("canonical_amplitude contains NaN or Inf values")
                 # Use raw STFT amplitude for harmonic detection
                 amp_for_harmonic = canonical_amplitude
                 # Temporally interpolate to match phase_orig dimensions if needed
