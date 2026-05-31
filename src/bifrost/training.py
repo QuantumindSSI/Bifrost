@@ -55,6 +55,22 @@ class ContrastiveCoherenceLoss(nn.Module):
     """
 
     def __init__(self, margin: float = 0.0) -> None:
+        """
+        Initialize contrastive coherence loss.
+
+        Parameters
+        ----------
+        margin : float
+            Unused (kept for API compatibility).
+
+        Complexity
+        ----------
+        O(1) - initialization only.
+
+        Side Effects
+        ------------
+        None.
+        """
         super().__init__()
         # Margin kept for API compatibility; not used in ratio loss.
 
@@ -76,15 +92,37 @@ class ContrastiveCoherenceLoss(nn.Module):
         - Is not destroyed by softmax compression (75000:1 dynamic range loss)
         - The canonical STFT phase controls coherence; W_v learns what to route
 
-        Args:
-            feat_real:  SpectralTensor or (B, T, D) amplitude from real signal.
-            feat_noise: SpectralTensor or (B, T, D) amplitude from noise signal.
+        Args
+        ----
+        feat_real : torch.Tensor or SpectralTensor
+            (B, T, D) amplitude from real signal. Must be finite.
+        feat_noise : torch.Tensor or SpectralTensor
+            (B, T, D) amplitude from noise signal. Must be finite.
 
-        Returns:
+        Returns
+        -------
+        torch.Tensor
             Scalar loss. Minimising this maximises var(feat_real) - var(feat_noise).
+
+        Raises
+        ------
+        ValueError
+            If inputs contain NaN or Inf values.
+
+        Complexity
+        ----------
+        O(N) - where N is total number of elements in input tensors.
+
+        Side Effects
+        ------------
+        None.
         """
         amp_real = feat_real.amplitude if hasattr(feat_real, 'amplitude') else feat_real
         amp_noise = feat_noise.amplitude if hasattr(feat_noise, 'amplitude') else feat_noise
+        if not torch.isfinite(amp_real).all():
+            raise ValueError("feat_real contains NaN or Inf values")
+        if not torch.isfinite(amp_noise).all():
+            raise ValueError("feat_noise contains NaN or Inf values")
         var_real = amp_real.var()
         var_noise = amp_noise.var().detach()
         # Normalised gap loss: maximise var_real / var_noise, not var_real alone.
@@ -107,6 +145,29 @@ class NextFramePredictionLoss(nn.Module):
     """
 
     def __init__(self, phase_weight: float = 0.5) -> None:
+        """
+        Initialize next-frame prediction loss.
+
+        Parameters
+        ----------
+        phase_weight : float
+            Weight for phase loss component. Must be in [0, 1].
+
+        Raises
+        ------
+        ValueError
+            If phase_weight not in [0, 1].
+
+        Complexity
+        ----------
+        O(1) - initialization only.
+
+        Side Effects
+        ------------
+        None.
+        """
+        if not (0.0 <= phase_weight <= 1.0):
+            raise ValueError(f"phase_weight must be in [0, 1], got {phase_weight}")
         super().__init__()
         self.phase_weight = phase_weight
 
@@ -115,6 +176,42 @@ class NextFramePredictionLoss(nn.Module):
         pred: SpectralTensor,
         target: SpectralTensor,
     ) -> torch.Tensor:
+        """
+        Compute next-frame prediction loss.
+
+        Args
+        ----
+        pred : SpectralTensor
+            Predicted spectral tensor. Must be finite.
+        target : SpectralTensor
+            Target spectral tensor. Must be finite.
+
+        Returns
+        -------
+        torch.Tensor
+            Combined amplitude and phase loss.
+
+        Raises
+        ------
+        ValueError
+            If inputs contain NaN or Inf values.
+
+        Complexity
+        ----------
+        O(N) - where N is total number of elements in input tensors.
+
+        Side Effects
+        ------------
+        None.
+        """
+        if not torch.isfinite(pred.amplitude).all():
+            raise ValueError("pred.amplitude contains NaN or Inf values")
+        if not torch.isfinite(pred.phase).all():
+            raise ValueError("pred.phase contains NaN or Inf values")
+        if not torch.isfinite(target.amplitude).all():
+            raise ValueError("target.amplitude contains NaN or Inf values")
+        if not torch.isfinite(target.phase).all():
+            raise ValueError("target.phase contains NaN or Inf values")
         amp_loss = F.mse_loss(pred.amplitude, target.amplitude)
         phase_diff = torch.atan2(
             (pred.phase - target.phase).sin(),
@@ -156,6 +253,46 @@ class BifrostTrainer:
         warmup_steps: int = 1000,
         device: Optional[str] = None,
     ) -> None:
+        """
+        Initialize Bifrost trainer.
+
+        Parameters
+        ----------
+        pipeline : BifrostPipeline
+            The Bifröst pipeline to train.
+        lr : float
+            Learning rate. Must be > 0.
+        weight_decay : float
+            Weight decay for regularization. Must be >= 0.
+        grad_clip : float
+            Gradient clipping threshold. Must be > 0.
+        warmup_steps : int
+            Number of warmup steps for LR schedule. Must be >= 0.
+        device : str, optional
+            Device to train on. Defaults to auto-detect.
+
+        Raises
+        ------
+        ValueError
+            If lr <= 0, weight_decay < 0, grad_clip <= 0, or warmup_steps < 0.
+
+        Complexity
+        ----------
+        O(1) - initialization only.
+
+        Side Effects
+        ------------
+        Moves pipeline to device, initializes optimizer and scheduler.
+        """
+        if lr <= 0:
+            raise ValueError(f"lr must be > 0, got {lr}")
+        if weight_decay < 0:
+            raise ValueError(f"weight_decay must be >= 0, got {weight_decay}")
+        if grad_clip <= 0:
+            raise ValueError(f"grad_clip must be > 0, got {grad_clip}")
+        if warmup_steps < 0:
+            raise ValueError(f"warmup_steps must be >= 0, got {warmup_steps}")
+
         self.pipeline = pipeline
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.pipeline.to(self.device)

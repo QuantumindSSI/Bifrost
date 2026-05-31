@@ -35,10 +35,10 @@ def bridge_to_canonicalizer(
 
     Returns
     -------
-    signal : torch.Tensor
+    torch.Tensor
         Float32 tensor shaped ``(channels, samples)`` for audio / 1-D,
         or ``(channels, H*W)`` for images (rows flattened into a signal).
-    metadata : dict
+    dict
         Enriched copy of the input metadata.
 
     Raises
@@ -46,7 +46,15 @@ def bridge_to_canonicalizer(
     TypeError
         If *data* is not a numeric array (e.g. text/JSON).
     ValueError
-        If the array shape cannot be resolved.
+        If the array shape cannot be resolved or contains NaN/Inf values.
+
+    Complexity
+    ----------
+    O(N) - where N is total number of elements in data array.
+
+    Side Effects
+    ------------
+    None.
     """
     modality = metadata.get("format", "").lower()
     content_type = metadata.get("content_type", "").lower()
@@ -88,6 +96,27 @@ bridge_to_s0 = bridge_to_canonicalizer
 # ---------------------------------------------------------------------------
 
 def _is_audio(meta: Dict[str, Any]) -> bool:
+    """
+    Check if metadata indicates audio modality.
+
+    Args
+    ----
+    meta : dict
+        Metadata dictionary.
+
+    Returns
+    -------
+    bool
+        True if audio modality detected.
+
+    Complexity
+    ----------
+    O(1) - dictionary lookups.
+
+    Side Effects
+    ------------
+    None.
+    """
     return meta.get("format") in {"wav", "mp3", "flac", "ogg"} or "sample_rate" in meta
 
 
@@ -100,7 +129,36 @@ def _canonicalize_audio(
 
     scipy WAV returns ``(samples,)`` for mono and ``(samples, channels)``
     for stereo.  librosa returns ``(channels, samples)``.
+
+    Args
+    ----
+    data : np.ndarray
+        Audio data array. Must be finite.
+    meta : dict
+        Metadata dictionary.
+
+    Returns
+    -------
+    torch.Tensor
+        Float32 tensor shaped (channels, samples).
+    dict
+        Updated metadata.
+
+    Raises
+    ------
+    ValueError
+        If data contains NaN or Inf values.
+
+    Complexity
+    ----------
+    O(N) - where N is total number of elements in data array.
+
+    Side Effects
+    ------------
+    None.
     """
+    if not np.isfinite(data).all():
+        raise ValueError("Audio data contains NaN or Inf values")
     arr = data.astype(np.float32) if data.dtype != np.float32 else data
     channels = meta.get("channels", 1)
 
@@ -130,6 +188,27 @@ def _canonicalize_audio(
 # ---------------------------------------------------------------------------
 
 def _is_image(meta: Dict[str, Any]) -> bool:
+    """
+    Check if metadata indicates image modality.
+
+    Args
+    ----
+    meta : dict
+        Metadata dictionary.
+
+    Returns
+    -------
+    bool
+        True if image modality detected.
+
+    Complexity
+    ----------
+    O(1) - dictionary lookups.
+
+    Side Effects
+    ------------
+    None.
+    """
     return meta.get("format") in {"png", "jpg", "jpeg", "tiff", "tif", "bmp"} or "color_space" in meta
 
 
@@ -143,7 +222,36 @@ def _canonicalize_image(
     Input layouts:
         - Grayscale: ``(H, W)`` → ``(1, H*W)``
         - Color:     ``(H, W, C)`` → ``(C, H*W)``
+
+    Args
+    ----
+    data : np.ndarray
+        Image data array. Must be finite.
+    meta : dict
+        Metadata dictionary.
+
+    Returns
+    -------
+    torch.Tensor
+        Float32 tensor shaped (channels, H*W).
+    dict
+        Updated metadata.
+
+    Raises
+    ------
+    ValueError
+        If data contains NaN or Inf values or has invalid dimensions.
+
+    Complexity
+    ----------
+    O(N) - where N is total number of elements in data array.
+
+    Side Effects
+    ------------
+    None.
     """
+    if not np.isfinite(data).all():
+        raise ValueError("Image data contains NaN or Inf values")
     arr = data.astype(np.float32) if data.dtype != np.float32 else data
 
     if arr.ndim == 2:
@@ -171,7 +279,27 @@ def _canonicalize_image(
 # ---------------------------------------------------------------------------
 
 def _is_text(meta: Dict[str, Any]) -> bool:
-    """Check if metadata indicates text modality."""
+    """
+    Check if metadata indicates text modality.
+
+    Args
+    ----
+    meta : dict
+        Metadata dictionary.
+
+    Returns
+    -------
+    bool
+        True if text modality detected.
+
+    Complexity
+    ----------
+    O(1) - dictionary lookups.
+
+    Side Effects
+    ------------
+    None.
+    """
     return meta.get("format") in {"csv", "json", "parquet", "txt"} or meta.get("embedding") is not None
 
 
@@ -187,9 +315,45 @@ def _canonicalize_text(
         - Already-processed numeric arrays from TextDecoder
         - Raw string documents (via TextTokenizer)
         - List of strings
+
+    Args
+    ----
+    data : np.ndarray or str or list
+        Text data or pre-processed numeric array.
+    meta : dict
+        Metadata dictionary.
+    embedding_dim : int
+        Embedding dimension for tokenization. Must be > 0.
+
+    Returns
+    -------
+    torch.Tensor
+        Float32 tensor shaped (features, samples).
+    dict
+        Updated metadata.
+
+    Raises
+    ------
+    ValueError
+        If embedding_dim <= 0, data contains NaN/Inf values, or invalid type.
+    TypeError
+        If data is not str, list, or np.ndarray.
+
+    Complexity
+    ----------
+    O(N * L) - where N is number of texts and L is average text length.
+
+    Side Effects
+    ------------
+    None.
     """
+    if embedding_dim <= 0:
+        raise ValueError(f"embedding_dim must be > 0, got {embedding_dim}")
+
     # Case 1: Already numeric from TextDecoder
     if isinstance(data, np.ndarray):
+        if not np.isfinite(data).all():
+            raise ValueError("Text data contains NaN or Inf values")
         arr = data.astype(np.float32) if data.dtype != np.float32 else data
 
         # Ensure shape is (features, samples)
@@ -244,7 +408,36 @@ def _canonicalize_tensor(
     If ``metadata["channel_axis"]`` is provided, use it.
     Otherwise assume the last axis is the sample/time axis and the
     preceding axes are batch/channel.
+
+    Args
+    ----
+    data : np.ndarray
+        Generic tensor data. Must be finite.
+    meta : dict
+        Metadata dictionary.
+
+    Returns
+    -------
+    torch.Tensor
+        Float32 tensor shaped (channels, samples).
+    dict
+        Updated metadata.
+
+    Raises
+    ------
+    ValueError
+        If data contains NaN or Inf values.
+
+    Complexity
+    ----------
+    O(N) - where N is total number of elements in data array.
+
+    Side Effects
+    ------------
+    None.
     """
+    if not np.isfinite(data).all():
+        raise ValueError("Tensor data contains NaN or Inf values")
     arr = data.astype(np.float32) if data.dtype != np.float32 else data
 
     channel_axis = meta.get("channel_axis")
