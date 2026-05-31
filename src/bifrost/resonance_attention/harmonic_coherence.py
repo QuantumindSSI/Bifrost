@@ -109,10 +109,11 @@ class HarmonicCoherenceDetector(nn.Module):
         harmonic_energy: torch.Tensor,
     ) -> torch.Tensor:
         """
-        Compute coherence matrix based on harmonic energy similarity.
+        Compute coherence matrix based on harmonic energy concentration.
 
-        For each time step, compute similarity of harmonic energy profiles.
-        High similarity = both have energy at same harmonics = harmonic signal.
+        For each time step, compute the ratio of energy at harmonic bins vs total energy.
+        High harmonic energy ratio = harmonic signal.
+        Low harmonic energy ratio = inharmonic signal.
 
         Args:
             harmonic_energy: (B, T, n_harmonics) energy at harmonic bins.
@@ -122,15 +123,19 @@ class HarmonicCoherenceDetector(nn.Module):
         """
         B, T, H = harmonic_energy.shape
 
-        # Normalize energy profiles per time step
-        energy_norm = F.normalize(harmonic_energy, p=2, dim=-1)  # (B, T, H)
+        # Compute harmonic energy ratio: sum of harmonic energy / total energy
+        # Since we only have harmonic energy, use the mean as the harmonic strength
+        harmonic_strength = harmonic_energy.mean(dim=-1, keepdim=True)  # (B, T, 1)
 
-        # Compute cosine similarity between all time pairs using matmul
-        # energy_norm: (B, T, H) -> (B, T, H) @ (B, H, T) -> (B, T, T)
-        similarity = torch.matmul(energy_norm, energy_norm.transpose(1, 2))  # (B, T, T)
-        similarity = similarity.unsqueeze(1)  # (B, 1, T, T)
+        # Compute coherence as outer product of harmonic strength
+        # High harmonic strength at both time indices = high coherence
+        coherence = torch.bmm(
+            harmonic_strength,  # (B, T, 1)
+            harmonic_strength.transpose(1, 2),  # (B, 1, T)
+        )  # (B, T, T)
+        coherence = coherence.unsqueeze(1)  # (B, 1, T, T)
 
-        return similarity
+        return coherence
 
     def forward(
         self,
