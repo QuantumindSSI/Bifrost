@@ -125,13 +125,10 @@ class HarmonicCoherenceDetector(nn.Module):
         # Normalize energy profiles per time step
         energy_norm = F.normalize(harmonic_energy, p=2, dim=-1)  # (B, T, H)
 
-        # Compute cosine similarity between all time pairs
-        # energy_norm: (B, T, H) -> (B, T, 1, H) and (B, 1, T, H)
-        similarity = torch.bmm(
-            energy_norm.unsqueeze(2),  # (B, T, 1, H)
-            energy_norm.transpose(1, 2).unsqueeze(1),  # (B, 1, T, H)
-        )  # (B, T, T)
-        similarity = similarity.squeeze(1).unsqueeze(1)  # (B, 1, T, T)
+        # Compute cosine similarity between all time pairs using matmul
+        # energy_norm: (B, T, H) -> (B, T, H) @ (B, H, T) -> (B, T, T)
+        similarity = torch.matmul(energy_norm, energy_norm.transpose(1, 2))  # (B, T, T)
+        similarity = similarity.unsqueeze(1)  # (B, 1, T, T)
 
         return similarity
 
