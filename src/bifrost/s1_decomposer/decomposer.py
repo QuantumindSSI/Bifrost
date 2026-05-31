@@ -142,6 +142,60 @@ class SpectralDecomposer(nn.Module):
         expand: int = 2,
         d_conv: int = 4,
     ) -> None:
+        """
+        Initialize spectral decomposer.
+
+        Parameters
+        ----------
+        n_fft : int
+            FFT size for sub-band analysis. Must be > 0.
+        n_scales : int
+            Number of wavelet scales. Must be > 0.
+        d_model : int
+            SSM hidden dimension. Must be > 0.
+        wavelet_kernel : int
+            Kernel size for wavelet convolutions. Must be > 0.
+        n_frames : int
+            Number of time frames T. Must be > 0.
+        use_mamba : bool
+            If False, forces S6SelectiveScan regardless of CUDA.
+        d_state : int
+            SSM state size. Must be > 0.
+        expand : int
+            SSM expansion factor. Must be > 0.
+        d_conv : int
+            SSM conv kernel size. Must be > 0.
+
+        Raises
+        ------
+        ValueError
+            If any parameter is <= 0.
+
+        Complexity
+        ----------
+        O(1) - initialization only.
+
+        Side Effects
+        ------------
+        Registers learnable parameters: wavelet bank, projections, SSMs.
+        """
+        if n_fft <= 0:
+            raise ValueError(f"n_fft must be > 0, got {n_fft}")
+        if n_scales <= 0:
+            raise ValueError(f"n_scales must be > 0, got {n_scales}")
+        if d_model <= 0:
+            raise ValueError(f"d_model must be > 0, got {d_model}")
+        if wavelet_kernel <= 0:
+            raise ValueError(f"wavelet_kernel must be > 0, got {wavelet_kernel}")
+        if n_frames <= 0:
+            raise ValueError(f"n_frames must be > 0, got {n_frames}")
+        if d_state <= 0:
+            raise ValueError(f"d_state must be > 0, got {d_state}")
+        if expand <= 0:
+            raise ValueError(f"expand must be > 0, got {expand}")
+        if d_conv <= 0:
+            raise ValueError(f"d_conv must be > 0, got {d_conv}")
+
         super().__init__()
         self.n_fft = n_fft
         self.n_scales = n_scales
@@ -194,13 +248,35 @@ class SpectralDecomposer(nn.Module):
 
     def forward(self, st: SpectralTensor) -> SpectralTensor:
         """
-        Args:
-            st: SpectralTensor from S0. amplitude shape: (B, n_freq_in)
+        Decompose SpectralTensor into temporal multi-resolution spectral embedding.
 
-        Returns:
-            SpectralTensor with amplitude/phase shape: (B, T, n_freq)
-            where T = n_frames.
+        Args
+        ----
+        st : SpectralTensor
+            SpectralTensor from S0. amplitude shape: (B, n_freq_in). Must be finite.
+
+        Returns
+        -------
+        SpectralTensor
+            With amplitude/phase shape: (B, T, n_freq) where T = n_frames.
+
+        Raises
+        ------
+        ValueError
+            If st is not a SpectralTensor or contains NaN/Inf values.
+
+        Complexity
+        ----------
+        O(B * T * n_freq * log(n_freq)) - FFT operations per frame.
+
+        Side Effects
+        ------------
+        None.
         """
+        if not hasattr(st, 'amplitude') or st.amplitude is None:
+            raise ValueError("st must have amplitude attribute")
+        if not torch.isfinite(st.amplitude).all():
+            raise ValueError("st.amplitude contains NaN or Inf values")
         amp = st.amplitude       # (B, n_freq_in) or (n_freq_in,)
         if amp.dim() == 1:
             amp = amp.unsqueeze(0)
@@ -275,15 +351,40 @@ class SpectralDecomposer(nn.Module):
     def _per_frame_spectral(
         self, frames: torch.Tensor, B: int
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Apply wavelet bank + FFT to every frame.
-
-        Args:
-            frames: (B, T, frame_size)
-            B: batch size
-
-        Returns:
-            (amplitudes, phases) each (B, T, n_freq)
         """
+        Apply wavelet bank + FFT to every frame.
+
+        Args
+        ----
+        frames : torch.Tensor
+            (B, T, frame_size) Input frames. Must be 3D and finite.
+        B : int
+            Batch size.
+
+        Returns
+        -------
+        torch.Tensor
+            (B, T, n_freq) Amplitudes.
+        torch.Tensor
+            (B, T, n_freq) Phases.
+
+        Raises
+        ------
+        ValueError
+            If frames is not 3D or contains NaN/Inf values.
+
+        Complexity
+        ----------
+        O(B * T * n_freq * log(n_freq)) - FFT operations per frame.
+
+        Side Effects
+        ------------
+        None.
+        """
+        if frames.dim() != 3:
+            raise ValueError(f"frames must be 3D (B, T, frame_size), got shape {frames.shape}")
+        if not torch.isfinite(frames).all():
+            raise ValueError("frames contains NaN or Inf values")
         T = frames.shape[1]
         # Reshape to process all frames at once: (B*T, 1, frame_size)
         flat = frames.reshape(B * T, 1, -1)
@@ -318,16 +419,42 @@ def _frame_signal(
     signal: torch.Tensor,
     n_frames: int,
 ) -> Tuple[torch.Tensor, int]:
-    """Split signal into n_frames overlapping windows.
-
-    Args:
-        signal:   (B, L)
-        n_frames: number of output frames T
-
-    Returns:
-        frames:     (B, T, frame_size)
-        frame_size: int
     """
+    Split signal into n_frames overlapping windows.
+
+    Args
+    ----
+    signal : torch.Tensor
+        (B, L) Input signal. Must be 2D and finite.
+    n_frames : int
+        Number of output frames T. Must be > 0.
+
+    Returns
+    -------
+    torch.Tensor
+        (B, T, frame_size) Framed signal.
+    int
+        Frame size.
+
+    Raises
+    ------
+    ValueError
+        If signal is not 2D, contains NaN/Inf values, or n_frames <= 0.
+
+    Complexity
+    ----------
+    O(B * L) - unfold and padding operations.
+
+    Side Effects
+        ------------
+    None.
+    """
+    if signal.dim() != 2:
+        raise ValueError(f"signal must be 2D (B, L), got shape {signal.shape}")
+    if not torch.isfinite(signal).all():
+        raise ValueError("signal contains NaN or Inf values")
+    if n_frames <= 0:
+        raise ValueError(f"n_frames must be > 0, got {n_frames}")
     B, L = signal.shape
     # Pad if needed so we get exactly n_frames
     frame_size = max(64, math.ceil(L / n_frames) * 2)

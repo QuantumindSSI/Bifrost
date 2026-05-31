@@ -58,6 +58,44 @@ class S0Canonicalizer(nn.Module):
         preserve_frames: bool = False,
         use_2d_fft: bool = False,
     ) -> None:
+        """
+        Initialize S0 canonicalizer.
+
+        Parameters
+        ----------
+        n_fft : int
+            FFT size. Must be > 0.
+        hop_length : int, optional
+            Hop length for STFT-style windowed FFT. None → n_fft // 4. Must be > 0 if provided.
+        normalize_input : bool
+            If True, z-score normalise the input before FFT.
+        initial_uncertainty : float
+            Constant value for the initial per-element uncertainty field. Must be >= 0.
+        preserve_frames : bool
+            If True, preserve STFT frames for sequence attention.
+        use_2d_fft : bool
+            If True, use 2D FFT for spatial data (images). If False, use 1D FFT.
+
+        Raises
+        ------
+        ValueError
+            If n_fft <= 0, hop_length <= 0 if provided, or initial_uncertainty < 0.
+
+        Complexity
+        ----------
+        O(1) - initialization only.
+
+        Side Effects
+        ------------
+        Registers Hann window buffer.
+        """
+        if n_fft <= 0:
+            raise ValueError(f"n_fft must be > 0, got {n_fft}")
+        if hop_length is not None and hop_length <= 0:
+            raise ValueError(f"hop_length must be > 0 if provided, got {hop_length}")
+        if initial_uncertainty < 0:
+            raise ValueError(f"initial_uncertainty must be >= 0, got {initial_uncertainty}")
+
         super().__init__()
         self.n_fft = n_fft
         self.hop_length = hop_length or n_fft // 4
@@ -86,7 +124,7 @@ class S0Canonicalizer(nn.Module):
         signal : torch.Tensor
             1-D ``(samples,)`` or 2-D ``(channels, samples)`` raw waveform
             (time-domain), or 2-D/3-D spatial data for 2D FFT.
-            Also accepts a batch dimension.
+            Also accepts a batch dimension. Must be finite.
         metadata : dict, optional
             Provenance metadata from the ingest layer.
 
@@ -95,7 +133,22 @@ class S0Canonicalizer(nn.Module):
         SpectralTensor
             With fields ``amplitude``, ``phase``, ``scale``, ``uncertainty``
             all shaped ``(…, n_freq_bins)`` where ``n_freq_bins = n_fft // 2 + 1``.
+
+        Raises
+        ------
+        ValueError
+            If signal is not finite or has invalid shape.
+
+        Complexity
+        ----------
+        O(N log N) - FFT computation where N is number of samples.
+
+        Side Effects
+        ------------
+        None.
         """
+        if not torch.isfinite(signal).all():
+            raise ValueError("signal contains NaN or Inf values")
         metadata = metadata or {}
 
         # Auto-detect 2D spatial data from metadata
@@ -163,7 +216,27 @@ class S0Canonicalizer(nn.Module):
 
     @staticmethod
     def _prepare_input(signal: torch.Tensor) -> torch.Tensor:
-        """Cast to float32 and ensure at least 2-D (channels, samples)."""
+        """
+        Cast to float32 and ensure at least 2-D (channels, samples).
+
+        Args
+        ----
+        signal : torch.Tensor
+            Input signal tensor.
+
+        Returns
+        -------
+        torch.Tensor
+            Float32 tensor with at least 2 dimensions.
+
+        Complexity
+        ----------
+        O(1) - dtype conversion and unsqueeze operations.
+
+        Side Effects
+        ------------
+        None.
+        """
         if signal.dtype != torch.float32:
             signal = signal.float()
 
@@ -173,7 +246,34 @@ class S0Canonicalizer(nn.Module):
 
     @staticmethod
     def _z_normalize(signal: torch.Tensor) -> torch.Tensor:
-        """Per-channel zero-mean unit-variance normalisation."""
+        """
+        Per-channel zero-mean unit-variance normalisation.
+
+        Args
+        ----
+        signal : torch.Tensor
+            Input signal tensor. Must be finite.
+
+        Returns
+        -------
+        torch.Tensor
+            Normalized signal tensor.
+
+        Raises
+        ------
+        ValueError
+            If signal contains NaN or Inf values.
+
+        Complexity
+        ----------
+        O(N) - where N is total number of elements.
+
+        Side Effects
+        ------------
+        None.
+        """
+        if not torch.isfinite(signal).all():
+            raise ValueError("signal contains NaN or Inf values")
         mean = signal.mean(dim=-1, keepdim=True)
         std = signal.std(dim=-1, keepdim=True).clamp(min=1e-8)
         return (signal - mean) / std

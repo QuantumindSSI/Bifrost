@@ -297,6 +297,46 @@ class SemanticCoherenceTrainer:
         lambda_semantic: float = 1.0,  # Weight for semantic loss
         lambda_contrastive: float = 0.5,  # Weight for contrastive loss
     ):
+        """
+        Initialize semantic coherence trainer.
+
+        Parameters
+        ----------
+        pipeline : BifrostPipeline
+            Bifrost pipeline to train.
+        num_classes : int
+            Number of semantic classes. Must be > 0.
+        device : str
+            Device for training (e.g., "cuda", "cpu").
+        lr : float
+            Learning rate. Must be > 0.
+        lambda_semantic : float
+            Weight for semantic loss. Must be >= 0.
+        lambda_contrastive : float
+            Weight for contrastive loss. Must be >= 0.
+
+        Raises
+        ------
+        ValueError
+            If num_classes <= 0, lr <= 0, lambda_semantic < 0, or lambda_contrastive < 0.
+
+        Complexity
+        ----------
+        O(1) - initialization only.
+
+        Side Effects
+        ------------
+        Moves pipeline to device, initializes optimizer and loss functions.
+        """
+        if num_classes <= 0:
+            raise ValueError(f"num_classes must be > 0, got {num_classes}")
+        if lr <= 0:
+            raise ValueError(f"lr must be > 0, got {lr}")
+        if lambda_semantic < 0:
+            raise ValueError(f"lambda_semantic must be >= 0, got {lambda_semantic}")
+        if lambda_contrastive < 0:
+            raise ValueError(f"lambda_contrastive must be >= 0, got {lambda_contrastive}")
+
         self.pipeline = pipeline.to(device)
         self.device = device
         self.lambda_semantic = lambda_semantic
@@ -341,10 +381,48 @@ class SemanticCoherenceTrainer:
     ) -> Dict[str, float]:
         """
         Single training step for semantic coherence.
-        
-        Returns:
-            Dictionary of loss values and metrics
+
+        Args
+        ----
+        signals : torch.Tensor
+            (B, signal_len) Input signals. Must be 2D and finite.
+        labels : torch.Tensor
+            (B,) Semantic labels. Must be 1D, finite, and in [0, num_classes).
+
+        Returns
+        -------
+        Dict[str, float]
+            Dictionary of loss values and metrics.
+
+        Raises
+        ------
+        ValueError
+            If signals/labels have invalid shapes, contain NaN/Inf values,
+            or labels are out of range.
+
+        Complexity
+        ----------
+        O(B * signal_len * log(signal_len)) - pipeline forward pass with FFT.
+
+        Side Effects
+        ------------
+        Updates model parameters via optimizer step.
         """
+        if signals.dim() != 2:
+            raise ValueError(f"signals must be 2D (B, signal_len), got shape {signals.shape}")
+        if labels.dim() != 1:
+            raise ValueError(f"labels must be 1D (B,), got shape {labels.shape}")
+        if signals.shape[0] != labels.shape[0]:
+            raise ValueError(f"signals batch size {signals.shape[0]} must match labels batch size {labels.shape[0]}")
+        if not torch.isfinite(signals).all():
+            raise ValueError("signals contains NaN or Inf values")
+        if not torch.isfinite(labels).all():
+            raise ValueError("labels contains NaN or Inf values")
+        if (labels < 0).any() or (labels >= self.classifier.num_classes).any():
+            raise ValueError(
+                f"labels must be in [0, {self.classifier.num_classes}), got range [{labels.min()}, {labels.max()}]"
+            )
+
         self.optimizer.zero_grad()
         
         # Forward through Bifrost
