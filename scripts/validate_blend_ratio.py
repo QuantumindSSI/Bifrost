@@ -193,39 +193,45 @@ def test_blend_ratio(
     try:
         # Test on harmonic signal (should preserve structure)
         harmonic_signal = generate_harmonic_chord(base_freq=440.0).to(device)
-        
+
         with torch.no_grad():
-            harmonic_spectral, _ = pipeline(harmonic_signal)
-        
+            harmonic_spectral, harmonic_coherence = pipeline(harmonic_signal)
+
         harmonic_metrics = measure_harmonic_preservation(
             harmonic_spectral, base_freq=440.0, sample_rate=16000
         )
-        
+
         # Test on inharmonic signal (should show different response)
         inharmonic_signal = generate_inharmonic_chord().to(device)
-        
+
         with torch.no_grad():
-            inharmonic_spectral, _ = pipeline(inharmonic_signal)
-        
+            inharmonic_spectral, inharmonic_coherence = pipeline(inharmonic_signal)
+
         inharmonic_metrics = measure_harmonic_preservation(
             inharmonic_spectral, base_freq=440.0, sample_rate=16000
         )
-        
+
         # Discrimination score: how well does it separate harmonic from inharmonic?
-        # A good blend should: 
-        # 1. High harmonic_peak_ratio for harmonic signals
-        # 2. Low harmonic_peak_ratio for inharmonic signals
-        discrimination = (
-            harmonic_metrics["harmonic_peak_ratio"] 
+        # Measure coherence difference directly (what the blend ratio affects)
+        # A good blend should:
+        # 1. High coherence for harmonic signals (harmonic structure preserved)
+        # 2. Low coherence for inharmonic signals (no harmonic structure)
+        coherence_discrimination = harmonic_coherence.mean() - inharmonic_coherence.mean()
+
+        # Also measure output amplitude discrimination (secondary metric)
+        amplitude_discrimination = (
+            harmonic_metrics["harmonic_peak_ratio"]
             - inharmonic_metrics["harmonic_peak_ratio"]
         )
-        
+
         return {
             "blend_ratio": blend_ratio,
             "harmonic_peak_ratio": harmonic_metrics["harmonic_peak_ratio"],
             "octave_coherence": harmonic_metrics["octave_coherence"],
             "inharmonic_peak_ratio": inharmonic_metrics["harmonic_peak_ratio"],
-            "discrimination": discrimination,
+            "coherence_discrimination": coherence_discrimination.item(),
+            "amplitude_discrimination": amplitude_discrimination,
+            "discrimination": coherence_discrimination.item(),  # Primary metric
         }
         
     finally:
@@ -274,25 +280,26 @@ def find_optimal_blend_ratio(
     
     for ratio in blend_ratios:
         print(f"Testing blend_ratio = {ratio:.1f}...")
-        
+
         metrics = test_blend_ratio(pipeline, ratio, device)
         results[ratio] = metrics
-        
+
         print(f"  Harmonic peak ratio: {metrics['harmonic_peak_ratio']:.3f}")
         print(f"  Octave coherence:    {metrics['octave_coherence']:.3f}")
         print(f"  Inharmonic peak:     {metrics['inharmonic_peak_ratio']:.3f}")
-        print(f"  Discrimination:      {metrics['discrimination']:.3f}")
+        print(f"  Coherence discrim:   {metrics['coherence_discrimination']:.4f}")
+        print(f"  Amplitude discrim:   {metrics['amplitude_discrimination']:.4f}")
         print()
-    
-    # Find optimal ratio based on discrimination (best harmonic/inharmonic separation)
+
+    # Find optimal ratio based on coherence discrimination (best harmonic/inharmonic separation)
     optimal_ratio = max(results.keys(), key=lambda r: results[r]["discrimination"])
-    
+
     print("=" * 60)
     print("RESULTS SUMMARY")
     print("=" * 60)
-    print(f"{'Ratio':<8} {'Harmonic':<10} {'Inharmonic':<12} {'Discrim':<10}")
+    print(f"{'Ratio':<8} {'Harmonic':<10} {'Inharmonic':<12} {'CohDisc':<10}")
     print("-" * 60)
-    
+
     for ratio in blend_ratios:
         r = results[ratio]
         marker = " ***" if ratio == optimal_ratio else ""
@@ -300,7 +307,7 @@ def find_optimal_blend_ratio(
             f"{ratio:<8.1f} "
             f"{r['harmonic_peak_ratio']:<10.3f} "
             f"{r['inharmonic_peak_ratio']:<12.3f} "
-            f"{r['discrimination']:<10.3f}{marker}"
+            f"{r['coherence_discrimination']:<10.4f}{marker}"
         )
     
     print("-" * 60)
