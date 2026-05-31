@@ -46,7 +46,7 @@ class SpectralBinding(nn.Module):
         n_bands: int = 8,
         dropout: float = 0.1,
         n_freq_in: Optional[int] = None,
-        harmonic_blend_ratio: float = 0.7,  # Empirically validated default
+        harmonic_blend_ratio: float = 0.9,  # Empirically validated default (see scripts/validate_blend_ratio.py)
     ) -> None:
         super().__init__()
         self.d_model = d_model
@@ -281,11 +281,6 @@ class SpectralBinding(nn.Module):
             # This preserves harmonic structure while allowing learned adaptation
             # Ratio is empirically validated on ground-truth harmonic signals
             h_ratio = self.harmonic_blend_ratio
-            # DEBUG: Print coherence stats to verify blend is working
-            print(f"[DEBUG] blend_ratio={h_ratio:.2f}, coherence_orig_mean={coherence_orig.mean():.4f}, "
-                  f"coherence_learned_mean={coherence.mean():.4f}, "
-                  f"coherence_orig_std={coherence_orig.std():.4f}, "
-                  f"coherence_learned_std={coherence.std():.4f}")
             coherence = h_ratio * coherence_orig_expanded + (1.0 - h_ratio) * coherence
 
             # Re-normalise blended weights and re-aggregate V so bound reflects harmonics

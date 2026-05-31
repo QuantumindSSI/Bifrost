@@ -167,10 +167,6 @@ class HarmonicCoherenceDetector(nn.Module):
         # Compute energy at harmonic bins
         harmonic_energy = self._compute_harmonic_energy(amplitude, harmonic_bins)
 
-        # DEBUG: Print harmonic energy stats
-        print(f"[DEBUG_HARM] bins={harmonic_bins.tolist()}, energy_mean={harmonic_energy.mean():.4f}, "
-              f"energy_std={harmonic_energy.std():.4f}, energy_max={harmonic_energy.max():.4f}")
-
         # Compute harmonic coherence matrix
         coherence = self._compute_harmonic_coherence_matrix(harmonic_energy)
 
