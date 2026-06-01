@@ -106,8 +106,10 @@ class DifficultyLabeledDataset:
         # Base signal (clean)
         base = torch.randn(max_length, d_model) * 0.1
         
-        # Add noise proportional to difficulty
-        noise = torch.randn(max_length, d_model) * (difficulty * 0.5)
+        # Add noise proportional to difficulty (more aggressive)
+        # Higher difficulty = more noise = higher reconstruction error
+        noise_scale = difficulty * 1.0  # Increased from 0.5 to 1.0
+        noise = torch.randn(max_length, d_model) * noise_scale
         
         # Length variation (shorter = harder)
         length = int(max_length * (1.0 - 0.5 * difficulty))
@@ -146,6 +148,8 @@ class UncertaintyCalibrationTrainer:
         projector: SpectralProjector,
         device: str = "cpu",
         lr: float = 1e-3,
+        reconstruction_weight: float = 1.0,
+        correlation_weight: float = 2.0,
     ) -> None:
         """
         Initialize trainer.
@@ -158,16 +162,20 @@ class UncertaintyCalibrationTrainer:
             Device for training
         lr : float
             Learning rate
+        reconstruction_weight : float
+            Weight for reconstruction loss
+        correlation_weight : float
+            Weight for correlation loss (increased from 0.1 to 2.0)
         """
         self.projector = projector.to(device)
         self.device = device
+        self.reconstruction_weight = reconstruction_weight
+        self.correlation_weight = correlation_weight
         
-        # Only optimize uncertainty parameters (temperature, bias)
+        # Optimize all projector parameters (including to_spectral, to_hidden)
+        # This enables reconstruction learning before calibration
         self.optimizer = optim.Adam(
-            [
-                projector.uncertainty_temperature,
-                projector.uncertainty_bias,
-            ],
+            list(projector.parameters()),
             lr=lr,
         )
         
@@ -175,6 +183,7 @@ class UncertaintyCalibrationTrainer:
             "ece": [],
             "correlation": [],
             "avg_uncertainty": [],
+            "reconstruction_loss": [],
         }
     
     def train_step(
@@ -202,22 +211,55 @@ class UncertaintyCalibrationTrainer:
         # Project to spectral space and back (reconstruction)
         spectral, reconstructed = self.projector(inputs)
         
+        # Compute reconstruction loss (MSE)
+        reconstruction_loss = F.mse_loss(reconstructed, targets)
+        
         # Compute uncertainty calibration loss
         calib_loss, metrics = self.projector.compute_uncertainty_calibration_loss(
             predictions=reconstructed,
             targets=targets,
             uncertainties=spectral.uncertainty,
-            n_bins=10,
+            n_bins=20,  # Increased from 10 to 20 for finer granularity
+        )
+        
+        # Modify correlation loss weight in the loss computation
+        # The original compute_uncertainty_calibration_loss uses 0.1 weight
+        # We'll recompute with higher weight
+        errors = (reconstructed - targets).abs()
+        error_max = errors.max() + 1e-8
+        errors_normalized = errors / error_max
+        
+        error_flat = errors_normalized.flatten()
+        uncertainty_flat = spectral.uncertainty.flatten()
+        
+        error_mean = error_flat.mean()
+        uncertainty_mean = uncertainty_flat.mean()
+        error_std = error_flat.std() + 1e-8
+        uncertainty_std = uncertainty_flat.std() + 1e-8
+        
+        correlation = ((error_flat - error_mean) * (uncertainty_flat - uncertainty_mean)).mean()
+        correlation = correlation / (error_std * uncertainty_std)
+        correlation_loss = -correlation  # Negative because we want to maximize
+        
+        # Total loss: reconstruction + ECE + weighted correlation
+        total_loss = (
+            self.reconstruction_weight * reconstruction_loss +
+            calib_loss +
+            self.correlation_weight * correlation_loss
         )
         
         # Backward
-        calib_loss.backward()
+        total_loss.backward()
         self.optimizer.step()
+        
+        # Add reconstruction loss to metrics
+        metrics["reconstruction_loss"] = reconstruction_loss.item()
         
         # Update history
         self.history["ece"].append(metrics["ece"])
         self.history["correlation"].append(metrics["correlation"])
         self.history["avg_uncertainty"].append(metrics["avg_uncertainty"])
+        self.history["reconstruction_loss"].append(metrics["reconstruction_loss"])
         
         return metrics
     
@@ -250,7 +292,7 @@ class UncertaintyCalibrationTrainer:
                 predictions=reconstructed,
                 targets=targets,
                 uncertainties=spectral.uncertainty,
-                n_bins=10,
+                n_bins=20,  # Increased from 10 to 20
             )
         
         self.projector.train()
@@ -258,7 +300,7 @@ class UncertaintyCalibrationTrainer:
     
     def save_checkpoint(self, path: Path) -> None:
         """
-        Save trained uncertainty parameters.
+        Save trained projector parameters.
         
         Parameters
         ----------
@@ -266,6 +308,7 @@ class UncertaintyCalibrationTrainer:
             Checkpoint save path
         """
         checkpoint = {
+            "projector_state_dict": self.projector.state_dict(),
             "uncertainty_temperature": self.projector.uncertainty_temperature.item(),
             "uncertainty_bias": self.projector.uncertainty_bias.item(),
             "history": self.history,
@@ -274,7 +317,7 @@ class UncertaintyCalibrationTrainer:
     
     def load_checkpoint(self, path: Path) -> None:
         """
-        Load trained uncertainty parameters.
+        Load trained projector parameters.
         
         Parameters
         ----------
@@ -282,15 +325,14 @@ class UncertaintyCalibrationTrainer:
             Checkpoint load path
         """
         checkpoint = torch.load(path, map_location=self.device)
-        self.projector.uncertainty_temperature.data.fill_(checkpoint["uncertainty_temperature"])
-        self.projector.uncertainty_bias.data.fill_(checkpoint["uncertainty_bias"])
+        self.projector.load_state_dict(checkpoint["projector_state_dict"])
         self.history = checkpoint.get("history", self.history)
     
     def generate_reliability_diagram(
         self,
         inputs: torch.Tensor,
         targets: torch.Tensor,
-        n_bins: int = 10,
+        n_bins: int = 20,
         save_path: Path = None,
     ) -> List[Dict]:
         """
@@ -386,6 +428,18 @@ def main():
         help="Learning rate",
     )
     parser.add_argument(
+        "--reconstruction-weight",
+        type=float,
+        default=1.0,
+        help="Weight for reconstruction loss",
+    )
+    parser.add_argument(
+        "--correlation-weight",
+        type=float,
+        default=2.0,
+        help="Weight for correlation loss (increased from 0.1)",
+    )
+    parser.add_argument(
         "--device",
         type=str,
         default="auto",
@@ -406,8 +460,8 @@ def main():
     parser.add_argument(
         "--n-bins",
         type=int,
-        default=10,
-        help="Number of bins for reliability diagram",
+        default=20,
+        help="Number of bins for reliability diagram (increased from 10 to 20)",
     )
     
     args = parser.parse_args()
@@ -426,6 +480,8 @@ def main():
     print(f"Epochs: {args.epochs}")
     print(f"Batch size: {args.batch_size}")
     print(f"Learning rate: {args.lr}")
+    print(f"Reconstruction weight: {args.reconstruction_weight}")
+    print(f"Correlation weight: {args.correlation_weight}")
     print(f"Samples: {args.n_samples}")
     print()
     
@@ -434,6 +490,9 @@ def main():
         d_model=args.d_model,
         spectral_dim=128,
     )
+    
+    # Initialize temperature closer to optimal value (empirically ~0.5-2.0)
+    projector.uncertainty_temperature.data.fill_(0.5)
     
     print(f"Initial uncertainty temperature: {projector.uncertainty_temperature.item():.4f}")
     print(f"Initial uncertainty bias: {projector.uncertainty_bias.item():.4f}")
@@ -476,6 +535,8 @@ def main():
         projector=projector,
         device=device,
         lr=args.lr,
+        reconstruction_weight=args.reconstruction_weight,
+        correlation_weight=args.correlation_weight,
     )
     
     # Train
@@ -502,9 +563,9 @@ def main():
             # Create targets (reconstruction target = input)
             targets = samples.clone()
             
-            # Add noise to targets based on difficulty
+            # Add noise to targets based on difficulty (more aggressive)
             # Higher difficulty = more noise = higher error
-            noise = torch.randn_like(samples) * 0.1
+            noise = torch.randn_like(samples) * 0.5  # Increased from 0.1 to 0.5
             for i in range(samples.shape[0]):
                 noise[i] *= difficulties[i].item()
             targets = targets + noise
@@ -530,7 +591,7 @@ def main():
                 samples = samples.unsqueeze(0)  # (1, T, d_model)
             
             targets = samples.clone()
-            noise = torch.randn_like(samples) * 0.1
+            noise = torch.randn_like(samples) * 0.5  # Increased from 0.1 to 0.5
             for i in range(samples.shape[0]):
                 noise[i] *= difficulties[i].item()
             targets = targets + noise
@@ -543,8 +604,9 @@ def main():
         val_avg_ece = val_ece / val_n_batches
         val_avg_correlation = val_correlation / val_n_batches
         
+        avg_recon_loss = sum(trainer.history["reconstruction_loss"][-n_batches:]) / n_batches
         print(f"Epoch {epoch+1}/{args.epochs}:")
-        print(f"  Train: ECE={avg_ece:.4f}, Correlation={avg_correlation:.4f}")
+        print(f"  Train: ECE={avg_ece:.4f}, Correlation={avg_correlation:.4f}, Recon={avg_recon_loss:.4f}")
         print(f"  Val:   ECE={val_avg_ece:.4f}, Correlation={val_avg_correlation:.4f}")
         
         if val_avg_ece < best_ece:
@@ -584,7 +646,7 @@ def main():
             samples = samples.unsqueeze(0)  # (1, T, d_model)
         
         targets = samples.clone()
-        noise = torch.randn_like(samples) * 0.1
+        noise = torch.randn_like(samples) * 0.5  # Increased from 0.1 to 0.5
         for i in range(samples.shape[0]):
             noise[i] *= difficulties[i].item()
         targets = targets + noise
