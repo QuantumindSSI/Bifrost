@@ -197,11 +197,8 @@ class UncertaintyCalibrationTrainer:
         """
         self.optimizer.zero_grad()
         
-        # Project to spectral space
-        spectral = self.projector.hidden_to_spectral(inputs)
-        
-        # Project back to hidden space (reconstruction)
-        reconstructed = self.projector.spectral_to_hidden(spectral)
+        # Project to spectral space and back (reconstruction)
+        spectral, reconstructed = self.projector(inputs)
         
         # Compute uncertainty calibration loss
         calib_loss, metrics = self.projector.compute_uncertainty_calibration_loss(
@@ -245,8 +242,7 @@ class UncertaintyCalibrationTrainer:
         self.projector.eval()
         
         with torch.no_grad():
-            spectral = self.projector.hidden_to_spectral(inputs)
-            reconstructed = self.projector.spectral_to_hidden(spectral)
+            spectral, reconstructed = self.projector(inputs)
             
             calib_loss, metrics = self.projector.compute_uncertainty_calibration_loss(
                 predictions=reconstructed,
@@ -317,8 +313,7 @@ class UncertaintyCalibrationTrainer:
         self.projector.eval()
         
         with torch.no_grad():
-            spectral = self.projector.hidden_to_spectral(inputs)
-            reconstructed = self.projector.spectral_to_hidden(spectral)
+            spectral, reconstructed = self.projector(inputs)
             
             errors = (reconstructed - targets).abs()
             error_max = errors.max() + 1e-8
