@@ -265,6 +265,7 @@ class UncertaintyCalibrationTrainer:
             "avg_uncertainty": [],
             "reconstruction_loss": [],
         }
+        self.current_epoch = 0
     
     def train_step(
         self,
@@ -389,6 +390,7 @@ class UncertaintyCalibrationTrainer:
             "uncertainty_temperature_log": self.projector.uncertainty_temperature_log.item(),
             "uncertainty_bias_log": self.projector.uncertainty_bias_log.item(),
             "history": self.history,
+            "current_epoch": self.current_epoch,
         }
         torch.save(checkpoint, path)
     
@@ -428,6 +430,7 @@ class UncertaintyCalibrationTrainer:
         
         self.projector.load_state_dict(state_dict)
         self.history = checkpoint.get("history", self.history)
+        self.current_epoch = checkpoint.get("current_epoch", 0)
 
 
 def main():
@@ -590,12 +593,10 @@ def main():
     )
     
     # Resume from checkpoint if specified
-    start_epoch = 0
     if args.resume_from:
         print(f"Resuming from checkpoint: {args.resume_from}")
         trainer.load_checkpoint(Path(args.resume_from))
-        start_epoch = len(trainer.history["ece"])
-        print(f"Resuming from epoch {start_epoch}")
+        print(f"Resuming from epoch {trainer.current_epoch}")
         print()
     
     # Train
@@ -606,7 +607,7 @@ def main():
     
     best_ece = float('inf')
     
-    for epoch in range(start_epoch, args.epochs):
+    for epoch in range(trainer.current_epoch, args.epochs):
         epoch_ece = 0.0
         epoch_correlation = 0.0
         n_batches = 0
@@ -671,6 +672,7 @@ def main():
             trainer.save_checkpoint(save_path)
             print(f"  ✓ Saved best checkpoint (ECE={best_ece:.4f})")
         
+        trainer.current_epoch = epoch + 1
         print()
     
     # Final evaluation
