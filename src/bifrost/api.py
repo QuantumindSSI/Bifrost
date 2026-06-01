@@ -113,8 +113,8 @@ async def process_file(
             audio_tensor, sr = torchaudio.load(io.BytesIO(contents))
             
             pipeline = BifrostPipeline(
-                n_fft_s0=n_fft,
-                n_fft_s1=n_fft // 2,
+                n_fft_canonical=n_fft,
+                n_fft_decompose=n_fft // 2,
                 d_model=d_model,
                 use_complex_ssm=True,
             )
@@ -253,7 +253,7 @@ async def demo_coherence(
     signal_random = torch.randn_like(signal_coherent)
     
     # Process through Bifrost
-    pipeline = BifrostPipeline(n_fft_s0=min(512, n_frames * 4), d_model=n_freq)
+    pipeline = BifrostPipeline(n_fft_canonical=min(512, n_frames * 4), d_model=n_freq)
     
     with torch.no_grad():
         bound_coh, coherence_coh = pipeline(signal_coherent.unsqueeze(0))

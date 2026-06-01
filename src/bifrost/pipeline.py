@@ -23,7 +23,7 @@ import torch.nn as nn
 from .spectral_tensor import SpectralTensor
 from .canonicalizer import SpectralCanonicalizer
 from .decomposer import SpectralDecomposer
-from .s1_decomposer.complex_decomposer import ComplexSpectralDecomposer
+from .decomposer.complex_decomposer import ComplexSpectralDecomposer
 from .resonance_attention import ResonanceAttention, SpectralBinding
 from .resonance_attention.harmonic_binding import HarmonicBinding
 
@@ -65,7 +65,7 @@ class BifrostPipeline(nn.Module):
         use_complex_ssm: bool = True,  # Default: complex-valued SSM for true phase coherence
         use_harmonic_binding: bool = False,  # Wire HarmonicBinding (explicit 440Hz↔4880Hz grid)
         sample_rate: float = 16000.0,  # Used by HarmonicBinding frequency grid
-        use_s3_attractor: bool = True,  # Enable learned S3 attractor dynamics (CRITICAL_AUDIT fix)
+        use_s3_attractor: bool = True,  # Enable learned attractor dynamics (CRITICAL_AUDIT fix)
     ) -> None:
         super().__init__()
         self.use_complex_ssm = use_complex_ssm
@@ -76,7 +76,7 @@ class BifrostPipeline(nn.Module):
         # Per Agentic CTO-Persona policy, these limitations are explicitly disclosed
         import warnings
         
-        # === S3 ATTRACTOR LEARNING MODULE (OPTIONAL) ===
+        # === ATTRACTOR LEARNING MODULE (OPTIONAL) ===
         # Per CRITICAL_AUDIT.md remediation: Integrate learned attractor dynamics
         # This replaces the placeholder stability=0.5 with learned stability prediction
         if self.use_s3_attractor:
@@ -256,23 +256,23 @@ class BifrostPipeline(nn.Module):
                 canonical_amplitude=canonical.amplitude,  # Raw STFT amplitude for harmonic detection
             )
         
-        # === S3 ATTRACTOR LEARNING (Optional) ===
+        # === ATTRACTOR LEARNING (Optional) ===
         # Extract learned attractors from spectral binding output
         if hasattr(self, 'attractor_learner') and self.attractor_learner is not None:
             try:
                 attractors, assignment_probs = self.attractor_learner(bound_st)
                 # Add attractor info to metadata
-                bound_st.metadata['s3_attractors'] = len(attractors)
+                bound_st.metadata['attractor_count'] = len(attractors)
                 bound_st.metadata['attractor_stabilities'] = [a.stability for a in attractors]
             except Exception as e:
                 # Log error per policy C-02 (no silent failures)
                 import warnings
                 warnings.warn(
-                    f"S3 Attractor Learning failed: {str(e)}. Skipping attractor extraction.",
+                    f"Attractor Learning failed: {str(e)}. Skipping attractor extraction.",
                     RuntimeWarning,
                     stacklevel=2
                 )
-                bound_st.metadata['s3_attractors'] = 0
+                bound_st.metadata['attractor_count'] = 0
                 bound_st.metadata['attractor_error'] = str(e)
         
         return bound_st, coherence

@@ -1,7 +1,7 @@
 """
-S0_Canonicaliser — convert raw ingested data into canonical SpectralTensor form.
+SpectralCanonicalizer — convert raw ingested data into canonical SpectralTensor form.
 
-Responsibilities (per Engineering Script §1, Stage S0):
+Responsibilities:
     1. Input normalisation — map arbitrary numeric arrays to float32.
     2. Frequency-domain projection — FFT of the signal to obtain
        amplitude + phase decomposition in L² space.
@@ -25,9 +25,9 @@ import torch.nn as nn
 from ..spectral_tensor import SpectralTensor
 
 
-class S0Canonicalizer(nn.Module):
+class SpectralCanonicalizer(nn.Module):
     """
-    Stage S0: raw signal → SpectralTensor.
+    Canonicalization stage: raw signal → SpectralTensor.
 
     Supports both 1D (temporal) and 2D (spatial) FFT modes for audio
     and image modalities respectively.
@@ -59,7 +59,7 @@ class S0Canonicalizer(nn.Module):
         use_2d_fft: bool = False,
     ) -> None:
         """
-        Initialize S0 canonicalizer.
+        Initialize SpectralCanonicalizer.
 
         Parameters
         ----------
@@ -192,7 +192,7 @@ class S0Canonicalizer(nn.Module):
             uncertainty=uncertainty,
             metadata={
                 **metadata,
-                "stage": "S0",
+                "stage": "canonicalize",
                 "n_fft": self.n_fft,
                 "hop_length": self.hop_length,
                 "normalize_input": self.normalize_input,

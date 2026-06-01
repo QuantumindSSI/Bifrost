@@ -234,9 +234,9 @@ class PhaseLockBridge(nn.Module):
         candidates.sort(key=lambda c: c.activation_score, reverse=True)
         return candidates
 
-    # ── S2 output → attractor extraction (bridge to S3) ───────────────
+    # ── Binding output → attractor extraction (bridge to attractor learning) ───────────────
 
-    def extract_attractors_from_s2(
+    def extract_attractors_from_binding(
         self,
         st: SpectralTensor,
         n_bands: int = 8,
@@ -244,10 +244,10 @@ class PhaseLockBridge(nn.Module):
         prefix: str = "att",
     ) -> List[FrequencyAttractor]:
         """
-        Convert an S2 SpectralTensor into a list of FrequencyAttractors
+        Convert a binding SpectralTensor into a list of FrequencyAttractors
         (one per channel / sequence position).
 
-        Uses learned stability from S3 AttractorLearningModule if available,
+        Uses learned stability from AttractorLearningModule if available,
         otherwise falls back to placeholder stability=0.5.
         """
         amp = st.amplitude

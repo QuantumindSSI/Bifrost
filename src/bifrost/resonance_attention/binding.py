@@ -1,10 +1,10 @@
 """
-S2_SpectralBinding — Semantic Frequency Binding via Resonance Attention.
+SpectralBinding — Semantic Frequency Binding via Resonance Attention.
 
 Wraps ResonanceAttention to operate directly on SpectralTensor objects,
-producing bound spectral candidates ready for attractor identification (S3).
+producing bound spectral candidates ready for attractor identification.
 
-Responsibilities (per Engineering Script S2):
+Responsibilities:
     - Compute phase-coherence attention maps.
     - Bind spectral modes into semantic candidates.
     - Generate signals for attractor identification.

@@ -249,7 +249,7 @@ def cmd_attractors(args: argparse.Namespace) -> int:
         bound, coherence = binding(decomposed)
 
         # Extract attractors from binding output
-        attractors = PhaseLockBridge.extract_attractors_from_s2(
+        attractors = PhaseLockBridge.extract_attractors_from_binding(
             bound, n_bands=args.n_bands, domain=args.domain, prefix=args.prefix
         )
 

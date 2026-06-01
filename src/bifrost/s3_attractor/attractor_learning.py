@@ -1,5 +1,5 @@
 """
-S3: Phase-Lock Attractor Learning Module
+Phase-Lock Attractor Learning Module
 
 Implements learned attractor dynamics to replace placeholder values.
 Provides stability scores, phase coherence tracking, and attractor clustering.
@@ -42,7 +42,7 @@ class FrequencyAttractor:
 
 class AttractorLearningModule(nn.Module):
     """
-    Learned attractor dynamics module for S3 Phase-Lock Bridge.
+    Learned attractor dynamics module for Phase-Lock Bridge.
     
     Replaces placeholder stability=0.5 with learned stability based on:
     1. Temporal consistency of attractor position
@@ -166,7 +166,7 @@ class AttractorLearningModule(nn.Module):
                 amplitude_profile=centroid,
                 stability=stability.item(),
                 domain="learned",
-                attractor_id=f"s3_attractor_{i:03d}",
+                attractor_id=f"learned_attractor_{i:03d}",
                 metadata={
                     "assignment_mass": weights.sum().item(),
                     "phase_coherence": phase_coherence.item(),
@@ -257,7 +257,7 @@ class AttractorLearningModule(nn.Module):
 
 class PhaseLockBridge(nn.Module):
     """
-    Complete S3 Phase-Lock Bridge with learned attractor dynamics.
+    Complete Phase-Lock Bridge with learned attractor dynamics.
     
     Integrates attractor learning into the Bifrost pipeline.
     """

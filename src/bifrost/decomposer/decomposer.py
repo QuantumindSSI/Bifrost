@@ -247,7 +247,7 @@ class SpectralDecomposer(nn.Module):
                 **st.metadata,
                 "stage": "decompose",
                 "n_scales": self.n_scales,
-                "n_fft_s1": self.n_fft,
+                "n_fft_decompose": self.n_fft,
                 "d_model": self.d_model,
                 "n_frames": self.n_frames,
                 "ssm_type": self.ssm_type,

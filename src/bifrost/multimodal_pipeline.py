@@ -36,8 +36,8 @@ import torch.nn.functional as F
 
 from .spectral_tensor import SpectralTensor
 from .canonicalizer import SpectralCanonicalizer
-from .s1_decomposer.decomposer import SpectralDecomposer
-from .s1_decomposer.complex_decomposer import ComplexSpectralDecomposer
+from .decomposer.decomposer import SpectralDecomposer
+from .decomposer.complex_decomposer import ComplexSpectralDecomposer
 from .resonance_attention.binding import SpectralBinding
 
 
@@ -171,8 +171,8 @@ class ImageSpectralDecomposer(nn.Module):
         self.n_frames = n_frames
 
         # Import here to avoid circular dependency
-        from .s1_decomposer.decomposer import MambaBlock
-        from .s1_decomposer.selective_scan import SelectiveScan
+        from .decomposer.decomposer import MambaBlock
+        from .decomposer.selective_scan import SelectiveScan
 
         # Project radial frequency to d_model
         self.input_proj = nn.Linear(self.n_freq, d_model)
@@ -247,7 +247,7 @@ class ImageSpectralDecomposer(nn.Module):
             uncertainty=uncertainty,
             metadata={
                 **st.metadata,
-                "stage": "S1",
+                "stage": "decompose",
                 "modality": "image",
                 "n_frames": self.n_frames,
             },

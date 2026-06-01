@@ -262,7 +262,7 @@ class ComplexSelectiveScan(nn.Module):
 
 class ComplexSpectralDecomposer(nn.Module):
     """
-    Complex-valued spectral decomposition with joint amplitude-phase SSM.
+    Stage: Complex-valued spectral decomposition with joint amplitude-phase SSM.
 
     This is the CORRECT architecture:
     1. Input: SpectralTensor with complex_spectrum() giving z = a * exp(i*phi)

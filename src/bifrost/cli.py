@@ -43,8 +43,8 @@ def cmd_process(args: argparse.Namespace) -> int:
         audio, sr = torchaudio.load(args.input)
         
         pipeline = BifrostPipeline(
-            n_fft_s0=args.n_fft,
-            n_fft_s1=args.n_fft // 2,
+            n_fft_canonical=args.n_fft,
+            n_fft_decompose=args.n_fft // 2,
             d_model=args.d_model,
             use_complex_ssm=True,
         )
@@ -206,8 +206,8 @@ def cmd_validate(args: argparse.Namespace) -> int:
     audio, sr = torchaudio.load(args.input)
     
     pipeline = BifrostPipeline(
-        n_fft_s0=1024,
-        n_fft_s1=512,
+        n_fft_canonical=1024,
+        n_fft_decompose=512,
         d_model=128,
         use_complex_ssm=True,
     )

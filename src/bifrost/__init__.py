@@ -29,7 +29,7 @@ from .multimodal_pipeline import (
     TensorSpectralAdapter,
     create_multimodal_pipeline,
 )
-from .s1_decomposer.complex_decomposer import (
+from .decomposer.complex_decomposer import (
     ComplexSpectralDecomposer,
     ComplexSelectiveScan,
     ComplexLinear,

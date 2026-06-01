@@ -1,4 +1,4 @@
-"""Tests for S0 Canonicalizer."""
+"""Tests for Spectral Canonicalizer."""
 
 import pytest
 import numpy as np

@@ -19,7 +19,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from .spectral_tensor import SpectralTensor
-from .s1_decomposer.complex_decomposer import ComplexSpectralDecomposer
+from .decomposer.complex_decomposer import ComplexSpectralDecomposer
 from .resonance_attention import SpectralBinding
 
 

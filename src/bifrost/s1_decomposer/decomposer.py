@@ -1,16 +1,16 @@
 """
-S1_SpectralDecomposer — multi-resolution spectral decomposition.
+SpectralDecomposer — multi-resolution spectral decomposition.
 
-Responsibilities (per Engineering Script §1, Stage S1):
+Responsibilities:
     1. Frame time-domain signal into T overlapping windows.
     2. Per-frame: wavelet bank + FFT → sub-band spectral features.
-    3. S6 selective scan over T frames (pure-PyTorch on CPU/MPS,
+    3. Selective scan over T frames (pure-PyTorch on CPU/MPS,
        real mamba-ssm on CUDA when available).
     4. Return SpectralTensor with temporal shape (B, T, n_freq).
 
 Phase 2 changes vs Phase 1:
     - Multi-frame output: (B, T, n_freq) instead of (B, n_freq)
-    - Real S6SelectiveScan replaces SelectiveScanBlock stand-in
+    - Real SelectiveScan replaces SelectiveScanBlock stand-in
     - Auto-uses mamba-ssm.Mamba on CUDA if installed
 """
 
@@ -108,7 +108,7 @@ class MambaBlock(nn.Module):
 
 
 class SpectralDecomposer(nn.Module):
-    """Stage S1: SpectralTensor → temporal multi-resolution spectral embedding.
+    """Decomposition stage: SpectralTensor → temporal multi-resolution spectral embedding.
 
     Pipeline (Phase 2):
         1. iFFT SpectralTensor → time-domain signal.
@@ -338,9 +338,9 @@ class SpectralDecomposer(nn.Module):
             uncertainty=out_uncertainty,
             metadata={
                 **st.metadata,
-                "stage": "S1",
+                "stage": "decompose",
                 "n_scales": self.n_scales,
-                "n_fft_s1": self.n_fft,
+                "n_fft_decompose": self.n_fft,
                 "d_model": self.d_model,
                 "n_frames": self.n_frames,
                 "ssm_type": self.ssm_type,
