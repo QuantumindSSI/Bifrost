@@ -310,8 +310,8 @@ class UncertaintyCalibrationTrainer:
         """
         checkpoint = {
             "projector_state_dict": self.projector.state_dict(),
-            "uncertainty_temperature": self.projector.uncertainty_temperature.item(),
-            "uncertainty_bias": self.projector.uncertainty_bias.item(),
+            "uncertainty_temperature_log": self.projector.uncertainty_temperature_log.item(),
+            "uncertainty_bias_log": self.projector.uncertainty_bias_log.item(),
             "history": self.history,
         }
         torch.save(checkpoint, path)
@@ -493,10 +493,13 @@ def main():
     )
     
     # Initialize temperature closer to optimal value (empirically ~0.5-2.0)
-    projector.uncertainty_temperature.data.fill_(0.5)
+    projector.uncertainty_temperature_log.data.fill_(-0.6931)  # log(0.5)
     
-    print(f"Initial uncertainty temperature: {projector.uncertainty_temperature.item():.4f}")
-    print(f"Initial uncertainty bias: {projector.uncertainty_bias.item():.4f}")
+    import torch.nn.functional as F
+    temp = F.softplus(projector.uncertainty_temperature_log).item()
+    bias = F.softplus(projector.uncertainty_bias_log).item()
+    print(f"Initial uncertainty temperature: {temp:.4f}")
+    print(f"Initial uncertainty bias: {bias:.4f}")
     print()
     
     # Create dataset
@@ -628,8 +631,10 @@ def main():
     # Load best checkpoint
     trainer.load_checkpoint(Path(args.save_path))
     
-    print(f"Final uncertainty temperature: {projector.uncertainty_temperature.item():.4f}")
-    print(f"Final uncertainty bias: {projector.uncertainty_bias.item():.4f}")
+    temp = F.softplus(projector.uncertainty_temperature_log).item()
+    bias = F.softplus(projector.uncertainty_bias_log).item()
+    print(f"Final uncertainty temperature: {temp:.4f}")
+    print(f"Final uncertainty bias: {bias:.4f}")
     print()
     
     # Generate reliability diagram
