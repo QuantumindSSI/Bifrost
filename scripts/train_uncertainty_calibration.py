@@ -99,13 +99,15 @@ class DifficultyLabeledDataset:
         Returns
         -------
         Tensor
-            Sample tensor (max_length,)
+            Sample tensor (max_length, d_model)
         """
+        d_model = 128  # Match default d_model
+        
         # Base signal (clean)
-        base = torch.randn(max_length) * 0.1
+        base = torch.randn(max_length, d_model) * 0.1
         
         # Add noise proportional to difficulty
-        noise = torch.randn(max_length) * (difficulty * 0.5)
+        noise = torch.randn(max_length, d_model) * (difficulty * 0.5)
         
         # Length variation (shorter = harder)
         length = int(max_length * (1.0 - 0.5 * difficulty))
@@ -493,6 +495,10 @@ def main():
         for samples, difficulties in train_loader:
             samples = samples.to(device)
             
+            # Add batch dimension if needed (B, T, d_model)
+            if samples.dim() == 2:
+                samples = samples.unsqueeze(0)  # (1, T, d_model)
+            
             # Create targets (reconstruction target = input)
             targets = samples.clone()
             
@@ -518,6 +524,11 @@ def main():
         
         for samples, difficulties in val_loader:
             samples = samples.to(device)
+            
+            # Add batch dimension if needed (B, T, d_model)
+            if samples.dim() == 2:
+                samples = samples.unsqueeze(0)  # (1, T, d_model)
+            
             targets = samples.clone()
             noise = torch.randn_like(samples) * 0.1
             for i in range(samples.shape[0]):
@@ -567,6 +578,11 @@ def main():
     
     for samples, difficulties in val_loader:
         samples = samples.to(device)
+        
+        # Add batch dimension if needed (B, T, d_model)
+        if samples.dim() == 2:
+            samples = samples.unsqueeze(0)  # (1, T, d_model)
+        
         targets = samples.clone()
         noise = torch.randn_like(samples) * 0.1
         for i in range(samples.shape[0]):
