@@ -142,13 +142,22 @@ class PhaseLLMTrainer:
         self.optimizer.zero_grad()
         
         # Forward pass
-        outputs = self.model(
+        logits = self.model(
             input_ids=input_ids,
-            labels=labels,
             attention_mask=attention_mask,
         )
         
-        loss = outputs.loss
+        # Compute cross-entropy loss manually
+        # Shift logits and labels for next token prediction
+        shift_logits = logits[..., :-1, :].contiguous()
+        shift_labels = labels[..., 1:].contiguous()
+        
+        # Flatten
+        shift_logits = shift_logits.view(-1, shift_logits.size(-1))
+        shift_labels = shift_labels.view(-1)
+        
+        # Compute loss (ignore -100 labels)
+        loss = F.cross_entropy(shift_logits, shift_labels, ignore_index=-100)
         perplexity = math.exp(loss.item())
         
         # Backward pass
@@ -186,13 +195,17 @@ class PhaseLLMTrainer:
             labels = batch["labels"].to(self.device)
             attention_mask = batch["attention_mask"].to(self.device)
             
-            outputs = self.model(
+            logits = self.model(
                 input_ids=input_ids,
-                labels=labels,
                 attention_mask=attention_mask,
             )
             
-            loss = outputs.loss
+            # Compute cross-entropy loss manually
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_labels = labels[..., 1:].contiguous()
+            shift_logits = shift_logits.view(-1, shift_logits.size(-1))
+            shift_labels = shift_labels.view(-1)
+            loss = F.cross_entropy(shift_logits, shift_labels, ignore_index=-100)
             perplexity = math.exp(loss.item())
             
             total_loss += loss.item()
