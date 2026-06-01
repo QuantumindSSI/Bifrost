@@ -32,7 +32,6 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from torch.optim import AdamW
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
-from datasets import load_dataset
 
 from bifrost.llm_adapter import BifrostEnhancedLLM, SpectralProjector
 
@@ -346,10 +345,16 @@ def main():
         help="HuggingFace model name",
     )
     parser.add_argument(
+        "--data-path",
+        type=str,
+        default=None,
+        help="Path to text file for training (one text per line)",
+    )
+    parser.add_argument(
         "--dataset",
         type=str,
         default="wikitext-2-raw-v1",
-        help="HuggingFace dataset name",
+        help="HuggingFace dataset name (requires datasets library)",
     )
     parser.add_argument(
         "--adapter-layer",
@@ -461,17 +466,37 @@ def main():
     
     # Load dataset
     print("Loading dataset...")
-    dataset = load_dataset(args.dataset, split="train")
-    val_dataset = load_dataset(args.dataset, split="validation")
     
     # Tokenizer
     tokenizer = AutoTokenizer.from_pretrained(args.llm_name)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     
-    # Create datasets
-    train_texts = [item["text"] for item in dataset]
-    val_texts = [item["text"] for item in val_dataset]
+    # Load data from file or HuggingFace dataset
+    if args.data_path:
+        # Load from text file
+        print(f"Loading from text file: {args.data_path}")
+        with open(args.data_path, 'r', encoding='utf-8') as f:
+            all_texts = [line.strip() for line in f if line.strip()]
+        
+        # Split into train/val (90/10)
+        split_idx = int(len(all_texts) * 0.9)
+        train_texts = all_texts[:split_idx]
+        val_texts = all_texts[split_idx:]
+    else:
+        # Load from HuggingFace dataset
+        try:
+            from datasets import load_dataset
+            print(f"Loading HuggingFace dataset: {args.dataset}")
+            dataset = load_dataset(args.dataset, split="train")
+            val_dataset = load_dataset(args.dataset, split="validation")
+            train_texts = [item["text"] for item in dataset]
+            val_texts = [item["text"] for item in val_dataset]
+        except ImportError:
+            print("Error: datasets library not installed.")
+            print("Please install with: pip install datasets")
+            print("Or provide --data-path to use a text file instead.")
+            return
     
     train_dataset = LMDataset(train_texts, tokenizer, args.max_length)
     val_dataset = LMDataset(val_texts, tokenizer, args.max_length)
