@@ -7,7 +7,11 @@ from .complex_decomposer import (
     ComplexLinear,
 )
 from .associative_scan import associative_scan, blelloch_scan
-from .complex_ssm_triton import ComplexSSMTritonKernel
+from .complex_ssm_triton import (
+    complex_selective_scan_cuda,
+    complex_selective_scan_triton,
+    select_complex_scan_backend,
+)
 
 __all__ = [
     "SpectralDecomposer",
@@ -16,5 +20,7 @@ __all__ = [
     "ComplexLinear",
     "associative_scan",
     "blelloch_scan",
-    "ComplexSSMTritonKernel",
+    "complex_selective_scan_cuda",
+    "complex_selective_scan_triton",
+    "select_complex_scan_backend",
 ]
