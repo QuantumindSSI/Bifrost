@@ -58,11 +58,15 @@ class RealAudioDataset(Dataset):
         self.max_length = max_length
         self.d_model = d_model
         
-        # Load audio files
-        self.audio_files = list(self.data_path.glob("*.wav")) + list(self.data_path.glob("*.mp3"))
+        # Load audio files (recursive search for wav, mp3, flac)
+        self.audio_files = (
+            list(self.data_path.rglob("*.wav")) +
+            list(self.data_path.rglob("*.mp3")) +
+            list(self.data_path.rglob("*.flac"))
+        )
         
         if len(self.audio_files) == 0:
-            raise ValueError(f"No audio files found in {data_path}")
+            raise ValueError(f"No audio files found in {data_path} (searched recursively for .wav, .mp3, .flac)")
         
         print(f"Loaded {len(self.audio_files)} audio files")
     
