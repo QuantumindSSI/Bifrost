@@ -59,11 +59,11 @@ class SpectralProjector(nn.Module):
         
         # === UNCERTAINTY CALIBRATION ===
         # Learnable temperature for scaling (constrained to be positive via softplus)
-        # Initialize log-space parameter so softplus(initial) ≈ 0.5
-        self.uncertainty_temperature_log = nn.Parameter(torch.tensor(-0.6931))  # log(0.5)
+        # Initialize to 0.5 (positive)
+        self.uncertainty_temperature = nn.Parameter(torch.tensor(0.5))
         # Learnable bias for shifting uncertainty baseline (constrained to be positive)
-        # Initialize log-space parameter so softplus(initial) ≈ 0.0
-        self.uncertainty_bias_log = nn.Parameter(torch.tensor(-10.0))  # softplus(-10) ≈ 0
+        # Initialize to 0.0 (positive)
+        self.uncertainty_bias = nn.Parameter(torch.tensor(0.0))
         
         # Initialize with small weights for stability
         nn.init.xavier_uniform_(self.to_spectral.weight, gain=0.01)
@@ -99,8 +99,8 @@ class SpectralProjector(nn.Module):
         # Uncertainty with learned calibration (temperature scaling + bias)
         # Both parameters constrained to be positive via softplus
         raw_uncertainty = spectral_flat[:, :, 3, :]
-        temperature = F.softplus(self.uncertainty_temperature_log)  # Always positive
-        bias = F.softplus(self.uncertainty_bias_log)  # Always positive
+        temperature = F.softplus(self.uncertainty_temperature)  # Always positive
+        bias = F.softplus(self.uncertainty_bias)  # Always positive
         uncertainty = (raw_uncertainty.abs() * temperature + bias)
         uncertainty = torch.sigmoid(uncertainty)  # Scale to [0, 1] for probabilistic interpretation
         

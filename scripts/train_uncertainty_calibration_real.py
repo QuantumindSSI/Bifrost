@@ -387,8 +387,8 @@ class UncertaintyCalibrationTrainer:
         """
         checkpoint = {
             "projector_state_dict": self.projector.state_dict(),
-            "uncertainty_temperature_log": self.projector.uncertainty_temperature_log.item(),
-            "uncertainty_bias_log": self.projector.uncertainty_bias_log.item(),
+            "uncertainty_temperature": self.projector.uncertainty_temperature.item(),
+            "uncertainty_bias": self.projector.uncertainty_bias.item(),
             "history": self.history,
             "current_epoch": self.current_epoch,
         }
@@ -404,31 +404,7 @@ class UncertaintyCalibrationTrainer:
             Checkpoint load path
         """
         checkpoint = torch.load(path, map_location=self.device)
-        
-        # Backward compatibility: migrate old parameter names to new log-space names
-        state_dict = checkpoint["projector_state_dict"]
-        
-        # If old parameters exist, convert to log-space
-        if "uncertainty_temperature" in state_dict:
-            old_temp = state_dict["uncertainty_temperature"]
-            # Convert to log-space: log(softplus^-1(x)) ≈ log(x) for x > 0
-            # For negative values, use a small positive number
-            if old_temp > 0:
-                state_dict["uncertainty_temperature_log"] = torch.log(old_temp)
-            else:
-                state_dict["uncertainty_temperature_log"] = torch.tensor(-0.6931)  # log(0.5)
-            del state_dict["uncertainty_temperature"]
-        
-        if "uncertainty_bias" in state_dict:
-            old_bias = state_dict["uncertainty_bias"]
-            # Convert to log-space
-            if old_bias > 0:
-                state_dict["uncertainty_bias_log"] = torch.log(old_bias)
-            else:
-                state_dict["uncertainty_bias_log"] = torch.tensor(-10.0)  # softplus(-10) ≈ 0
-            del state_dict["uncertainty_bias"]
-        
-        self.projector.load_state_dict(state_dict)
+        self.projector.load_state_dict(checkpoint["projector_state_dict"])
         self.history = checkpoint.get("history", self.history)
         self.current_epoch = checkpoint.get("current_epoch", 0)
 
@@ -539,11 +515,11 @@ def main():
     )
     
     # Initialize temperature to positive value
-    projector.uncertainty_temperature_log.data.fill_(-0.6931)  # log(0.5)
+    projector.uncertainty_temperature.data.fill_(0.5)
     
     import torch.nn.functional as F
-    temp = F.softplus(projector.uncertainty_temperature_log).item()
-    bias = F.softplus(projector.uncertainty_bias_log).item()
+    temp = F.softplus(projector.uncertainty_temperature).item()
+    bias = F.softplus(projector.uncertainty_bias).item()
     print(f"Initial uncertainty temperature: {temp:.4f}")
     print(f"Initial uncertainty bias: {bias:.4f}")
     print()
@@ -691,8 +667,8 @@ def main():
     
     trainer.load_checkpoint(Path(args.save_path))
     
-    temp = F.softplus(projector.uncertainty_temperature_log).item()
-    bias = F.softplus(projector.uncertainty_bias_log).item()
+    temp = F.softplus(projector.uncertainty_temperature).item()
+    bias = F.softplus(projector.uncertainty_bias).item()
     print(f"Final uncertainty temperature: {temp:.4f}")
     print(f"Final uncertainty bias: {bias:.4f}")
     print()
