@@ -505,6 +505,12 @@ def main():
         default=None,
         help="Path to checkpoint to resume training from",
     )
+    parser.add_argument(
+        "--start-epoch",
+        type=int,
+        default=None,
+        help="Starting epoch (overrides checkpoint current_epoch)",
+    )
     
     args = parser.parse_args()
     
@@ -596,6 +602,8 @@ def main():
     if args.resume_from:
         print(f"Resuming from checkpoint: {args.resume_from}")
         trainer.load_checkpoint(Path(args.resume_from))
+        if args.start_epoch is not None:
+            trainer.current_epoch = args.start_epoch
         print(f"Resuming from epoch {trainer.current_epoch}")
         print()
     
