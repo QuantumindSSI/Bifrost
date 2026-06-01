@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
