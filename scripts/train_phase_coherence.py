@@ -233,8 +233,8 @@ def train(args: argparse.Namespace) -> None:
     print()
 
     pipeline = BifrostPipeline(
-        n_fft_s0=1024,
-        n_fft_s1=512,
+        n_fft_canonical=1024,
+        n_fft_decompose=512,
         d_model=args.d_model,
         n_heads=4,
         n_bands=8,

@@ -34,10 +34,10 @@ class BifrostPipeline(nn.Module):
 
     Parameters
     ----------
-    n_fft_s0 : int
-        FFT size for canonicalization.
-    n_fft_s1 : int
-        FFT size for decomposition sub-band analysis.
+    n_fft_canonical : int
+        FFT size for canonicalization (S0 stage).
+    n_fft_decompose : int
+        FFT size for decomposition sub-band analysis (S1 stage).
     n_scales : int
         Number of wavelet scales in decomposition.
     d_model : int
@@ -52,8 +52,8 @@ class BifrostPipeline(nn.Module):
 
     def __init__(
         self,
-        n_fft_s0: int = 1024,
-        n_fft_s1: int = 512,
+        n_fft_canonical: int = 1024,
+        n_fft_decompose: int = 512,
         n_scales: int = 6,
         d_model: int = 128,
         n_heads: int = 4,
@@ -114,19 +114,19 @@ class BifrostPipeline(nn.Module):
             )
 
         self.canonicalizer = SpectralCanonicalizer(
-            n_fft=n_fft_s0,
+            n_fft=n_fft_canonical,
             preserve_frames=preserve_frames,
             use_2d_fft=use_2d_fft,
         )
 
-        # decomposer output n_freq = n_fft_s1 // 2 + 1
-        n_freq_decomp = n_fft_s1 // 2 + 1
+        # decomposer output n_freq = n_fft_decompose // 2 + 1
+        n_freq_decomp = n_fft_decompose // 2 + 1
 
         if use_complex_ssm:
             # Complex SSM processes amplitude+phase jointly for true coherence learning
             # Input n_freq, internal d_model, output d_model (matches binding expectation)
             self.decomposer = ComplexSpectralDecomposer(
-                n_fft=n_fft_s1,
+                n_fft=n_fft_decompose,
                 d_model=d_model,
                 n_frames=32,
             )
@@ -134,7 +134,7 @@ class BifrostPipeline(nn.Module):
             # Dual-stream SSM (default, backward compatible)
             # Use d_model (not n_freq_decomp) so output matches binding expectation
             self.decomposer = SpectralDecomposer(
-                n_fft=n_fft_s1,
+                n_fft=n_fft_decompose,
                 n_scales=n_scales,
                 d_model=d_model,
                 use_mamba=use_mamba,
@@ -147,7 +147,7 @@ class BifrostPipeline(nn.Module):
         binding_n_freq_in = None if use_complex_ssm else n_freq_decomp
         if use_harmonic_binding:
             # HarmonicBinding: explicit 440Hz↔4880Hz frequency grid wired into attention.
-            # n_freq = n_fft_s1 // 2 + 1 (the frequency dimension of the decomposer output
+            # n_freq = n_fft_decompose // 2 + 1 (the frequency dimension of the decomposer output
             # before d_model projection; used by the harmonic grid for bin mapping).
             self.binding = HarmonicBinding(
                 d_model=d_model,

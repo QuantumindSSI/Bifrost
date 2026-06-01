@@ -314,7 +314,7 @@ def main():
     # Initialize pipeline
     print(f"\nInitializing Pipeline...")
     pipeline = BifrostPipeline(
-        n_fft_s0=512,
+        n_fft_canonical=512,
         d_model=128,
         use_complex_ssm=True,
         use_s3_attractor=True,

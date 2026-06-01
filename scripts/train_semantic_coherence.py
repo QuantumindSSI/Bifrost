@@ -87,10 +87,10 @@ def main():
         help="Force synthetic dataset even if --dataset provided",
     )
     parser.add_argument(
-        "--n-fft-s0",
+        "--n-fft-canonical",
         type=int,
         default=512,
-        help="FFT size for canonicalization",
+        help="FFT size for canonicalization (S0 stage)",
     )
     parser.add_argument(
         "--d-model",
@@ -148,13 +148,13 @@ def main():
     # Initialize pipeline
     print(f"\nInitializing Bifrost Pipeline...")
     pipeline = BifrostPipeline(
-        n_fft_s0=args.n_fft_s0,
+        n_fft_canonical=args.n_fft_canonical,
         d_model=args.d_model,
         use_s3_attractor=True,
         use_complex_ssm=True,
     ).to(device)
     print(f"  d_model: {args.d_model}")
-    print(f"  n_fft_s0: {args.n_fft_s0}")
+    print(f"  n_fft_canonical: {args.n_fft_canonical}")
     
     # Create trainer
     print(f"\nInitializing Semantic Coherence Trainer...")

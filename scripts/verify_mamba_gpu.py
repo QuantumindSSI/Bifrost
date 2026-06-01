@@ -105,8 +105,8 @@ def test_fbc_mamba_integration():
 
     # Create pipeline with Mamba enabled
     pipeline = BifrostPipeline(
-        n_fft_s0=512,
-        n_fft_s1=256,
+        n_fft_canonical=512,
+        n_fft_decompose=256,
         d_model=128,
         n_scales=4,
         n_heads=4,

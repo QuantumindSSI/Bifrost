@@ -281,7 +281,7 @@ def find_optimal_blend_ratio(
     # no projection is needed and the blend ratio has no effect.
     pipeline = BifrostPipeline(
         d_model=d_model,
-        n_fft_s0=n_fft,
+        n_fft_canonical=n_fft,
         use_complex_ssm=False,  # Required for blend ratio testing
     ).to(device)
     pipeline.eval()

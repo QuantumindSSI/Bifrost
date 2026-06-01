@@ -435,7 +435,7 @@ def main():
     # Initialize projector
     projector = SpectralProjector(
         d_model=args.d_model,
-        d_spectral=128,
+        spectral_dim=128,
     )
     
     print(f"Initial uncertainty temperature: {projector.uncertainty_temperature.item():.4f}")

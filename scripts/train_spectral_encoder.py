@@ -257,16 +257,16 @@ def main():
         help="Audio sample rate",
     )
     parser.add_argument(
-        "--n-fft-s0",
+        "--n-fft-canonical",
         type=int,
         default=1024,
-        help="FFT size for canonicalization",
+        help="FFT size for canonicalization (S0 stage)",
     )
     parser.add_argument(
-        "--n-fft-s1",
+        "--n-fft-decompose",
         type=int,
         default=512,
-        help="FFT size for decomposition",
+        help="FFT size for decomposition (S1 stage)",
     )
     parser.add_argument(
         "--d-model",
@@ -322,15 +322,15 @@ def main():
     # Initialize pipeline
     print(f"\nInitializing Pipeline...")
     pipeline = BifrostPipeline(
-        n_fft_s0=args.n_fft_s0,
-        n_fft_s1=args.n_fft_s1,
+        n_fft_canonical=args.n_fft_canonical,
+        n_fft_decompose=args.n_fft_decompose,
         d_model=args.d_model,
         use_complex_ssm=True,
         use_s3_attractor=True,
     )
     print(f"  d_model: {args.d_model}")
-    print(f"  n_fft_s0: {args.n_fft_s0}")
-    print(f"  n_fft_s1: {args.n_fft_s1}")
+    print(f"  n_fft_canonical: {args.n_fft_canonical}")
+    print(f"  n_fft_decompose: {args.n_fft_decompose}")
     
     # Trainer
     trainer = SpectralEncoderTrainer(
