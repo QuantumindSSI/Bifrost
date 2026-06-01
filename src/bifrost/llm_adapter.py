@@ -97,11 +97,9 @@ class SpectralProjector(nn.Module):
         scale = spectral_flat[:, :, 2, :].abs() + 1e-8  # Ensure positive
         
         # Uncertainty with learned calibration (temperature scaling + bias)
-        # Both parameters constrained to be positive via softplus
         raw_uncertainty = spectral_flat[:, :, 3, :]
-        temperature = F.softplus(self.uncertainty_temperature)  # Always positive
-        bias = F.softplus(self.uncertainty_bias)  # Always positive
-        uncertainty = (raw_uncertainty.abs() * temperature + bias)
+        uncertainty = (raw_uncertainty.abs() * self.uncertainty_temperature 
+                        + self.uncertainty_bias)
         uncertainty = torch.sigmoid(uncertainty)  # Scale to [0, 1] for probabilistic interpretation
         
         spectral = SpectralTensor(

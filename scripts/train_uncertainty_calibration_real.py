@@ -518,8 +518,8 @@ def main():
     projector.uncertainty_temperature.data.fill_(0.5)
     
     import torch.nn.functional as F
-    temp = F.softplus(projector.uncertainty_temperature).item()
-    bias = F.softplus(projector.uncertainty_bias).item()
+    temp = projector.uncertainty_temperature.item()
+    bias = projector.uncertainty_bias.item()
     print(f"Initial uncertainty temperature: {temp:.4f}")
     print(f"Initial uncertainty bias: {bias:.4f}")
     print()
@@ -667,8 +667,8 @@ def main():
     
     trainer.load_checkpoint(Path(args.save_path))
     
-    temp = F.softplus(projector.uncertainty_temperature).item()
-    bias = F.softplus(projector.uncertainty_bias).item()
+    temp = projector.uncertainty_temperature.item()
+    bias = projector.uncertainty_bias.item()
     print(f"Final uncertainty temperature: {temp:.4f}")
     print(f"Final uncertainty bias: {bias:.4f}")
     print()
