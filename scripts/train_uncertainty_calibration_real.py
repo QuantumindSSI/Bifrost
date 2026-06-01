@@ -402,7 +402,31 @@ class UncertaintyCalibrationTrainer:
             Checkpoint load path
         """
         checkpoint = torch.load(path, map_location=self.device)
-        self.projector.load_state_dict(checkpoint["projector_state_dict"])
+        
+        # Backward compatibility: migrate old parameter names to new log-space names
+        state_dict = checkpoint["projector_state_dict"]
+        
+        # If old parameters exist, convert to log-space
+        if "uncertainty_temperature" in state_dict:
+            old_temp = state_dict["uncertainty_temperature"]
+            # Convert to log-space: log(softplus^-1(x)) ≈ log(x) for x > 0
+            # For negative values, use a small positive number
+            if old_temp > 0:
+                state_dict["uncertainty_temperature_log"] = torch.log(old_temp)
+            else:
+                state_dict["uncertainty_temperature_log"] = torch.tensor(-0.6931)  # log(0.5)
+            del state_dict["uncertainty_temperature"]
+        
+        if "uncertainty_bias" in state_dict:
+            old_bias = state_dict["uncertainty_bias"]
+            # Convert to log-space
+            if old_bias > 0:
+                state_dict["uncertainty_bias_log"] = torch.log(old_bias)
+            else:
+                state_dict["uncertainty_bias_log"] = torch.tensor(-10.0)  # softplus(-10) ≈ 0
+            del state_dict["uncertainty_bias"]
+        
+        self.projector.load_state_dict(state_dict)
         self.history = checkpoint.get("history", self.history)
 
 
@@ -471,6 +495,12 @@ def main():
         type=str,
         default="checkpoints/uncertainty_calibration_real.pt",
         help="Checkpoint save path",
+    )
+    parser.add_argument(
+        "--resume-from",
+        type=str,
+        default=None,
+        help="Path to checkpoint to resume training from",
     )
     
     args = parser.parse_args()
@@ -559,6 +589,15 @@ def main():
         correlation_weight=args.correlation_weight,
     )
     
+    # Resume from checkpoint if specified
+    start_epoch = 0
+    if args.resume_from:
+        print(f"Resuming from checkpoint: {args.resume_from}")
+        trainer.load_checkpoint(Path(args.resume_from))
+        start_epoch = len(trainer.history["ece"])
+        print(f"Resuming from epoch {start_epoch}")
+        print()
+    
     # Train
     print("=" * 60)
     print("Training")
@@ -567,7 +606,7 @@ def main():
     
     best_ece = float('inf')
     
-    for epoch in range(args.epochs):
+    for epoch in range(start_epoch, args.epochs):
         epoch_ece = 0.0
         epoch_correlation = 0.0
         n_batches = 0
