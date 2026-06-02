@@ -14,7 +14,6 @@ Per Agentic CTO-Persona Policy:
 """
 
 import torch
-import torchaudio
 import numpy as np
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict, Union, Callable
@@ -22,6 +21,14 @@ from dataclasses import dataclass
 from torch.utils.data import Dataset, DataLoader
 import json
 import csv
+
+# Optional torchaudio import (only needed for audio processing)
+try:
+    import torchaudio
+    TORCHAUDIO_AVAILABLE = True
+except (ImportError, OSError):
+    TORCHAUDIO_AVAILABLE = False
+    torchaudio = None
 
 
 @dataclass

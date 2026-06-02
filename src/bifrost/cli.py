@@ -25,6 +25,14 @@ from typing import Optional
 import torch
 import numpy as np
 
+# Optional torchaudio import (only needed for audio processing)
+try:
+    import torchaudio
+    TORCHAUDIO_AVAILABLE = True
+except (ImportError, OSError):
+    TORCHAUDIO_AVAILABLE = False
+    torchaudio = None
+
 from . import BifrostPipeline, HarmonicBinding, create_multimodal_pipeline
 from .spectral_tensor import SpectralTensor
 from .complex_training import ComplexBifrostTrainer, PhaseCoherenceMetrics
