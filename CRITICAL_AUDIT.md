@@ -254,29 +254,30 @@ except ImportError:
 
 **Reality:** Converts all modalities to 1D signals arbitrarily. No proof this preserves modality-specific information.
 
-### D3. "Phase Coherence as Information Carrier" - Training Evidence ❌ NOT PROVEN
+### D3. "Phase Coherence as Information Carrier" - Preliminary Training Evidence ⚠️ INCONCLUSIVE
 **Location:** Throughout documentation, `scripts/train_phasellm_lm.py`
 
 **Claim:** Phase coherence in LLM hidden states correlates with semantic coherence, and spectral processing enhances this relationship.
 
-**Training Evidence (2026-06-01):**
+**Preliminary Training Evidence (2026-06-01):**
 - PhaseLLM adapter trained on real text corpus (5 Project Gutenberg books, 2.2M characters)
 - Training results over 3 epochs:
   - Epoch 1: Val Loss=0.1850, PPL=1.20, **Coherence=0.0005**
   - Epoch 2: Val Loss=0.1810, PPL=1.20, **Coherence=0.0005**
   - Epoch 3: Val Loss=0.1729, PPL=1.19, **Coherence=0.0005**
 
-**Scientific Reality:**
-- **Phase coherence is constant (0.0005)** across all epochs despite perplexity improvement
-- No correlation observed between phase coherence and semantic metrics (loss, perplexity)
-- Spectral processing does NOT appear to enhance phase-semantic relationship
+**Preliminary Observations:**
+- **Phase coherence is constant (0.0005)** across 3 epochs despite perplexity improvement
+- No correlation observed between phase coherence and semantic metrics (loss, perplexity) in initial training
 - Coherence values are near-zero, suggesting the metric may not be meaningful for text
 
-**Policy Violations:**
-- G5 Problem Fit: Core hypothesis (phase-semantic correlation) **not supported by empirical evidence**
-- Empiricism is inviolable: Training data contradicts the central claim
+**Limitations:**
+- **3 epochs is insufficient** to establish conclusive evidence
+- Training was interrupted (killed by memory limits)
+- Need extended training (10+ epochs) to observe trends
+- May need different coherence metric formulation
 
-**Status:** ❌ **HYPOTHESIS DISPROVEN BY TRAINING DATA**
+**Status:** ⚠️ **PRELIMINARY EVIDENCE SUGGESTS NO CORRELATION - MORE TRAINING REQUIRED**
 
 ---
 
@@ -349,24 +350,30 @@ except ImportError:
 | 2 | 0.1892 | 1.21 | 0.1810 | 1.20 | **0.0005** |
 | 3 | 0.1843 | 1.20 | 0.1729 | 1.19 | **0.0005** |
 
-### Critical Finding: Phase-Semantic Correlation NOT Observed
+### Preliminary Finding: Phase-Semantic Correlation Not Observed (Limited Training)
 
-**Evidence:**
-1. **Phase coherence is constant (0.0005)** across all training epochs
+**Evidence (3 epochs):**
+1. **Phase coherence is constant (0.0005)** across 3 training epochs
 2. **No correlation** between phase coherence and semantic metrics:
    - Perplexity improved (7.83 → 1.19)
    - Loss improved (0.2034 → 0.1729)
    - Phase coherence: **unchanged**
 3. **Near-zero coherence values** suggest the metric may not be meaningful for text representations
-4. **Spectral processing does not enhance** the phase-semantic relationship
+4. **Spectral processing does not appear to enhance** the phase-semantic relationship
 
-**Conclusion:**
-> The central hypothesis of Bifrost—that phase coherence in LLM hidden states correlates with semantic coherence and that spectral processing can enhance this relationship—is **NOT supported by empirical evidence**. Training data contradicts this claim.
+**Limitations:**
+- **3 epochs is insufficient** for conclusive evidence
+- Training was interrupted (memory limits)
+- Need extended training (10+ epochs) to observe trends
+- May need different coherence metric formulation
 
-**Implications:**
-- Phase coherence as currently computed (phase variance inverse) may not be a meaningful metric for text
-- The spectral processing pipeline does not appear to provide benefits for language modeling
-- The theoretical foundation of Bifrost requires re-evaluation
+**Conclusion (Preliminary):**
+> Initial training suggests no correlation between phase coherence and semantic metrics, but **3 epochs is insufficient** to draw definitive conclusions. Extended training required to validate or refute the hypothesis.
+
+**Next Steps:**
+- Continue training for 10+ epochs
+- Monitor phase coherence trends over longer training
+- Consider alternative coherence metric formulations if constant coherence persists
 
 ---
 
