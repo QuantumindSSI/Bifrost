@@ -254,30 +254,44 @@ except ImportError:
 
 **Reality:** Converts all modalities to 1D signals arbitrarily. No proof this preserves modality-specific information.
 
-### D3. "Phase Coherence as Information Carrier" - Preliminary Training Evidence ⚠️ INCONCLUSIVE
+### D3. "Phase Coherence as Information Carrier" - Supported by Recent Research ⚠️ NEEDS VALIDATION
 **Location:** Throughout documentation, `scripts/train_phasellm_lm.py`
 
 **Claim:** Phase coherence in LLM hidden states correlates with semantic coherence, and spectral processing enhances this relationship.
 
-**Preliminary Training Evidence (2026-06-01):**
+**Recent Research Support (PRISM Paper, 2025):**
+- **PRISM (Phase-Rotating Interference Spectral Model)** demonstrates phase-semantic correlation
+- Synonym/antonym pairs show **R=0.198** phase coherence vs **R=0.072** for random pairs
+- Biological analogy: Theta-band phase synchronization increases during semantic processing
+- Hybrid models achieve **antonym coherence R=0.69** vs lower baselines
+- Reference: https://arxiv.org/html/2512.01208
+
+**Mechanisms:**
+1. **Interference-based computation**: Coherent threads reinforce (constructive), unrelated cancels (destructive)
+2. **Lexical ambiguity resolution**: Phase rotations align with contextual "wavefront"
+3. **Hybrid Wave-Particle**: Magnitude stream (discrimination) + Phase stream (coherence)
+
+**Bifrost Preliminary Training Evidence (2026-06-01):**
 - PhaseLLM adapter trained on real text corpus (5 Project Gutenberg books, 2.2M characters)
 - Training results over 3 epochs:
-  - Epoch 1: Val Loss=0.1850, PPL=1.20, **Coherence=0.0005**
-  - Epoch 2: Val Loss=0.1810, PPL=1.20, **Coherence=0.0005**
-  - Epoch 3: Val Loss=0.1729, PPL=1.19, **Coherence=0.0005**
+  - Epoch 1: Val Loss=0.1850, PPL=1.20, **Coherence=0.0005** (old metric)
+  - Epoch 2: Val Loss=0.1810, PPL=1.20, **Coherence=0.0005** (old metric)
+  - Epoch 3: Val Loss=0.1729, PPL=1.19, **Coherence=0.0005** (old metric)
 
-**Preliminary Observations:**
-- **Phase coherence is constant (0.0005)** across 3 epochs despite perplexity improvement
-- No correlation observed between phase coherence and semantic metrics (loss, perplexity) in initial training
-- Coherence values are near-zero, suggesting the metric may not be meaningful for text
+**Metric Issue (2026-06-02):**
+- Bifrost used **inverse variance** as coherence metric (non-standard)
+- This produced near-zero values (0.0005) regardless of training progress
+- **Fixed**: Replaced with standard Phase Coherence (PC): `|mean(exp(i * phase))|`
+- Added semantic coherence metrics (BERT-based, Entity Grid, perplexity-based)
+- Added phase-semantic correlation tracking (Pearson, Spearman, Mutual Information)
 
 **Limitations:**
 - **3 epochs is insufficient** to establish conclusive evidence
 - Training was interrupted (killed by memory limits)
-- Need extended training (10+ epochs) to observe trends
-- May need different coherence metric formulation
+- Old metric was incorrect - need to retrain with corrected metrics
+- Need extended training (10+ epochs) with standard metrics
 
-**Status:** ⚠️ **PRELIMINARY EVIDENCE SUGGESTS NO CORRELATION - MORE TRAINING REQUIRED**
+**Status:** ⚠️ **HYPOTHESIS SUPPORTED BY PRISM RESEARCH - NEEDS BIFROST VALIDATION WITH CORRECTED METRICS**
 
 ---
 
