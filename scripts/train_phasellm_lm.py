@@ -33,6 +33,7 @@ from torch.optim import AdamW
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
 from bifrost.llm_adapter import BifrostEnhancedLLM, SpectralProjector
+from bifrost.semantic_coherence.metrics import SemanticCoherenceMetrics, PhaseSemanticCorrelation
 
 
 class LMDataset(Dataset):
@@ -111,12 +112,18 @@ class PhaseLLMTrainer:
         
         self.optimizer = AdamW(trainable_params, lr=lr, weight_decay=weight_decay)
         
+        # Initialize semantic coherence metrics
+        self.semantic_metrics = SemanticCoherenceMetrics()
+        self.phase_semantic_correlation = PhaseSemanticCorrelation()
+        
         self.history = {
             "train_loss": [],
             "train_ppl": [],
             "val_loss": [],
             "val_ppl": [],
-            "coherence": [],
+            "phase_coherence": [],
+            "semantic_coherence": [],
+            "phase_semantic_corr": [],
         }
         self.current_epoch = 0
     
@@ -171,7 +178,7 @@ class PhaseLLMTrainer:
     def validate(
         self,
         val_loader: DataLoader,
-    ) -> Tuple[float, float, float]:
+    ) -> Tuple[float, float, float, float, float]:
         """
         Validate on validation set.
         
@@ -181,14 +188,20 @@ class PhaseLLMTrainer:
         Returns:
             avg_loss: Average loss
             avg_ppl: Average perplexity
-            avg_coherence: Average phase coherence
+            avg_phase_coherence: Average phase coherence
+            avg_semantic_coherence: Average semantic coherence (perplexity-based)
+            phase_semantic_corr: Correlation between phase and semantic coherence
         """
         self.model.eval()
         
         total_loss = 0.0
         total_ppl = 0.0
-        total_coherence = 0.0
+        total_phase_coherence = 0.0
         n_batches = 0
+        
+        # Track per-batch coherence for correlation
+        batch_phase_coherence = []
+        batch_semantic_coherence = []
         
         for batch in val_loader:
             input_ids = batch["input_ids"].to(self.device)
@@ -211,18 +224,34 @@ class PhaseLLMTrainer:
             total_loss += loss.item()
             total_ppl += perplexity
             
-            # Track coherence if available
+            # Track phase coherence if available
             if hasattr(self.model, "coherence_history") and self.model.coherence_history:
-                total_coherence += sum(self.model.coherence_history) / len(self.model.coherence_history)
+                batch_phase = sum(self.model.coherence_history) / len(self.model.coherence_history)
+                total_phase_coherence += batch_phase
+                batch_phase_coherence.append(batch_phase)
+                
+                # Semantic coherence: use inverse perplexity (higher = better)
+                semantic_coherence = 1.0 / (1.0 + loss.item())
+                batch_semantic_coherence.append(semantic_coherence)
+                
                 self.model.coherence_history.clear()
             
             n_batches += 1
         
         avg_loss = total_loss / n_batches
         avg_ppl = total_ppl / n_batches
-        avg_coherence = total_coherence / n_batches if n_batches > 0 else 0.0
+        avg_phase_coherence = total_phase_coherence / n_batches if n_batches > 0 else 0.0
+        avg_semantic_coherence = sum(batch_semantic_coherence) / len(batch_semantic_coherence) if batch_semantic_coherence else 0.0
         
-        return avg_loss, avg_ppl, avg_coherence
+        # Compute phase-semantic correlation
+        if batch_phase_coherence and batch_semantic_coherence:
+            for pc, sc in zip(batch_phase_coherence, batch_semantic_coherence):
+                self.phase_semantic_correlation.update(pc, sc)
+            phase_semantic_corr = self.phase_semantic_correlation.compute_pearson_correlation()
+        else:
+            phase_semantic_corr = 0.0
+        
+        return avg_loss, avg_ppl, avg_phase_coherence, avg_semantic_coherence, phase_semantic_corr
     
     def save_checkpoint(self, path: Path) -> None:
         """
@@ -501,18 +530,23 @@ def main():
         avg_ppl = epoch_ppl / n_batches
         
         # Validate
-        val_loss, val_ppl, val_coherence = trainer.validate(val_loader)
+        val_loss, val_ppl, val_phase_coherence, val_semantic_coherence, val_phase_semantic_corr = trainer.validate(val_loader)
         
         # Update history
         trainer.history["train_loss"].append(avg_loss)
         trainer.history["train_ppl"].append(avg_ppl)
         trainer.history["val_loss"].append(val_loss)
         trainer.history["val_ppl"].append(val_ppl)
-        trainer.history["coherence"].append(val_coherence)
+        trainer.history["phase_coherence"].append(val_phase_coherence)
+        trainer.history["semantic_coherence"].append(val_semantic_coherence)
+        trainer.history["phase_semantic_corr"].append(val_phase_semantic_corr)
         
         print(f"Epoch {epoch+1}/{args.epochs}:")
         print(f"  Train: Loss={avg_loss:.4f}, PPL={avg_ppl:.2f}")
-        print(f"  Val:   Loss={val_loss:.4f}, PPL={val_ppl:.2f}, Coherence={val_coherence:.4f}")
+        print(f"  Val:   Loss={val_loss:.4f}, PPL={val_ppl:.2f}")
+        print(f"  Phase Coherence: {val_phase_coherence:.4f}")
+        print(f"  Semantic Coherence: {val_semantic_coherence:.4f}")
+        print(f"  Phase-Semantic Correlation: {val_phase_semantic_corr:.4f}")
         
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -531,11 +565,27 @@ def main():
     print()
     
     trainer.load_checkpoint(Path(args.save_path))
-    val_loss, val_ppl, val_coherence = trainer.validate(val_loader)
+    val_loss, val_ppl, val_phase_coherence, val_semantic_coherence, val_phase_semantic_corr = trainer.validate(val_loader)
+    
+    print(f"Final Results:")
+    print(f"  Val Loss: {val_loss:.4f}")
+    print(f"  Val PPL: {val_ppl:.2f}")
+    print(f"  Phase Coherence: {val_phase_coherence:.4f}")
+    print(f"  Semantic Coherence: {val_semantic_coherence:.4f}")
+    print(f"  Phase-Semantic Correlation: {val_phase_semantic_corr:.4f}")
+    print()
+    
+    # Print correlation summary
+    correlation_summary = trainer.phase_semantic_correlation.get_summary()
+    print("Phase-Semantic Correlation Summary:")
+    for key, value in correlation_summary.items():
+        if value is not None:
+            print(f"  {key}: {value:.4f}")
+    print()
     
     print(f"Best validation loss: {best_val_loss:.4f}")
     print(f"Best validation perplexity: {math.exp(best_val_loss):.2f}")
-    print(f"Final phase coherence: {val_coherence:.4f}")
+    print(f"Final phase coherence: {val_phase_coherence:.4f}")
     print()
     print("Training Complete")
 

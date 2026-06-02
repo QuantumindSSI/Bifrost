@@ -402,9 +402,10 @@ class BifrostEnhancedLLM(nn.Module):
         # Project back to hidden space
         enhanced = self.spectral_projector.spectral_to_hidden(decomposed)
         
-        # Compute phase coherence score
-        phase_variance = decomposed.phase.var(dim=-1).mean().item()
-        coherence_score = 1.0 / (1.0 + phase_variance)  # Higher = more coherent
+        # Compute phase coherence score using standard Phase Coherence (PC) formula
+        # PC = |mean(exp(i * phase))| - measures phase alignment across spectral components
+        phase_complex = torch.exp(1j * decomposed.phase)  # Convert to complex
+        coherence_score = torch.abs(phase_complex.mean(dim=-1)).mean().item()
         
         return enhanced, decomposed, coherence_score
     
