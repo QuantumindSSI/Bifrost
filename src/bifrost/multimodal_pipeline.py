@@ -576,39 +576,140 @@ class MultiModalSpectralPipeline(nn.Module):
         self.use_2d_fft = use_2d_fft
         self.use_complex_ssm = use_complex_ssm
 
-        # Modality-specific canonicalizer/decomposer
-        if modality == Modality.AUDIO:
-            self.canonicalizer = SpectralCanonicalizer(
-                n_fft=n_fft,
-                preserve_frames=True,
-                use_2d_fft=False,
-            )
-            if use_complex_ssm:
-                self.decomposer = ComplexSpectralDecomposer(
-                    n_fft=n_fft // 2,
-                    d_model=d_model,
-                    n_frames=32,
-                    d_state=d_state,
-                    expand=expand,
-                )
-            else:
-                self.decomposer = SpectralDecomposer(
-                    n_fft=n_fft // 2,  # S1 uses smaller FFT
-                    d_model=d_model,
-                    n_frames=32,
-                    use_mamba=use_mamba,
-                    d_state=d_state,
-                    expand=expand,
-                    d_conv=d_conv,
-                )
+        self.canonicalizer, self.decomposer = self._build_stages(
+            modality, n_fft, d_model, use_mamba, d_state, expand,
+            d_conv, use_complex_ssm,
+        )
+        binding_n_freq = self._compute_binding_n_freq(modality, n_fft)
+        self.binding = SpectralBinding(
+            d_model=d_model,
+            n_heads=n_heads,
+            n_bands=n_bands,
+            dropout=0.1,
+            n_freq_in=binding_n_freq,
+        )
 
-        elif modality == Modality.IMAGE:
-            self.canonicalizer = SpectralCanonicalizer(
-                n_fft=n_fft,
-                use_2d_fft=True,
-                preserve_frames=False,
+    def _build_stages(
+        self,
+        modality: Modality,
+        n_fft: int,
+        d_model: int,
+        use_mamba: bool,
+        d_state: int,
+        expand: int,
+        d_conv: int,
+        use_complex_ssm: bool,
+    ) -> Tuple[nn.Module, nn.Module]:
+        """Build modality-specific canonicalizer and decomposer."""
+        if modality == Modality.AUDIO:
+            return self._build_audio_stages(
+                n_fft, d_model, use_mamba, d_state, expand, d_conv,
+                use_complex_ssm,
             )
-            self.decomposer = ImageSpectralDecomposer(
+        if modality == Modality.IMAGE:
+            return self._build_image_stages(
+                n_fft, d_model, use_mamba, d_state, expand, d_conv,
+            )
+        if modality == Modality.TEXT:
+            return self._build_text_stages(
+                n_fft, d_model, use_mamba, d_state, expand, d_conv,
+                use_complex_ssm,
+            )
+        if modality == Modality.TENSOR:
+            return self._build_tensor_stages(
+                n_fft, d_model, use_mamba, d_state, expand, d_conv,
+                use_complex_ssm,
+            )
+        raise ValueError(f"Unknown modality: {modality}")
+
+    def _build_audio_stages(
+        self,
+        n_fft: int,
+        d_model: int,
+        use_mamba: bool,
+        d_state: int,
+        expand: int,
+        d_conv: int,
+        use_complex_ssm: bool,
+    ) -> Tuple[nn.Module, nn.Module]:
+        """Build audio canonicalizer and decomposer."""
+        canonicalizer = SpectralCanonicalizer(
+            n_fft=n_fft,
+            preserve_frames=True,
+            use_2d_fft=False,
+        )
+        if use_complex_ssm:
+            decomposer = ComplexSpectralDecomposer(
+                n_fft=n_fft // 2,
+                d_model=d_model,
+                n_frames=32,
+                d_state=d_state,
+                expand=expand,
+            )
+        else:
+            decomposer = SpectralDecomposer(
+                n_fft=n_fft // 2,
+                d_model=d_model,
+                n_frames=32,
+                use_mamba=use_mamba,
+                d_state=d_state,
+                expand=expand,
+                d_conv=d_conv,
+            )
+        return canonicalizer, decomposer
+
+    def _build_image_stages(
+        self,
+        n_fft: int,
+        d_model: int,
+        use_mamba: bool,
+        d_state: int,
+        expand: int,
+        d_conv: int,
+    ) -> Tuple[nn.Module, nn.Module]:
+        """Build image canonicalizer and decomposer."""
+        canonicalizer = SpectralCanonicalizer(
+            n_fft=n_fft,
+            use_2d_fft=True,
+            preserve_frames=False,
+        )
+        decomposer = ImageSpectralDecomposer(
+            n_fft=n_fft,
+            d_model=d_model,
+            n_frames=32,
+            use_mamba=use_mamba,
+            d_state=d_state,
+            expand=expand,
+            d_conv=d_conv,
+        )
+        return canonicalizer, decomposer
+
+    def _build_text_stages(
+        self,
+        n_fft: int,
+        d_model: int,
+        use_mamba: bool,
+        d_state: int,
+        expand: int,
+        d_conv: int,
+        use_complex_ssm: bool,
+    ) -> Tuple[nn.Module, nn.Module]:
+        """Build text canonicalizer and decomposer."""
+        canonicalizer = TextSpectralEncoder(
+            vocab_size=50000,
+            embed_dim=256,
+            n_fft=n_fft,
+        )
+        if use_complex_ssm:
+            decomposer = ComplexSpectralDecomposer(
+                n_fft=n_fft,
+                d_model=d_model,
+                n_frames=32,
+                d_state=d_state,
+                expand=expand,
+            )
+        else:
+            decomposer = SpectralDecomposer(
                 n_fft=n_fft,
                 d_model=d_model,
                 n_frames=32,
@@ -617,76 +718,53 @@ class MultiModalSpectralPipeline(nn.Module):
                 expand=expand,
                 d_conv=d_conv,
             )
+        return canonicalizer, decomposer
 
-        elif modality == Modality.TEXT:
-            self.canonicalizer = TextSpectralEncoder(
-                vocab_size=50000,
-                embed_dim=256,
+    def _build_tensor_stages(
+        self,
+        n_fft: int,
+        d_model: int,
+        use_mamba: bool,
+        d_state: int,
+        expand: int,
+        d_conv: int,
+        use_complex_ssm: bool,
+    ) -> Tuple[nn.Module, nn.Module]:
+        """Build tensor canonicalizer and decomposer."""
+        canonicalizer = TensorSpectralAdapter(n_fft=n_fft)
+        if use_complex_ssm:
+            decomposer = ComplexSpectralDecomposer(
                 n_fft=n_fft,
+                d_model=d_model,
+                n_frames=32,
+                d_state=d_state,
+                expand=expand,
             )
-            if use_complex_ssm:
-                self.decomposer = ComplexSpectralDecomposer(
-                    n_fft=n_fft,
-                    d_model=d_model,
-                    n_frames=32,
-                    d_state=d_state,
-                    expand=expand,
-                )
-            else:
-                self.decomposer = SpectralDecomposer(
-                    n_fft=n_fft,
-                    d_model=d_model,
-                    n_frames=32,
-                    use_mamba=use_mamba,
-                    d_state=d_state,
-                    expand=expand,
-                    d_conv=d_conv,
-                )
-
-        elif modality == Modality.TENSOR:
-            self.canonicalizer = TensorSpectralAdapter(
-                n_fft=n_fft,
-            )
-            if use_complex_ssm:
-                self.decomposer = ComplexSpectralDecomposer(
-                    n_fft=n_fft,
-                    d_model=d_model,
-                    n_frames=32,
-                    d_state=d_state,
-                    expand=expand,
-                )
-            else:
-                self.decomposer = SpectralDecomposer(
-                    n_fft=n_fft,
-                    d_model=d_model,
-                    n_frames=32,
-                    use_mamba=use_mamba,
-                    d_state=d_state,
-                    expand=expand,
-                    d_conv=d_conv,
-                )
-
-        # Binding stage - needs to know input n_freq from decomposer output.
-        # IMAGE always uses ImageSpectralDecomposer (no complex SSM path) → outputs n_fft//2+1.
-        # AUDIO/TEXT/TENSOR with complex SSM → outputs d_model directly (no projection needed).
-        # AUDIO without complex SSM → n_fft//4+1 (S1 uses n_fft//2).
-        # TEXT/TENSOR without complex SSM → n_fft//2+1.
-        if modality == Modality.IMAGE:
-            binding_n_freq = n_fft // 2 + 1
-        elif use_complex_ssm:
-            binding_n_freq = None  # Complex decomposer outputs d_model directly
-        elif modality == Modality.AUDIO:
-            binding_n_freq = n_fft // 4 + 1
         else:
-            binding_n_freq = n_fft // 2 + 1
+            decomposer = SpectralDecomposer(
+                n_fft=n_fft,
+                d_model=d_model,
+                n_frames=32,
+                use_mamba=use_mamba,
+                d_state=d_state,
+                expand=expand,
+                d_conv=d_conv,
+            )
+        return canonicalizer, decomposer
 
-        self.binding = SpectralBinding(
-            d_model=d_model,
-            n_heads=n_heads,
-            n_bands=n_bands,
-            dropout=0.1,
-            n_freq_in=binding_n_freq,
-        )
+    def _compute_binding_n_freq(
+        self,
+        modality: Modality,
+        n_fft: int,
+    ) -> Optional[int]:
+        """Compute binding input frequency dimension from modality."""
+        if modality == Modality.IMAGE:
+            return n_fft // 2 + 1
+        if self.use_complex_ssm:
+            return None
+        if modality == Modality.AUDIO:
+            return n_fft // 4 + 1
+        return n_fft // 2 + 1
 
     def forward(
         self,
