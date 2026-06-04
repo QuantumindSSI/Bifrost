@@ -105,57 +105,74 @@ async def process_file(
     """
     try:
         contents = await file.read()
-        
+
         if modality == "audio":
-            if torchaudio is None:
-                raise HTTPException(status_code=503, detail="torchaudio not available")
-            # Load audio
-            audio_tensor, sr = torchaudio.load(io.BytesIO(contents))
-            
-            pipeline = BifrostPipeline(
-                n_fft_canonical=n_fft,
-                n_fft_decompose=n_fft // 2,
-                d_model=d_model,
-                use_complex_ssm=True,
-            )
-            
-            bound, coherence = pipeline(audio_tensor, {'sample_rate': sr})
-            
-            # Compute metrics
-            diag_ratio = PhaseCoherenceMetrics.diagonal_coherence_ratio(coherence)
-            
-            return ProcessResponse(
-                input_shape=list(audio_tensor.shape),
-                output_shape={
-                    'amplitude': list(bound.amplitude.shape),
-                    'phase': list(bound.phase.shape),
-                },
-                ssm_type=pipeline.ssm_type,
-                coherence_ratio=diag_ratio,
-                metadata=bound.metadata,
-            )
-        
-        elif modality == "image":
-            from PIL import Image
-            img = Image.open(io.BytesIO(contents)).convert('L')
-            tensor = torch.from_numpy(np.array(img)).float().unsqueeze(0) / 255.0
-            
-            pipeline = create_multimodal_pipeline('tensor', n_fft=n_fft, d_model=d_model)
-            bound, coherence = pipeline(tensor)
-            
-            return ProcessResponse(
-                input_shape=list(tensor.shape),
-                output_shape={'amplitude': list(bound.amplitude.shape), 'phase': list(bound.phase.shape)},
-                ssm_type=pipeline.ssm_type,
-                coherence_ratio=0.0,
-                metadata=bound.metadata,
-            )
-        
-        else:
-            raise HTTPException(status_code=400, detail=f"Unsupported modality: {modality}")
-    
+            return await _process_audio(contents, n_fft, d_model)
+        if modality == "image":
+            return await _process_image(contents, n_fft, d_model)
+        raise HTTPException(status_code=400, detail=f"Unsupported modality: {modality}")
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _process_audio(
+    contents: bytes,
+    n_fft: int,
+    d_model: int,
+) -> ProcessResponse:
+    """Process audio bytes through Bifröst pipeline."""
+    if torchaudio is None:
+        raise HTTPException(status_code=503, detail="torchaudio not available")
+
+    audio_tensor, sr = torchaudio.load(io.BytesIO(contents))
+    pipeline = BifrostPipeline(
+        n_fft_canonical=n_fft,
+        n_fft_decompose=n_fft // 2,
+        d_model=d_model,
+        use_complex_ssm=True,
+    )
+    bound, coherence = pipeline(audio_tensor, {'sample_rate': sr})
+    diag_ratio = PhaseCoherenceMetrics.diagonal_coherence_ratio(coherence)
+
+    return ProcessResponse(
+        input_shape=list(audio_tensor.shape),
+        output_shape={
+            'amplitude': list(bound.amplitude.shape),
+            'phase': list(bound.phase.shape),
+        },
+        ssm_type=pipeline.ssm_type,
+        coherence_ratio=diag_ratio,
+        metadata=bound.metadata,
+    )
+
+
+async def _process_image(
+    contents: bytes,
+    n_fft: int,
+    d_model: int,
+) -> ProcessResponse:
+    """Process image bytes through Bifröst pipeline."""
+    from PIL import Image
+    img = Image.open(io.BytesIO(contents)).convert('L')
+    tensor = (
+        torch.from_numpy(np.array(img)).float().unsqueeze(0) / 255.0
+    )
+    pipeline = create_multimodal_pipeline(
+        'tensor', n_fft=n_fft, d_model=d_model
+    )
+    bound, coherence = pipeline(tensor)
+
+    return ProcessResponse(
+        input_shape=list(tensor.shape),
+        output_shape={
+            'amplitude': list(bound.amplitude.shape),
+            'phase': list(bound.phase.shape),
+        },
+        ssm_type=pipeline.ssm_type,
+        coherence_ratio=0.0,
+        metadata=bound.metadata,
+    )
 
 
 @app.get("/demo/harmonic", response_model=DemoResponse)
@@ -179,32 +196,44 @@ async def demo_harmonic(
     if any(f <= 0 for f in freqs):
         raise ValueError("all frequencies must be positive")
 
-    # Generate audio
     sample_rate = 16000
+    audio = _generate_harmonic_audio(freqs, duration, sample_rate)
+    data = _run_harmonic_binding(audio, freqs, sample_rate)
+    return DemoResponse(demo_type="harmonic_binding", data=data, visualizations=["spectrum", "attention_heatmap", "harmonic_grid"])
+
+
+def _generate_harmonic_audio(
+    freqs: list[float],
+    duration: float,
+    sample_rate: int,
+) -> torch.Tensor:
+    """Generate harmonic audio signal from frequency list."""
     t = torch.linspace(0, duration, int(sample_rate * duration))
-    
     audio = torch.zeros_like(t)
     for f in freqs:
         audio += torch.sin(2 * np.pi * f * t)
         for overtone in [2, 3]:
             audio += torch.sin(2 * np.pi * f * overtone * t) * 0.3
-    
-    audio = audio.unsqueeze(0)
-    
-    # Process through harmonic binding
+    return audio.unsqueeze(0)
+
+
+def _run_harmonic_binding(
+    audio: torch.Tensor,
+    freqs: list[float],
+    sample_rate: int,
+) -> dict:
+    """Run STFT and HarmonicBinding, return visualization data."""
     harmonic = HarmonicBinding(
         d_model=128,
         n_freq=257,
         base_freq=freqs[0],
         sample_rate=sample_rate,
     )
-    
-    # STFT
+
     stft = torch.stft(audio.squeeze(0), n_fft=512, return_complex=True)
     amplitude = stft.abs().unsqueeze(0).transpose(-2, -1)
     phase = stft.angle().unsqueeze(0).transpose(-2, -1)
-    
-    # Interpolate to match
+
     if amplitude.shape[-1] != 257:
         amplitude = torch.nn.functional.interpolate(
             amplitude.transpose(-2, -1), size=257, mode='linear'
@@ -212,25 +241,22 @@ async def demo_harmonic(
         phase = torch.nn.functional.interpolate(
             phase.transpose(-2, -1), size=257, mode='linear'
         ).transpose(-2, -1)
-    
+
     bound, attn = harmonic(amplitude, phase)
-    
-    # Extract data for visualization
     harmonic_bins = harmonic.harmonic_grid.get_harmonic_bins().tolist()
-    
-    return DemoResponse(
-        demo_type="harmonic_binding",
-        data={
-            "frequencies": freqs,
-            "harmonic_bins": harmonic_bins,
-            "amplitude": amplitude[0].mean(dim=0).tolist(),
-            "attention_matrix": attn[0, 0].tolist(),  # First head
-            "attention_std": attn.std().item(),
-            "_note": "PROCESSED: Real harmonic audio generated from input frequencies via Bifrost pipeline",
-            "_warning": "This is actual processing, not synthetic demo data",
-        },
-        visualizations=["spectrum", "attention_heatmap", "harmonic_grid"],
-    )
+
+    return {
+        "frequencies": freqs,
+        "harmonic_bins": harmonic_bins,
+        "amplitude": amplitude[0].mean(dim=0).tolist(),
+        "attention_matrix": attn[0, 0].tolist(),
+        "attention_std": attn.std().item(),
+        "_note": (
+            "PROCESSED: Real harmonic audio generated from input "
+            "frequencies via Bifrost pipeline"
+        ),
+        "_warning": "This is actual processing, not synthetic demo data",
+    }
 
 
 @app.get("/demo/coherence", response_model=DemoResponse)
