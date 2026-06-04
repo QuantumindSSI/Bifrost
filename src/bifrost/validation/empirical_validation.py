@@ -1,7 +1,6 @@
 """
 Empirical Validation Metrics for Phase Coherence
 
-Per Agentic CTO-Persona policy, all scientific claims must be empirically traceable.
 This module validates that phase coherence actually correlates with:
 1. Task performance (does higher coherence = better task accuracy?)
 2. Information preservation (does coherence preserve semantic content?)

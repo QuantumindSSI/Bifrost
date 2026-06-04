@@ -10,11 +10,6 @@ Key differences from simple phase-alignment:
 2. FREQUENCY MATCHING: Oscillators must have matching/near frequencies (detuning check)
 3. COUPLING DYNAMICS: Models energy exchange, not just snapshot similarity
 
-Per Agentic CTO-Persona Policy:
-- C-01: Full documentation
-- C-02: Explicit error handling
-- C-04: Complexity ≤10
-- G1-G5: Complete, executable, correct
 """
 
 from __future__ import annotations

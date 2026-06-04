@@ -299,7 +299,7 @@ class BifrostPipeline(nn.Module):
                 bound_st.metadata['attractor_count'] = len(attractors)
                 bound_st.metadata['attractor_stabilities'] = [a.stability for a in attractors]
             except Exception as e:
-                # Log error per policy C-02 (no silent failures)
+                # Log error — no silent failures
                 import warnings
                 warnings.warn(
                     f"Attractor Learning failed: {str(e)}. Skipping attractor extraction.",

@@ -1,10 +1,6 @@
 """
 Tests for Semantic Coherence Training Module
 
-Per Agentic CTO-Persona policy C-03: Every function has tests for:
-- Happy path
-- Boundaries
-- Error paths
 """
 
 import torch

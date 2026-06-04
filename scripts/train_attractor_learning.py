@@ -4,11 +4,6 @@ Train S3 Attractor Learning Module with Real Dataset
 Trains the attractor dynamics on real audio data to learn
 stable phase-lock patterns that correlate with semantic classes.
 
-Per Agentic CTO-Persona Policy:
-- C-01: Full documentation
-- C-02: Explicit error handling
-- C-04: Complexity ≤10
-- G1-G5: Complete, executable, correct
 """
 
 import argparse

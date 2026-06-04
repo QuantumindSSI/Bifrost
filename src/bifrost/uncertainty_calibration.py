@@ -6,12 +6,6 @@ Implements proper uncertainty calibration using:
 2. Temperature scaling on raw uncertainty logits
 3. Expected Calibration Error (ECE) for evaluation
 
-Per Agentic CTO-Persona Policy:
-- C-01: Full documentation
-- C-02: Explicit error handling
-- C-04: Complexity ≤10
-- G1-G5: Complete, executable, correct
-
 Reference:
 - Guo et al. "On Calibration of Modern Neural Networks" (ICML 2017)
 - Temperature scaling: p = sigmoid(z / T) where T is learned on validation set
@@ -28,7 +22,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-# Named constants for demo / calibration defaults (NASA R8)
+# Named constants for demo / calibration defaults
 _DEMO_N_SAMPLES: int = 1000
 
 

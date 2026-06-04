@@ -4,11 +4,6 @@ Empirical Validation of Harmonic/Projected Coherence Blend Ratio
 Validates the optimal blend ratio between original-phase coherence (harmonic-preserving)
 and projected-phase coherence (learned) using ground-truth harmonic signals.
 
-Per Agentic CTO-Persona Policy:
-- C-01: Full documentation
-- C-02: Explicit error handling
-- C-04: Complexity ≤10
-- G1-G5: Complete, executable, correct
 """
 
 import argparse

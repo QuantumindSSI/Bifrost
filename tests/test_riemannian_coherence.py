@@ -8,7 +8,6 @@ Validates:
 - TripletLoss trains correctly
 - Full pipeline integration
 
-Agentic CTO Compliance: C-03 (every function has tests)
 """
 
 import pytest

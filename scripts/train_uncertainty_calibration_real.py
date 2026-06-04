@@ -5,11 +5,6 @@ Train Uncertainty Calibration on Real-World Data
 Uses real audio/text/image datasets instead of synthetic data.
 For production-level uncertainty calibration.
 
-Per Agentic CTO-Persona Policy:
-- C-01: Full documentation
-- C-02: Explicit error handling
-- C-04: Complexity ≤10
-- G1-G5: Complete, executable, correct
 """
 
 import argparse

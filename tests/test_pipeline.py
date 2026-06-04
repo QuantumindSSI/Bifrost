@@ -6,7 +6,7 @@ from bifrost import BifrostPipeline, BifrostPipeline
 
 
 class TestBifrostPipeline:
-    """Test suite for BifrostPipeline per CTO guidelines (C-03)."""
+    """Test suite for BifrostPipeline."""
 
     def test_import_aliases(self):
         """Happy path: Verify BifrostPipeline and BifrostPipeline are same class."""

@@ -20,7 +20,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# Named constants for demo parameters (NASA R8)
+# Named constants for demo parameters
 _DEMO_N_FREQ: int = 257
 _DEMO_N_FFT: int = 512
 _DEMO_SAMPLE_RATE: float = 16000.0

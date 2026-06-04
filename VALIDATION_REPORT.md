@@ -1,7 +1,7 @@
 # Bifrost Codebase Validation Report
 
 **Date:** 2026-06-04
-**Standard:** Agentic CTO-Persona + NASA Power of 10
+**Standard:** Internal Engineering Policy + NASA Power of 10
 **Scope:** `src/bifrost/`, `tests/`, `docs/`
 
 ---
@@ -10,53 +10,53 @@
 
 | Gate | Status | Notes |
 |------|--------|-------|
-| G1 Executability | PASS | `__init__.py`, `cli.py`, `cli/main.py` entry points present |
-| G2 Completeness | PASS | Zero pass-only function bodies; all functions have real implementation |
-| G3 Correctness | MANUAL | Requires runtime test execution (not performed in this audit) |
-| G4 Dependency Honesty | PASS | All imports verified; flagged items were false positives from absolute-package import resolution |
-| G5 Problem Fit | MANUAL | Requires domain-expert review of spectral pipeline logic |
+| Executability | PASS | `__init__.py`, `cli.py`, `cli/main.py` entry points present |
+| Completeness | PASS | Zero pass-only function bodies; all functions have real implementation |
+| Correctness | MANUAL | Requires runtime test execution (not performed in this audit) |
+| Dependency Honesty | PASS | All imports verified; flagged items were false positives from absolute-package import resolution |
+| Problem Fit | MANUAL | Requires domain-expert review of spectral pipeline logic |
 | **Overall** | **CONDITIONAL PASS** | 4 critical violations require remediation before production release |
 
 ---
 
 ## FIVE GATES
 
-### G1: Executability — PASS
+### Executability — PASS
 
 - `src/bifrost/__init__.py` present — package importable
 - `src/bifrost/cli.py` present — CLI entry point
 - `src/bifrost/cli/main.py` present — extended CLI with subcommands
 - No missing `__main__.py` blocks detected
 
-### G2: Completeness — PASS
+### Completeness — PASS
 
 - Zero functions with empty (`pass`-only) bodies
 - Zero `NotImplementedError` stubs except one intentional `_decode_zarr` (see Anti-Deception)
 - Zero `TODO`, `FIXME`, `HACK`, `XXX` comments in source/tests
 
-### G3: Correctness — MANUAL REVIEW REQUIRED
+### Correctness — MANUAL REVIEW REQUIRED
 
 The audit cannot verify correctness of the spectral-math logic without:
 1. Full test-suite execution (`pytest`)
 2. Numerical validation against known baselines
 3. Domain-expert review of phase-lock and Riemannian-manifold implementations
 
-### G4: Dependency Honesty — PASS
+### Dependency Honesty — PASS
 
 All flagged "unresolvable" imports were false positives from the naive `__import__` probe. Absolute imports (`from bifrost.ingest...`) are valid when the package is installed. Verified that:
 - `bifrost.data` and `bifrost.data.loader` exist
 - `bifrost.canonicalizer`, `bifrost.decomposer`, `bifrost.resonance_attention` exist
 - External deps (torch, numpy, librosa) are listed in `pyproject.toml`
 
-### G5: Problem Fit — MANUAL REVIEW REQUIRED
+### Problem Fit — MANUAL REVIEW REQUIRED
 
 The pipeline implements: canonicalize -> decompose -> bind -> attractor -> semantic coherence. Architectural alignment with the stated problem (multimodal spectral reasoning) appears consistent, but requires domain validation.
 
 ---
 
-## CODE STANDARDS (C-01 to C-07)
+## CODE STANDARDS
 
-### C-01: Public Function Documentation — 94.2% (MEDIUM)
+### Public Function Documentation — 94.2% (MEDIUM)
 
 - **Total public functions:** 191
 - **Missing docstrings:** 11 (5.8%)
@@ -75,13 +75,13 @@ The pipeline implements: canonicalize -> decompose -> bind -> attractor -> seman
 
 **Recommendation:** Add one-line docstrings to the 3 non-`@property` methods. The `@property` methods are acceptable without docstrings if the class docstring is sufficient.
 
-### C-02: Explicit Failure Handling — PASS
+### Explicit Failure Handling — PASS
 
 - Zero bare `except:` blocks
 - Zero silent `try/except: pass` patterns
 - All exceptions either re-raise, log, or surface via metadata
 
-### C-03: Test Coverage — UNKNOWN (MEDIUM)
+### Test Coverage — UNKNOWN (MEDIUM)
 
 - **Test files:** 23
 - **Source files:** 54
@@ -90,13 +90,13 @@ The pipeline implements: canonicalize -> decompose -> bind -> attractor -> seman
 
 **Recommendation:** Run `pytest --cov=src/bifrost` and enforce minimum 80% line coverage.
 
-### C-04: Cyclomatic Complexity — NOT MEASURED
+### Cyclomatic Complexity — NOT MEASURED
 
-Static cyclomatic complexity was not computed. However, NASA R4 violations (29 functions > 50 lines) strongly correlate with elevated complexity.
+Static cyclomatic complexity was not computed. However, function size violations (29 functions > 50 lines) strongly correlate with elevated complexity.
 
 **Recommendation:** Integrate `radon` or `mccabe` into CI to enforce complexity <= 10.
 
-### C-05: Input Validation — FAIL (CRITICAL)
+### Input Validation — FAIL (CRITICAL)
 
 20+ public functions accept parameters with no validation:
 
@@ -113,33 +113,33 @@ Static cyclomatic complexity was not computed. However, NASA R4 violations (29 f
 
 **Recommendation:** Add `isinstance`, shape, and range assertions at the top of every public function. Zero-trust all external input.
 
-### C-06: Big-O Documentation — NOT MEASURED
+### Big-O Documentation — NOT MEASURED
 
 Big-O complexity is documented in some modules (e.g., `decomposer.py`) but not consistently across all non-trivial functions.
 
-### C-07: No Placeholders — PASS
+### No Placeholders — PASS
 
 - Zero `TODO`, `FIXME`, `HACK`, `XXX` comments in source or tests
 - Zero scaffold/placeholder functions
 
 ---
 
-## NASA POWER OF 10
+## POWER OF 10 RULES
 
 | Rule | Status | Notes |
 |------|--------|-------|
-| R1: Cyclomatic <= 10 | NOT MEASURED | Requires `mccabe` / `radon` |
-| R2: Every loop terminates | PASS | No `while True` found |
-| R3: Memory at init time | MANUAL | Requires runtime profiling |
-| R4: Functions <= 50 lines | **FAIL (CRITICAL)** | 29 violations; see full list below |
-| R5: Pre/post assertions | PARTIAL | 20 `assert` statements; needs expansion |
-| R6: No global mutable state | PASS | Zero global mutable variables |
-| R7: No ignored return values | MANUAL | Spot-check required |
-| R8: No magic config | **FAIL (CRITICAL)** | Bare literals: 512, 1024, 440.0, 1000, 256, 64 |
-| R9: Bounded call depth | MANUAL | Requires static analysis |
-| R10: CI/CD fails on warnings | NOT CONFIGURED | No CI config in repo |
+| Cyclomatic complexity <= 10 | NOT MEASURED | Requires `mccabe` / `radon` |
+| Every loop terminates | PASS | No `while True` found |
+| Memory at init time | MANUAL | Requires runtime profiling |
+| Functions <= 50 lines | **FAIL (CRITICAL)** | 29 violations; see full list below |
+| Pre/post assertions | PARTIAL | 20 `assert` statements; needs expansion |
+| No global mutable state | PASS | Zero global mutable variables |
+| No ignored return values | MANUAL | Spot-check required |
+| No magic config | **FAIL (CRITICAL)** | Bare literals: 512, 1024, 440.0, 1000, 256, 64 |
+| Bounded call depth | MANUAL | Requires static analysis |
+| CI/CD fails on warnings | NOT CONFIGURED | No CI config in repo |
 
-### NASA R4 Violations — Functions Exceeding 50 Lines (29 total)
+### Function Size Violations — Functions Exceeding 50 Lines (29 total)
 
 | File | Line | Function | Lines |
 |------|------|----------|-------|
@@ -173,7 +173,7 @@ Big-O complexity is documented in some modules (e.g., `decomposer.py`) but not c
 | `training.py` | 77 | `forward` | 59 |
 | `training.py` | 247 | `__init__` | 89 |
 
-### NASA R8 Violations — Magic Numbers
+### Magic Number Violations
 
 ```
 decomposer.py:134        n_fft: int = 512
@@ -245,4 +245,4 @@ api.py:42                n_fft: int = 1024
 
 ---
 
-*Report generated by automated static analysis against the Agentic CTO-Persona engineering standard.*
+*Report generated by automated static analysis against internal engineering standards.*

@@ -23,13 +23,6 @@ References:
     - Metric Learning for Semantic Similarity (Weinberger & Saul, 2009)
     - Graph-Based Manifold Learning (Tenenbaum et al., 2000)
 
-Agentic CTO Compliance:
-    - C-01: All public functions documented
-    - C-02: Explicit failure handling
-    - C-03: Tests included (see tests/test_riemannian_coherence.py)
-    - C-04: Cyclomatic complexity ≤10
-    - C-06: Big-O documented for non-trivial functions
-    - NASA Power of 10: All rules followed
 """
 
 import torch

@@ -5,11 +5,6 @@ Train Uncertainty Calibration for SpectralProjector
 Trains the uncertainty temperature and bias parameters to ensure
 predicted uncertainty correlates with actual prediction error.
 
-Per Agentic CTO-Persona Policy:
-- C-01: Full documentation
-- C-02: Explicit error handling
-- C-04: Complexity ≤10
-- G1-G5: Complete, executable, correct
 """
 
 import argparse

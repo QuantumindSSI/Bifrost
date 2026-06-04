@@ -57,7 +57,7 @@ class TestDemo1AntiPhase:
     """Test suite for demo_1_antiphase."""
 
     def test_discriminate_pair_assertions(self):
-        """Happy path: _evaluate_pair passes NASA Rule 5 assertions."""
+        """Happy path: _evaluate_pair passes invariant assertions."""
         import demos.demo_1_antiphase as demo
         from bifrost.resonance_attention import ResonanceAttention
         from demos.baselines import DotProductAttention

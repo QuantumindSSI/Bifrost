@@ -6,11 +6,6 @@ Supports multiple audio dataset formats:
 - CSV/JSON metadata with file paths and labels
 - TorchAudio datasets (SpeechCommands, VoxCeleb, etc.)
 
-Per Agentic CTO-Persona Policy:
-- C-01: Full documentation
-- C-02: Explicit error handling
-- C-04: Complexity ≤10
-- G1-G5: Complete, executable, correct
 """
 
 import torch
@@ -30,7 +25,7 @@ except (ImportError, OSError):
     TORCHAUDIO_AVAILABLE = False
     torchaudio = None
 
-# Named constants for synthetic dataset generation (NASA R8)
+# Named constants for synthetic dataset generation
 _SYNTHETIC_BASE_FREQ_HZ: float = 200.0
 _SYNTHETIC_FREQ_STEP_PER_CLASS_HZ: float = 100.0
 

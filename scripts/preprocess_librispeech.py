@@ -5,11 +5,6 @@ Preprocess LibriSpeech audio data for faster training.
 Loads audio files, preprocesses them, and saves as cached .pt files.
 This avoids on-the-fly audio loading during training.
 
-Per Agentic CTO-Persona Policy:
-- C-01: Full documentation
-- C-02: Explicit error handling
-- C-04: Complexity ≤10
-- G1-G5: Complete, executable, correct
 """
 
 import argparse

@@ -4,11 +4,6 @@ Train Spectral Encoder (S0-S1) with Real Dataset
 Trains the canonicalizer and decomposer stages end-to-end
 on real audio classification tasks.
 
-Per Agentic CTO-Persona Policy:
-- C-01: Full documentation
-- C-02: Explicit error handling
-- C-04: Complexity ≤10
-- G1-G5: Complete, executable, correct
 """
 
 import argparse
