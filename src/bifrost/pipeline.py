@@ -16,6 +16,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
 
+import warnings
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -74,77 +76,17 @@ class BifrostPipeline(nn.Module):
         self.use_harmonic_binding = use_harmonic_binding
         self.use_s3_attractor = use_s3_attractor
         self.use_riemannian_semantic = use_riemannian_semantic
-        
-        import warnings
-        
-        # === ATTRACTOR LEARNING MODULE (OPTIONAL) ===
-        # Integrates learned attractor dynamics.
-        # Replaces placeholder stability with learned stability prediction.
-        if self.use_s3_attractor:
-            try:
-                from .s3_attractor import AttractorLearningModule
-                self.attractor_learner = AttractorLearningModule(
-                    d_model=d_model,
-                    n_bands=n_bands,
-                    n_attractors=16,
-                )
-                warnings.warn(
-                    "Bifrost Pipeline: Phase-Lock Bridge using learned attractor module. "
-                    "Neural stability prediction active.",
-                    UserWarning,
-                    stacklevel=2
-                )
-            except ImportError:
-                self.attractor_learner = None
-                warnings.warn(
-                    "Bifrost Pipeline: Phase-Lock Bridge using placeholder stability values. "
-                    "Attractor learning module not available.",
-                    UserWarning,
-                    stacklevel=2
-                )
-        else:
-            self.attractor_learner = None
-        
-        # === RIEMANNIAN SEMANTIC COHERENCE (OPTIONAL) ===
-        # Implements learned Riemannian manifold on attractor space
-        # for semantic coherence measurement via geodesic distances
-        self.riemannian_semantic_coherence = None
-        if self.use_riemannian_semantic:
-            if not self.use_s3_attractor:
-                raise ValueError(
-                    "Riemannian semantic coherence requires use_s3_attractor=True "
-                    "to provide FrequencyAttractors"
-                )
-            
-            try:
-                from .riemannian_coherence import RiemannianSemanticCoherence
-                self.riemannian_semantic_coherence = RiemannianSemanticCoherence(
-                    d_model=d_model,
-                    metric_dim=riemannian_metric_dim,
-                    k_neighbors=min(5, 16),  # Based on n_attractors=16
-                    manifold_dim=2,
-                )
-                warnings.warn(
-                    "Bifrost Pipeline: Riemannian Semantic Coherence enabled. "
-                    "Semantic manifold learning active.",
-                    UserWarning,
-                    stacklevel=2
-                )
-            except ImportError as e:
-                warnings.warn(
-                    f"Bifrost Pipeline: Riemannian coherence import failed ({str(e)}). "
-                    "Semantic coherence disabled.",
-                    RuntimeWarning,
-                    stacklevel=2
-                )
-                self.use_riemannian_semantic = False
-        
+
+        self._init_attractor_learner(d_model, n_bands)
+        self._init_riemannian_semantic(d_model, riemannian_metric_dim)
+
         if not use_complex_ssm:
             warnings.warn(
-                "Bifrost Pipeline: Real SSM mode uses different architecture than Complex SSM. "
-                "Switching between modes gives non-equivalent results.",
+                "Bifrost Pipeline: Real SSM mode uses different architecture "
+                "than Complex SSM. Switching between modes gives "
+                "non-equivalent results.",
                 UserWarning,
-                stacklevel=2
+                stacklevel=2,
             )
 
         self.canonicalizer = SpectralCanonicalizer(
@@ -153,37 +95,116 @@ class BifrostPipeline(nn.Module):
             use_2d_fft=use_2d_fft,
         )
 
-        # decomposer output n_freq = n_fft_decompose // 2 + 1
         n_freq_decomp = n_fft_decompose // 2 + 1
+        self.decomposer = self._build_decomposer(
+            n_fft_decompose, n_scales, d_model, use_mamba
+        )
+        self.binding = self._build_binding(
+            d_model, n_heads, n_bands, n_freq_decomp, sample_rate,
+            dropout, use_complex_ssm, use_harmonic_binding,
+        )
+        self._decomp_to_bind_proj = self._build_bridge_projection(
+            n_freq_decomp, d_model, use_complex_ssm,
+        )
 
-        if use_complex_ssm:
-            # Complex SSM processes amplitude+phase jointly for true coherence learning
-            # Input n_freq, internal d_model, output d_model (matches binding expectation)
-            self.decomposer = ComplexSpectralDecomposer(
-                n_fft=n_fft_decompose,
+    def _init_attractor_learner(self, d_model: int, n_bands: int) -> None:
+        """Initialize optional attractor learning module."""
+        if not self.use_s3_attractor:
+            self.attractor_learner = None
+            return
+
+        try:
+            from .s3_attractor import AttractorLearningModule
+            self.attractor_learner = AttractorLearningModule(
+                d_model=d_model,
+                n_bands=n_bands,
+                n_attractors=16,
+            )
+            warnings.warn(
+                "Bifrost Pipeline: Phase-Lock Bridge using learned attractor "
+                "module. Neural stability prediction active.",
+                UserWarning,
+                stacklevel=2,
+            )
+        except ImportError:
+            self.attractor_learner = None
+            warnings.warn(
+                "Bifrost Pipeline: Phase-Lock Bridge using placeholder "
+                "stability values. Attractor learning module not available.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+    def _init_riemannian_semantic(self, d_model: int, metric_dim: int) -> None:
+        """Initialize optional Riemannian semantic coherence module."""
+        self.riemannian_semantic_coherence = None
+        if not self.use_riemannian_semantic:
+            return
+
+        if not self.use_s3_attractor:
+            raise ValueError(
+                "Riemannian semantic coherence requires use_s3_attractor=True "
+                "to provide FrequencyAttractors"
+            )
+
+        try:
+            from .riemannian_coherence import RiemannianSemanticCoherence
+            self.riemannian_semantic_coherence = RiemannianSemanticCoherence(
+                d_model=d_model,
+                metric_dim=metric_dim,
+                k_neighbors=min(5, 16),
+                manifold_dim=2,
+            )
+            warnings.warn(
+                "Bifrost Pipeline: Riemannian Semantic Coherence enabled. "
+                "Semantic manifold learning active.",
+                UserWarning,
+                stacklevel=2,
+            )
+        except ImportError as e:
+            warnings.warn(
+                f"Bifrost Pipeline: Riemannian coherence import failed "
+                f"({str(e)}). Semantic coherence disabled.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            self.use_riemannian_semantic = False
+
+    def _build_decomposer(
+        self,
+        n_fft: int,
+        n_scales: int,
+        d_model: int,
+        use_mamba: bool,
+    ) -> nn.Module:
+        """Build spectral decomposer (complex or dual-stream)."""
+        if self.use_complex_ssm:
+            return ComplexSpectralDecomposer(
+                n_fft=n_fft,
                 d_model=d_model,
                 n_frames=32,
             )
-        else:
-            # Dual-stream SSM (default, backward compatible)
-            # Use d_model (not n_freq_decomp) so output matches binding expectation
-            self.decomposer = SpectralDecomposer(
-                n_fft=n_fft_decompose,
-                n_scales=n_scales,
-                d_model=d_model,
-                use_mamba=use_mamba,
-            )
+        return SpectralDecomposer(
+            n_fft=n_fft,
+            n_scales=n_scales,
+            d_model=d_model,
+            use_mamba=use_mamba,
+        )
 
-        # For the dual-stream decomposer the binding receives n_freq_decomp-dimensional
-        # phase tensors; passing n_freq_in activates the harmonic-preserving original-phase
-        # coherence path in SpectralBinding (use_original_phase=True).
-        # For the complex SSM the decomposer already outputs d_model, so no projection needed.
-        binding_n_freq_in = None if use_complex_ssm else n_freq_decomp
+    def _build_binding(
+        self,
+        d_model: int,
+        n_heads: int,
+        n_bands: int,
+        n_freq_decomp: int,
+        sample_rate: float,
+        dropout: float,
+        use_complex_ssm: bool,
+        use_harmonic_binding: bool,
+    ) -> nn.Module:
+        """Build spectral binding module."""
         if use_harmonic_binding:
-            # HarmonicBinding: explicit 440Hz↔4880Hz frequency grid wired into attention.
-            # n_freq = n_fft_decompose // 2 + 1 (the frequency dimension of the decomposer output
-            # before d_model projection; used by the harmonic grid for bin mapping).
-            self.binding = HarmonicBinding(
+            return HarmonicBinding(
                 d_model=d_model,
                 n_heads=n_heads,
                 n_freq=n_freq_decomp,
@@ -191,23 +212,28 @@ class BifrostPipeline(nn.Module):
                 sample_rate=sample_rate,
                 dropout=dropout,
             )
-        else:
-            self.binding = SpectralBinding(
-                d_model=d_model,
-                n_heads=n_heads,
-                n_bands=n_bands,
-                dropout=dropout,
-                n_freq_in=binding_n_freq_in,
-            )
 
-        # Bridge projection if decomposer output dim != binding d_model
-        # Complex SSM already outputs d_model features, no projection needed
+        n_freq_in = None if use_complex_ssm else n_freq_decomp
+        return SpectralBinding(
+            d_model=d_model,
+            n_heads=n_heads,
+            n_bands=n_bands,
+            dropout=dropout,
+            n_freq_in=n_freq_in,
+        )
+
+    def _build_bridge_projection(
+        self,
+        n_freq_decomp: int,
+        d_model: int,
+        use_complex_ssm: bool,
+    ) -> Optional[nn.Module]:
+        """Build bridge projection if decomposer output dim != binding d_model."""
         if use_complex_ssm:
-            self._decomp_to_bind_proj = None  # Complex decomposer outputs d_model directly
-        elif n_freq_decomp != d_model:
-            self._decomp_to_bind_proj = nn.Linear(n_freq_decomp, d_model)
-        else:
-            self._decomp_to_bind_proj = None
+            return None
+        if n_freq_decomp != d_model:
+            return nn.Linear(n_freq_decomp, d_model)
+        return None
 
     def forward(
         self,
@@ -236,94 +262,143 @@ class BifrostPipeline(nn.Module):
         coherence : torch.Tensor
             Attention coherence weights from binding.
         """
-        if signal.numel() == 0:
-            raise ValueError("Input signal is empty (numel=0).")
-        
-        # === INPUT VALIDATION ASSERTIONS ===
-        assert signal.dtype == torch.float32, f"Expected float32 input signal, got {signal.dtype}"
-        assert signal.dim() >= 1, f"Expected 1D+ signal, got shape {signal.shape}"
-        assert torch.isfinite(signal).all(), "Non-finite values in input signal"
-        
+        self._validate_input(signal)
+
         canonical = self.canonicalizer(signal, metadata)
         if self.use_complex_ssm:
             decomposed, _ = self.decomposer(canonical, h_0)
         else:
             decomposed = self.decomposer(canonical)
-        if self.use_harmonic_binding:
-            # HarmonicBinding takes (amplitude, phase) tensors directly.
-            amp = decomposed.amplitude
-            phase = decomposed.phase
-            if amp.dim() == 2:
-                amp = amp.unsqueeze(1)
-                phase = phase.unsqueeze(1)
-            if amp.shape[1] == 1:
-                raise ValueError(
-                    "Single-token input (T=1) produces trivially uniform coherence. "
-                    "Pass a signal long enough to produce T > 1 spectral frames."
-                )
-            bound_amp, coherence = self.binding(amp, phase=phase)
-            bound_st = SpectralTensor(
-                amplitude=bound_amp,
-                phase=phase,
-                scale=decomposed.scale,
-                uncertainty=decomposed.uncertainty,
-                metadata=decomposed.metadata,
-            )
-        else:
-            amp = decomposed.amplitude
-            if amp.dim() == 3 and amp.shape[1] == 1:
-                import warnings
-                warnings.warn(
-                    "SpectralBinding received T=1 (single token). "
-                    "Coherence will be trivially 1.0 — phase carries no information. "
-                    "Provide longer signals for meaningful phase-coherence routing.",
-                    stacklevel=2,
-                )
-            # Validate canonical has amplitude attribute
-            if not hasattr(canonical, 'amplitude') or canonical.amplitude is None:
-                raise ValueError("canonical must have amplitude attribute for harmonic coherence detection")
 
-            bound_st, coherence = self.binding(
-                decomposed,
-                input_proj=self._decomp_to_bind_proj,
-                canonical_phase=canonical.phase,
-                canonical_amplitude=canonical.amplitude,  # Raw STFT amplitude for harmonic detection
-            )
-        
-        # === ATTRACTOR LEARNING (Optional) ===
-        # Extract learned attractors from spectral binding output
-        if hasattr(self, 'attractor_learner') and self.attractor_learner is not None:
-            try:
-                attractors, assignment_probs = self.attractor_learner(bound_st)
-                # Add attractor info to metadata
-                bound_st.metadata['attractor_count'] = len(attractors)
-                bound_st.metadata['attractor_stabilities'] = [a.stability for a in attractors]
-            except Exception as e:
-                # Log error — no silent failures
-                import warnings
-                warnings.warn(
-                    f"Attractor Learning failed: {str(e)}. Skipping attractor extraction.",
-                    RuntimeWarning,
-                    stacklevel=2
-                )
-                bound_st.metadata['attractor_count'] = 0
-                bound_st.metadata['attractor_error'] = str(e)
-        
-        # === SEMANTIC COHERENCE COMPUTATION (OPTIONAL) ===
-        if self.use_riemannian_semantic and self.riemannian_semantic_coherence is not None:
-            if 'attractor_count' in bound_st.metadata and bound_st.metadata['attractor_count'] > 1:
-                try:
-                    # Reconstruct attractors from metadata for coherence processing
-                    # In practice, these would be cached from attractor learning forward pass
-                    semantic_output = self.riemannian_semantic_coherence(
-                        attractors=[],  # Placeholder - real implementation needs attractor cache
-                    )
-                    bound_st.metadata['semantic_coherence'] = semantic_output.coherence_scores.mean().item()
-                    bound_st.metadata['manifold_coords'] = semantic_output.manifold_coords.cpu().numpy().tolist()
-                except Exception as e:
-                    bound_st.metadata['semantic_coherence_error'] = str(e)
-        
+        bound_st, coherence = self._run_binding(decomposed, canonical)
+        bound_st = self._run_attractor_learning(bound_st)
+        bound_st = self._run_semantic_coherence(bound_st)
         return bound_st, coherence
+
+    def _validate_input(self, signal: torch.Tensor) -> None:
+        """Validate input tensor shape, dtype, and finiteness."""
+        if signal.numel() == 0:
+            raise ValueError("Input signal is empty (numel=0).")
+        if signal.dtype != torch.float32:
+            raise TypeError(
+                f"Expected float32 input signal, got {signal.dtype}"
+            )
+        if signal.dim() < 1:
+            raise ValueError(
+                f"Expected 1D+ signal, got shape {signal.shape}"
+            )
+        if not torch.isfinite(signal).all():
+            raise ValueError("Non-finite values in input signal")
+
+    def _run_binding(
+        self,
+        decomposed: SpectralTensor,
+        canonical: SpectralTensor,
+    ) -> Tuple[SpectralTensor, torch.Tensor]:
+        """Run spectral binding (harmonic or standard)."""
+        if self.use_harmonic_binding:
+            return self._run_harmonic_binding(decomposed)
+        return self._run_spectral_binding(decomposed, canonical)
+
+    def _run_harmonic_binding(
+        self,
+        decomposed: SpectralTensor,
+    ) -> Tuple[SpectralTensor, torch.Tensor]:
+        """Run HarmonicBinding on decomposed spectral tensor."""
+        amp = decomposed.amplitude
+        phase = decomposed.phase
+        if amp.dim() == 2:
+            amp = amp.unsqueeze(1)
+            phase = phase.unsqueeze(1)
+        if amp.shape[1] == 1:
+            raise ValueError(
+                "Single-token input (T=1) produces trivially uniform coherence. "
+                "Pass a signal long enough to produce T > 1 spectral frames."
+            )
+        bound_amp, coherence = self.binding(amp, phase=phase)
+        return SpectralTensor(
+            amplitude=bound_amp,
+            phase=phase,
+            scale=decomposed.scale,
+            uncertainty=decomposed.uncertainty,
+            metadata=decomposed.metadata,
+        ), coherence
+
+    def _run_spectral_binding(
+        self,
+        decomposed: SpectralTensor,
+        canonical: SpectralTensor,
+    ) -> Tuple[SpectralTensor, torch.Tensor]:
+        """Run standard SpectralBinding on decomposed spectral tensor."""
+        amp = decomposed.amplitude
+        if amp.dim() == 3 and amp.shape[1] == 1:
+            warnings.warn(
+                "SpectralBinding received T=1 (single token). "
+                "Coherence will be trivially 1.0 — phase carries no "
+                "information. Provide longer signals for meaningful "
+                "phase-coherence routing.",
+                stacklevel=2,
+            )
+        if canonical.amplitude is None:
+            raise ValueError(
+                "canonical must have amplitude attribute for harmonic "
+                "coherence detection"
+            )
+        bound_st, coherence = self.binding(
+            decomposed,
+            input_proj=self._decomp_to_bind_proj,
+            canonical_phase=canonical.phase,
+            canonical_amplitude=canonical.amplitude,
+        )
+        return bound_st, coherence
+
+    def _run_attractor_learning(self, bound_st: SpectralTensor) -> SpectralTensor:
+        """Extract learned attractors and attach metadata."""
+        if not hasattr(self, 'attractor_learner') or self.attractor_learner is None:
+            return bound_st
+
+        try:
+            attractors, _ = self.attractor_learner(bound_st)
+            bound_st.metadata['attractor_count'] = len(attractors)
+            bound_st.metadata['attractor_stabilities'] = [
+                a.stability for a in attractors
+            ]
+        except Exception as e:
+            warnings.warn(
+                f"Attractor Learning failed: {str(e)}. "
+                f"Skipping attractor extraction.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            bound_st.metadata['attractor_count'] = 0
+            bound_st.metadata['attractor_error'] = str(e)
+        return bound_st
+
+    def _run_semantic_coherence(self, bound_st: SpectralTensor) -> SpectralTensor:
+        """Compute optional Riemannian semantic coherence."""
+        if (
+            not self.use_riemannian_semantic
+            or self.riemannian_semantic_coherence is None
+        ):
+            return bound_st
+
+        count = bound_st.metadata.get('attractor_count', 0)
+        if count <= 1:
+            return bound_st
+
+        try:
+            semantic_output = self.riemannian_semantic_coherence(
+                attractors=[],
+            )
+            bound_st.metadata['semantic_coherence'] = (
+                semantic_output.coherence_scores.mean().item()
+            )
+            bound_st.metadata['manifold_coords'] = (
+                semantic_output.manifold_coords.cpu().numpy().tolist()
+            )
+        except Exception as e:
+            bound_st.metadata['semantic_coherence_error'] = str(e)
+        return bound_st
 
     def forward_stateful(
         self,
@@ -358,28 +433,15 @@ class BifrostPipeline(nn.Module):
             )
         if signal.numel() == 0:
             raise ValueError("Input signal is empty (numel=0).")
+
         canonical = self.canonicalizer(signal, metadata)
         decomposed, h_T = self.decomposer(canonical, h_0)
         if self.use_harmonic_binding:
-            amp = decomposed.amplitude
-            phase = decomposed.phase
-            if amp.dim() == 2:
-                amp = amp.unsqueeze(1)
-                phase = phase.unsqueeze(1)
-            if amp.shape[1] == 1:
-                raise ValueError(
-                    "Single-token input (T=1) produces trivially uniform coherence."
-                )
-            bound_amp, coherence = self.binding(amp, phase=phase)
-            bound_st = SpectralTensor(
-                amplitude=bound_amp,
-                phase=phase,
-                scale=decomposed.scale,
-                uncertainty=decomposed.uncertainty,
-                metadata=decomposed.metadata,
-            )
+            bound_st, coherence = self._run_harmonic_binding(decomposed)
         else:
-            bound_st, coherence = self.binding(decomposed, input_proj=self._decomp_to_bind_proj)
+            bound_st, coherence = self.binding(
+                decomposed, input_proj=self._decomp_to_bind_proj
+            )
         return bound_st, coherence, h_T
 
     @property
