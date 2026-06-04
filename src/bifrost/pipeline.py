@@ -82,7 +82,7 @@ class BifrostPipeline(nn.Module):
         # Replaces placeholder stability with learned stability prediction.
         if self.use_s3_attractor:
             try:
-                from .s3_attractor.attractor_learning import AttractorLearningModule
+                from .s3_attractor import AttractorLearningModule
                 self.attractor_learner = AttractorLearningModule(
                     d_model=d_model,
                     n_bands=n_bands,

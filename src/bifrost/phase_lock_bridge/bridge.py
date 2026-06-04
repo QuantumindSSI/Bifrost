@@ -29,7 +29,7 @@ import torch.nn.functional as F
 from .attractor import FrequencyAttractor
 from .phase_lock_detector import TruePhaseLockDetector, PhaseLockState
 from ..spectral_tensor import SpectralTensor
-from ..s3_attractor.attractor_learning import AttractorLearningModule
+from ..s3_attractor import AttractorLearningModule
 
 
 @dataclass
