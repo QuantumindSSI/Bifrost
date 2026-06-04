@@ -203,6 +203,10 @@ class ImageSpectralDecomposer(nn.Module):
         Returns:
             SpectralTensor with learned temporal structure (B, T, n_freq)
         """
+        if not isinstance(st, SpectralTensor):
+            raise TypeError(
+                f"Expected SpectralTensor, got {type(st).__name__}"
+            )
         amp = st.amplitude
         phase = st.phase
 

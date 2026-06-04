@@ -397,5 +397,9 @@ class BifrostPipeline(nn.Module):
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Tuple[SpectralTensor, torch.Tensor]:
         """Convenience: accept a NumPy array from the ingest layer."""
+        if not isinstance(array, np.ndarray):
+            raise TypeError(
+                f"array must be np.ndarray, got {type(array).__name__}"
+            )
         tensor = torch.from_numpy(array.astype(np.float32))
         return self.forward(tensor, metadata)

@@ -28,6 +28,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+# Named constants for demo / calibration defaults (NASA R8)
+_DEMO_N_SAMPLES: int = 1000
+
 
 @dataclass
 class CalibrationMetrics:
@@ -408,7 +411,7 @@ def demo_calibration():
     
     # Generate synthetic validation data
     # Scenario: model is overconfident (uncertainty < actual error rate)
-    n_samples = 1000
+    n_samples = _DEMO_N_SAMPLES
     
     # Actual error rate is 0.3, but model predicts 0.1 uncertainty (overconfident)
     actual_errors = torch.bernoulli(torch.ones(n_samples) * 0.3)

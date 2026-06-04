@@ -20,6 +20,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# Named constants for demo parameters (NASA R8)
+_DEMO_N_FREQ: int = 257
+_DEMO_N_FFT: int = 512
+_DEMO_SAMPLE_RATE: float = 16000.0
+_DEMO_BASE_FREQ: float = 440.0
+
 
 class HarmonicCoherenceDetector(nn.Module):
     """
@@ -337,10 +343,10 @@ def demo_harmonic_coherence():
     print("=" * 60)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    n_freq = 257
-    n_fft = 512
-    sample_rate = 16000.0
-    base_freq = 440.0
+    n_freq = _DEMO_N_FREQ
+    n_fft = _DEMO_N_FFT
+    sample_rate = _DEMO_SAMPLE_RATE
+    base_freq = _DEMO_BASE_FREQ
 
     detector = HarmonicCoherenceDetector(
         n_freq=n_freq,

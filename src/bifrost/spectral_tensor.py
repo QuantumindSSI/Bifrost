@@ -117,6 +117,15 @@ class SpectralTensor:
         ------------
         None (returns new instance).
         """
+        if not isinstance(device, (torch.device, str)):
+            raise TypeError(
+                f"device must be torch.device or str, got {type(device).__name__}"
+            )
+        if dtype is not None and not isinstance(dtype, torch.dtype):
+            raise TypeError(
+                f"dtype must be torch.dtype, got {type(dtype).__name__}"
+            )
+
         kwargs: Dict[str, Any] = {"device": device}
         if dtype is not None:
             kwargs["dtype"] = dtype

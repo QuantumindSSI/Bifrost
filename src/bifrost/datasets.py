@@ -30,6 +30,10 @@ except (ImportError, OSError):
     TORCHAUDIO_AVAILABLE = False
     torchaudio = None
 
+# Named constants for synthetic dataset generation (NASA R8)
+_SYNTHETIC_BASE_FREQ_HZ: float = 200.0
+_SYNTHETIC_FREQ_STEP_PER_CLASS_HZ: float = 100.0
+
 
 @dataclass
 class AudioSample:
@@ -284,7 +288,7 @@ class SyntheticAudioDataset(Dataset):
         t = torch.linspace(0, self.duration, self.n_samples_audio)
         
         # Base frequency varies by class
-        base_freq = 200 + label * 100  # 200Hz, 300Hz, 400Hz...
+        base_freq = _SYNTHETIC_BASE_FREQ_HZ + label * _SYNTHETIC_FREQ_STEP_PER_CLASS_HZ
         
         # Add harmonics
         waveform = torch.sin(2 * torch.pi * base_freq * t)
@@ -333,6 +337,15 @@ def create_data_loader(
     DataLoader
         Configured data loader
     """
+    if not isinstance(dataset, Dataset):
+        raise TypeError(
+            f"dataset must be torch.utils.data.Dataset, got {type(dataset).__name__}"
+        )
+    if batch_size <= 0:
+        raise ValueError(f"batch_size must be positive, got {batch_size}")
+    if num_workers < 0:
+        raise ValueError(f"num_workers must be non-negative, got {num_workers}")
+
     def collate_fn(batch: List[AudioSample]) -> Tuple[torch.Tensor, torch.Tensor, List]:
         """Collate AudioSample objects into batched tensors."""
         waveforms = torch.stack([s.waveform for s in batch])

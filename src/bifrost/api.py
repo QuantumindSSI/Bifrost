@@ -170,8 +170,15 @@ async def demo_harmonic(
         frequencies: Comma-separated frequencies (Hz)
         duration: Audio duration in seconds
     """
+    if duration <= 0:
+        raise ValueError(f"duration must be positive, got {duration}")
+
     freqs = [float(f) for f in frequencies.split(',')]
-    
+    if not freqs:
+        raise ValueError("frequencies must contain at least one valid frequency")
+    if any(f <= 0 for f in freqs):
+        raise ValueError("all frequencies must be positive")
+
     # Generate audio
     sample_rate = 16000
     t = torch.linspace(0, duration, int(sample_rate * duration))

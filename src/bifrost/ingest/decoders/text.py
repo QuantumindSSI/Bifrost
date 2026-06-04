@@ -262,7 +262,7 @@ class TextTokenizer:
 
 class TensorDecoder(BaseDecoder):
     """
-    Decode raw tensor formats (NPZ, HDF5, Zarr) into numpy arrays.
+    Decode raw tensor formats (NPZ, HDF5) into numpy arrays.
 
     For direct tensor ingestion without text preprocessing.
     """
@@ -270,7 +270,7 @@ class TensorDecoder(BaseDecoder):
     @property
     def supported_formats(self) -> set[str]:
         """Return set of supported format strings."""
-        return {"npz", "hdf5", "zarr"}
+        return {"npz", "hdf5"}
 
     def decode(self, data: bytes, fmt: str) -> Tuple[np.ndarray, Dict[str, Any]]:
         """
@@ -278,7 +278,7 @@ class TensorDecoder(BaseDecoder):
 
         Args:
             data: Raw bytes of tensor file.
-            fmt: Format string ('npz', 'hdf5', 'zarr').
+            fmt: Format string ('npz', 'hdf5').
 
         Returns:
             (array, metadata): float32 array and file metadata.
@@ -289,8 +289,6 @@ class TensorDecoder(BaseDecoder):
             array, meta = self._decode_npz(data)
         elif fmt in ("hdf5", "h5"):
             array, meta = self._decode_hdf5(data)
-        elif fmt == "zarr":
-            array, meta = self._decode_zarr(data)
         else:
             raise ValueError(f"Unsupported tensor format: {fmt}")
 
@@ -323,12 +321,6 @@ class TensorDecoder(BaseDecoder):
             raise ImportError("h5py required for HDF5 support. Install: pip install h5py")
 
         with h5py.File(io.BytesIO(data), "r") as f:
-            # Get first dataset
-            def get_first_dataset(name, obj):
-                if isinstance(obj, h5py.Dataset):
-                    return obj[()]
-                return None
-
             array = None
             for key in f.keys():
                 if isinstance(f[key], h5py.Dataset):
@@ -346,9 +338,3 @@ class TensorDecoder(BaseDecoder):
             }
             return array, meta
 
-    def _decode_zarr(self, data: bytes) -> Tuple[np.ndarray, Dict[str, Any]]:
-        """Decode Zarr format."""
-        raise NotImplementedError(
-            "Zarr support requires additional dependencies. "
-            "Use NPZ or HDF5 for now."
-        )
