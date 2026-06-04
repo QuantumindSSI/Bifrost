@@ -1,6 +1,6 @@
-# Contributing to Spectral Encoder Phase 1
+# Contributing to Bifrost
 
-Thank you for your interest in contributing! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing. This document provides guidelines for participation.
 
 ## Code of Conduct
 
@@ -13,35 +13,37 @@ Thank you for your interest in contributing! This document provides guidelines f
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/your-feature`)
 3. Make your changes
-4. Write/update tests
+4. Write or update tests
 5. Submit a pull request
 
 ## Development Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/quantumind/spectral-encoder-phase1.git
-cd fbc-phase1
+git clone https://github.com/quantumind/bifrost.git
+cd bifrost
 
 # Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Run tests
-pytest spectral_encoder/tests/
+pytest tests/ -v
 ```
 
-## Code Style
+## Code Standards
 
 - Follow PEP 8
 - Use meaningful variable names
-- Add docstrings to functions and classes
-- Keep functions focused and small
+- Document all public functions (purpose, parameters, returns)
+- Keep functions focused and small (single responsibility)
+- Handle errors explicitly; silent failures are prohibited
+- Non-trivial functions document Big-O complexity
 
-## Testing
+## Testing Requirements
 
 - Write tests for new features
 - Ensure all existing tests pass
@@ -80,12 +82,12 @@ Include:
 - Operating system
 - Steps to reproduce
 - Expected vs actual behavior
-- Error messages/stack traces
+- Error messages and stack traces
 
-## Questions?
+## Questions
 
-Open an issue or check the documentation in the project.
+Open an issue or refer to the documentation in the project.
 
 ---
 
-**Thank you for contributing!**
+**Thank you for contributing.**

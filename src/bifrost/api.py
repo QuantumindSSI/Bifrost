@@ -344,8 +344,8 @@ async def demo_multimodal() -> DemoResponse:
         data={
             "modalities": modalities_data,
             "_note": "PROCESSED: Realistic test data processed through actual Bifrost pipeline",
-            "_method": "S0 canonicalization -> S1 decomposition -> S2 resonance attention",
-            "_warning": "Some modalities may fail due to S3/S4 limitations (see CRITICAL_AUDIT.md)",
+            "_method": "canonicalization -> decomposition -> resonance attention",
+            "_warning": "Some modalities may fail due to attractor or coherence limitations.",
         },
         visualizations=["comparison_table", "spectral_statistics"],
     )

@@ -8,8 +8,7 @@ This module validates that phase coherence actually correlates with:
 3. Training stability (does coherence training lead to stable convergence?)
 
 References:
-    - CRITICAL_AUDIT.md for violation traceability
-    - Bifrost architecture claims requiring validation
+    - Bifrost architecture claims requiring empirical validation
 """
 
 import torch

@@ -8,10 +8,9 @@ Responsibilities:
        real mamba-ssm on CUDA when available).
     4. Return SpectralTensor with temporal shape (B, T, n_freq).
 
-Phase 2 changes vs Phase 1:
-    - Multi-frame output: (B, T, n_freq) instead of (B, n_freq)
-    - Real SelectiveScan replaces SelectiveScanBlock stand-in
-    - Auto-uses mamba-ssm.Mamba on CUDA if installed
+Key features:
+    - Multi-frame output: (B, T, n_freq)
+    - Pure-PyTorch selective scan with optional mamba-ssm acceleration on CUDA
 """
 
 from __future__ import annotations

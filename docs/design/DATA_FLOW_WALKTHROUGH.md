@@ -1,6 +1,6 @@
 # Data Ingestion Flow - Complete Walkthrough
 
-**Purpose:** Understand how raw files (audio, images) flow through the Spectral Encoder pipeline to become standardized float32 tensors.
+**Purpose:** Understand how raw files (audio, images) flow through the Bifrost pipeline to become standardized float32 tensors.
 
 ---
 
@@ -20,7 +20,7 @@ Standardized float32 Tensor (ready for ML models)
 
 ---
 
-## Stage 1: Decoder - Extract Raw Data
+## Step 1: Decoder - Extract Raw Data
 
 ### Audio Decoder
 
@@ -79,7 +79,7 @@ Output array:
 
 ---
 
-## Stage 2: Validator - Check Constraints
+## Step 2: Validator - Check Constraints
 
 ### Audio Validator
 
@@ -139,7 +139,7 @@ Additional checks:
 
 ---
 
-## Stage 3: Normalizer - Type Conversion & Scaling
+## Step 3: Normalizer - Type Conversion & Scaling
 
 ### Audio Normalization
 
@@ -365,25 +365,25 @@ File 3: audio2.wav
 
 ### Possible Errors
 
-**DecodingError** (Stage 1):
+**DecodingError** (Decoder step):
 - File not found
 - Unsupported format
 - Corrupted file headers
 - Missing required library
 
-**ValidationError** (Stage 2):
+**ValidationError** (Validator step):
 - Sample rate out of range
 - Resolution too small/large
 - Invalid number of channels
 - Contains NaN/Inf values
 
-**NormalizationError** (Stage 3):
+**NormalizationError** (Normalizer step):
 - Type conversion failed
 - Scale overflow
 
 ### Client Code
 ```python
-from spectral_encoder.ingest.validation.exceptions import (
+from bifrost.exceptions import (
     DecodingError,
     ValidationError
 )

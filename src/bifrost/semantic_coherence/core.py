@@ -343,8 +343,8 @@ class SemanticCoherenceTrainer:
         self.lambda_contrastive = lambda_contrastive
         
         # Phase coherence extractor
-        # Access decomposer (S1 stage) output dimension for coherence feature extraction
-        # Note: BifrostPipeline uses explicit component names, not s0/s1/s2/s3 numeric references
+        # Access decomposer output dimension for coherence feature extraction
+        # Note: BifrostPipeline uses explicit component names, not numeric stage references
         decomposer_d_model = getattr(pipeline.decomposer, 'd_model', 128)
         self.coherence_extractor = PhaseCoherenceExtractor(
             d_model=decomposer_d_model,
@@ -355,7 +355,7 @@ class SemanticCoherenceTrainer:
         self.semantic_loss_fn = SupervisedSemanticCoherenceLoss()
         
         # Contrastive loss - uses amplitude features from decomposer output
-        # This enforces that S1 (decomposer) produces discriminative spectral features
+        # This enforces that the decomposer produces discriminative spectral features
         from ..training import ContrastiveCoherenceLoss
         self.contrastive_loss_fn = ContrastiveCoherenceLoss()
         

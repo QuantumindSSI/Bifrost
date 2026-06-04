@@ -20,7 +20,7 @@ import torch.nn.functional as F
 from bifrost import BifrostPipeline, PhaseCoherenceMetrics
 from bifrost.phase_lock_bridge.bridge import PhaseLockBridge
 from bifrost.resonance_attention import ResonanceAttention, SpectralBinding
-from bifrost.s1_decomposer.complex_decomposer import ComplexSpectralDecomposer
+from bifrost.decomposer.complex_decomposer import ComplexSpectralDecomposer
 from bifrost.spectral_tensor import SpectralTensor
 
 

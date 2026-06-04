@@ -1,6 +1,6 @@
-# FBC Cloud GPU Setup Guide
+# Cloud GPU Setup Guide
 
-Quick deployment guide for running FBC with Mamba-3 on cloud GPU instances (RunPod, Lambda Labs, etc.).
+Quick deployment guide for running Bifrost on cloud GPU instances (RunPod, Lambda Labs, etc.).
 
 ## Hardware Requirements
 
@@ -22,11 +22,11 @@ Quick deployment guide for running FBC with Mamba-3 on cloud GPU instances (RunP
 ssh <pod-id>@ssh.runpod.io -i ~/.ssh/<your-key>
 ```
 
-### 3. Clone FBC Repository
+### 3. Clone Repository
 ```bash
 cd /workspace
-git clone https://github.com/QuantumindSSI/Frequency-based-Cognition.git fbc-core
-cd fbc-core
+git clone https://github.com/QuantumindSSI/Bifrost.git bifrost
+cd bifrost
 ```
 
 ### 4. Run Setup Script
@@ -39,7 +39,7 @@ This installs:
 - PyTorch with CUDA 12.8
 - causal-conv1d (Mamba dependency)
 - mamba-ssm with CUDA kernels
-- FBC dependencies
+- Bifrost dependencies
 
 ### 5. Verify Installation
 ```bash
