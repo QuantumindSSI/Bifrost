@@ -59,6 +59,10 @@ env/
 *~
 .DS_Store
 
+# Node.js dependencies (must be installed via npm ci)
+node_modules/
+**/node_modules/
+
 # Project specific
 sample_data/
 *.wav
