@@ -41,64 +41,68 @@ from .complex_training import ComplexBifrostTrainer, PhaseCoherenceMetrics
 def cmd_process(args: argparse.Namespace) -> int:
     """Process file through Bifröst pipeline."""
     print(f"🎵 Processing: {args.input}")
-    
-    # Detect file type
+
     ext = Path(args.input).suffix.lower()
-    
     if ext in ['.wav', '.mp3', '.flac']:
-        # Audio processing
-        import torchaudio
-        audio, sr = torchaudio.load(args.input)
-        
-        pipeline = BifrostPipeline(
-            n_fft_canonical=args.n_fft,
-            n_fft_decompose=args.n_fft // 2,
-            d_model=args.d_model,
-            use_complex_ssm=True,
-        )
-        
-        bound, coherence = pipeline(audio, {'sample_rate': sr})
-        
-        results = {
-            'input_shape': list(audio.shape),
-            'sample_rate': sr,
-            'ssm_type': pipeline.ssm_type,
-            'output_shape': {
-                'amplitude': list(bound.amplitude.shape),
-                'phase': list(bound.phase.shape),
-            },
-            'metadata': bound.metadata,
-            'coherence_diagonal_ratio': PhaseCoherenceMetrics.diagonal_coherence_ratio(coherence),
-        }
-        
+        results = _process_audio_file(args)
     elif ext in ['.png', '.jpg', '.jpeg']:
-        # Image processing
-        from PIL import Image
-        img = Image.open(args.input).convert('L')
-        tensor = torch.from_numpy(np.array(img)).float().unsqueeze(0) / 255.0
-        
-        pipeline = create_multimodal_pipeline('tensor', n_fft=args.n_fft, d_model=args.d_model)
-        bound, coherence = pipeline(tensor)
-        
-        results = {
-            'input_shape': list(tensor.shape),
-            'detected_structure': bound.metadata.get('detected_structure'),
-            'ssm_type': pipeline.ssm_type,
-            'output_shape': list(bound.amplitude.shape),
-        }
+        results = _process_image_file(args)
     else:
         print(f"❌ Unsupported file type: {ext}")
         return 1
-    
-    # Output results
+
     if args.output:
         with open(args.output, 'w') as f:
             json.dump(results, f, indent=2)
         print(f"✅ Results saved to: {args.output}")
     else:
         print(json.dumps(results, indent=2))
-    
     return 0
+
+
+def _process_audio_file(args: argparse.Namespace) -> dict:
+    """Process audio file and return results dict."""
+    import torchaudio
+    audio, sr = torchaudio.load(args.input)
+    pipeline = BifrostPipeline(
+        n_fft_canonical=args.n_fft,
+        n_fft_decompose=args.n_fft // 2,
+        d_model=args.d_model,
+        use_complex_ssm=True,
+    )
+    bound, coherence = pipeline(audio, {'sample_rate': sr})
+    return {
+        'input_shape': list(audio.shape),
+        'sample_rate': sr,
+        'ssm_type': pipeline.ssm_type,
+        'output_shape': {
+            'amplitude': list(bound.amplitude.shape),
+            'phase': list(bound.phase.shape),
+        },
+        'metadata': bound.metadata,
+        'coherence_diagonal_ratio': (
+            PhaseCoherenceMetrics.diagonal_coherence_ratio(coherence)
+        ),
+    }
+
+
+def _process_image_file(args: argparse.Namespace) -> dict:
+    """Process image file and return results dict."""
+    from PIL import Image
+    img = Image.open(args.input).convert('L')
+    tensor = (
+        torch.from_numpy(np.array(img)).float().unsqueeze(0) / 255.0
+    )
+    pipeline = create_multimodal_pipeline(
+        'tensor', n_fft=args.n_fft, d_model=args.d_model
+    )
+    bound, coherence = pipeline(tensor)
+    return {
+        'input_shape': list(tensor.shape),
+        'detected_structure': bound.metadata.get('detected_structure'),
+        'ssm_type': pipeline.ssm_type,
+        'output_shape': list(bound.amplitude.shape),
+    }
 
 
 
@@ -107,103 +111,128 @@ def cmd_demo(args: argparse.Namespace) -> int:
     """Interactive demo with visualizations."""
     print("🎹 Bifröst Interactive Demo")
     print("=" * 60)
-    
+
     if args.type == 'harmonic':
-        # Demo harmonic binding
-        print(f"\n🎼 Harmonic Binding Demo")
-        print(f"   Chord: {args.chord}")
-        print(f"   (Note: This demo uses synthetically generated audio with harmonic structure)")
-        
-        # Parse frequencies
-        freqs = [float(f) for f in args.chord.split(',')]
-        
-        # Generate chord
-        sample_rate = 16000
-        duration = 1.0
-        t = torch.linspace(0, duration, int(sample_rate * duration))
-        
-        audio = torch.zeros_like(t)
-        for f in freqs:
-            audio += torch.sin(2 * np.pi * f * t)
-            # Add overtones
-            for overtone in [2, 3]:
-                audio += torch.sin(2 * np.pi * f * overtone * t) * 0.3
-        
-        audio = audio.unsqueeze(0)
-        
-        # Process
-        harmonic = HarmonicBinding(
-            d_model=128,
-            n_freq=257,
-            base_freq=freqs[0],
-            sample_rate=sample_rate,
-        )
-        
-        # Convert to spectral
-        stft = torch.stft(audio.squeeze(0), n_fft=512, return_complex=True)
-        amplitude = stft.abs().unsqueeze(0).transpose(-2, -1)
-        phase = stft.angle().unsqueeze(0).transpose(-2, -1)
-        
-        # Interpolate if needed
-        if amplitude.shape[-1] != 257:
-            amplitude = torch.nn.functional.interpolate(
-                amplitude.transpose(-2, -1), size=257, mode='linear'
-            ).transpose(-2, -1)
-            phase = torch.nn.functional.interpolate(
-                phase.transpose(-2, -1), size=257, mode='linear'
-            ).transpose(-2, -1)
-        
-        bound, attn = harmonic(amplitude, phase)
-        
-        print(f"\n📊 Results:")
-        print(f"   Harmonic bins: {len(harmonic.harmonic_grid.get_harmonic_bins())}")
-        print(f"   Attention std: {attn.std():.4f} (non-uniform = structure detected)")
-        
-        # Show harmonic relationships
-        print(f"\n🎵 Harmonic relationships:")
-        for i, f in enumerate(freqs):
-            print(f"   {f}Hz → overtones at {2*f:.0f}Hz, {3*f:.0f}Hz")
-    
+        _demo_harmonic(args.chord)
     elif args.type == 'coherence':
-        # Demo phase coherence
-        print(f"\n🌊 Phase Coherence Demo")
-        print(f"   (Note: This demo uses synthetically generated phase data for demonstration)")
-        
-        # Generate coherent vs random phase
-        T, n_freq = 32, 128
-        
-        # Coherent: smooth progression
-        phase_coherent = torch.cumsum(torch.randn(1, T, n_freq) * 0.1, dim=1)
-        smooth_coherent = PhaseCoherenceMetrics.phase_gradient_smoothness(phase_coherent)
-        
-        # Random: independent
-        phase_random = torch.randn(1, T, n_freq)
-        smooth_random = PhaseCoherenceMetrics.phase_gradient_smoothness(phase_random)
-        
-        print(f"\n📈 Phase smoothness:")
-        print(f"   Coherent: {smooth_coherent:.2f} (high = smooth)")
-        print(f"   Random:   {smooth_random:.2f} (low = chaotic)")
-        print(f"   Ratio:    {smooth_coherent/smooth_random:.2f}x smoother")
-        print(f"\n✅ Complex SSM learns {smooth_coherent/smooth_random:.1f}x smoother phase evolution")
-    
+        _demo_coherence()
     elif args.type == 'multimodal':
-        # Demo all modalities
-        print(f"\n🔄 Multimodal Demo")
-        print(f"   (Note: This demo uses synthetically generated data for demonstration)")
-        
-        modalities = [
-            ('audio', torch.randn(1, 8000)),
-            ('text', torch.randint(0, 50000, (1, 128))),
-            ('tensor', torch.randn(2, 64, 64)),
-        ]
-        
-        for name, data in modalities:
-            pipeline = create_multimodal_pipeline(name, n_fft=512, d_model=128)
-            bound, coherence = pipeline(data)
-            print(f"   {name:8s}: {list(data.shape)} → {list(bound.amplitude.shape)} [{pipeline.ssm_type[:20]}...]")
-    
+        _demo_multimodal()
+
     print("\n" + "=" * 60)
     return 0
+
+
+def _demo_harmonic(chord: str) -> None:
+    """Run harmonic binding demo."""
+    print("\n🎼 Harmonic Binding Demo")
+    print(f"   Chord: {chord}")
+    print(
+        "   (Note: This demo uses synthetically generated audio "
+        "with harmonic structure)"
+    )
+
+    freqs = [float(f) for f in chord.split(',')]
+    sample_rate = 16000
+    duration = 1.0
+    t = torch.linspace(0, duration, int(sample_rate * duration))
+
+    audio = torch.zeros_like(t)
+    for f in freqs:
+        audio += torch.sin(2 * np.pi * f * t)
+        for overtone in [2, 3]:
+            audio += torch.sin(2 * np.pi * f * overtone * t) * 0.3
+
+    audio = audio.unsqueeze(0)
+    harmonic = HarmonicBinding(
+        d_model=128,
+        n_freq=257,
+        base_freq=freqs[0],
+        sample_rate=sample_rate,
+    )
+
+    stft = torch.stft(audio.squeeze(0), n_fft=512, return_complex=True)
+    amplitude = stft.abs().unsqueeze(0).transpose(-2, -1)
+    phase = stft.angle().unsqueeze(0).transpose(-2, -1)
+
+    if amplitude.shape[-1] != 257:
+        amplitude = torch.nn.functional.interpolate(
+            amplitude.transpose(-2, -1), size=257, mode='linear'
+        ).transpose(-2, -1)
+        phase = torch.nn.functional.interpolate(
+            phase.transpose(-2, -1), size=257, mode='linear'
+        ).transpose(-2, -1)
+
+    bound, attn = harmonic(amplitude, phase)
+
+    print("\n📊 Results:")
+    print(
+        f"   Harmonic bins: "
+        f"{len(harmonic.harmonic_grid.get_harmonic_bins())}"
+    )
+    print(
+        f"   Attention std: {attn.std():.4f} "
+        f"(non-uniform = structure detected)"
+    )
+
+    print("\n🎵 Harmonic relationships:")
+    for f in freqs:
+        print(f"   {f}Hz → overtones at {2*f:.0f}Hz, {3*f:.0f}Hz")
+
+
+def _demo_coherence() -> None:
+    """Run phase coherence demo."""
+    print("\n🌊 Phase Coherence Demo")
+    print(
+        "   (Note: This demo uses synthetically generated phase "
+        "data for demonstration)"
+    )
+
+    T, n_freq = 32, 128
+    phase_coherent = torch.cumsum(
+        torch.randn(1, T, n_freq) * 0.1, dim=1
+    )
+    smooth_coherent = PhaseCoherenceMetrics.phase_gradient_smoothness(
+        phase_coherent
+    )
+
+    phase_random = torch.randn(1, T, n_freq)
+    smooth_random = PhaseCoherenceMetrics.phase_gradient_smoothness(
+        phase_random
+    )
+
+    print("\n📈 Phase smoothness:")
+    print(f"   Coherent: {smooth_coherent:.2f} (high = smooth)")
+    print(f"   Random:   {smooth_random:.2f} (low = chaotic)")
+    ratio = smooth_coherent / smooth_random
+    print(f"   Ratio:    {ratio:.2f}x smoother")
+    print(f"\n✅ Complex SSM learns {ratio:.1f}x smoother phase evolution")
+
+
+def _demo_multimodal() -> None:
+    """Run multimodal demo."""
+    print("\n🔄 Multimodal Demo")
+    print(
+        "   (Note: This demo uses synthetically generated data "
+        "for demonstration)"
+    )
+
+    modalities = [
+        ('audio', torch.randn(1, 8000)),
+        ('text', torch.randint(0, 50000, (1, 128))),
+        ('tensor', torch.randn(2, 64, 64)),
+    ]
+
+    for name, data in modalities:
+        pipeline = create_multimodal_pipeline(
+            name, n_fft=512, d_model=128
+        )
+        bound, coherence = pipeline(data)
+        print(
+            f"   {name:8s}: {list(data.shape)} → "
+            f"{list(bound.amplitude.shape)} "
+            f"[{pipeline.ssm_type[:20]}...]"
+        )
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
