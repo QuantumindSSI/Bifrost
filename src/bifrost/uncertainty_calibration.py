@@ -183,117 +183,158 @@ class UncertaintyCalibrator(nn.Module):
         Returns:
             CalibrationMetrics before and after calibration
         """
+        self._print_calibration_header(
+            len(validation_uncertainties), target_ece
+        )
+
+        pre_ece, pre_brier = self._compute_pre_metrics(
+            validation_uncertainties, validation_errors
+        )
+        self.pre_calibration_ece = torch.tensor(pre_ece)
+        print(f"Pre-calibration ECE: {pre_ece:.4f}")
+        print(f"Pre-calibration Brier: {pre_brier:.4f}\n")
+
+        best_temp, best_bias, best_ece = self._optimize_temperature(
+            validation_uncertainties,
+            validation_errors,
+            max_iterations,
+            learning_rate,
+            target_ece,
+            pre_ece,
+        )
+
+        self._restore_best_params(best_temp, best_bias)
+        post_ece, post_brier, post_nll = self._compute_post_metrics(
+            validation_uncertainties, validation_errors
+        )
+        self.post_calibration_ece = torch.tensor(post_ece)
+
+        self._print_calibration_results(pre_ece, post_ece)
+        return self._build_calibration_metrics(
+            post_ece, post_brier, post_nll
+        )
+
+    def _print_calibration_header(
+        self, n_samples: int, target_ece: float
+    ) -> None:
+        """Print calibration run header."""
         print("=" * 60)
         print("UNCERTAINTY CALIBRATION")
         print("=" * 60)
-        print(f"Validation samples: {len(validation_uncertainties)}")
-        print(f"Target ECE: {target_ece:.4f}")
-        print()
-        
-        # Compute pre-calibration metrics
-        pre_calib_uncertainties = self.forward(validation_uncertainties)
-        pre_ece = self.compute_expected_calibration_error(
-            pre_calib_uncertainties, validation_errors
+        print(f"Validation samples: {n_samples}")
+        print(f"Target ECE: {target_ece:.4f}\n")
+
+    def _compute_pre_metrics(
+        self,
+        uncertainties: torch.Tensor,
+        errors: torch.Tensor,
+    ) -> Tuple[float, float]:
+        """Compute pre-calibration ECE and Brier score."""
+        calib = self.forward(uncertainties)
+        ece = self.compute_expected_calibration_error(calib, errors)
+        brier = self.compute_brier_score(calib, errors)
+        return ece, brier
+
+    def _optimize_temperature(
+        self,
+        uncertainties: torch.Tensor,
+        errors: torch.Tensor,
+        max_iterations: int,
+        learning_rate: float,
+        target_ece: float,
+        pre_ece: float,
+    ) -> Tuple[float, float, float]:
+        """Optimize temperature and bias on validation data."""
+        optimizer = torch.optim.Adam(
+            [self.temperature, self.bias], lr=learning_rate
         )
-        pre_brier = self.compute_brier_score(pre_calib_uncertainties, validation_errors)
-        
-        self.pre_calibration_ece = torch.tensor(pre_ece)
-        
-        print(f"Pre-calibration ECE: {pre_ece:.4f}")
-        print(f"Pre-calibration Brier: {pre_brier:.4f}")
-        print()
-        
-        # Optimize temperature on validation set
-        optimizer = torch.optim.Adam([self.temperature, self.bias], lr=learning_rate)
-        
         best_ece = pre_ece
         best_temp = self.temperature.item()
         best_bias = self.bias.item()
-        
+
         for iteration in range(max_iterations):
             optimizer.zero_grad()
-            
-            # Forward pass
-            calibrated = self.forward(validation_uncertainties)
-            
-            # Loss: negative log-likelihood of calibration
-            # We want calibrated uncertainty to predict actual errors
-            nll = F.binary_cross_entropy(calibrated, validation_errors.float())
-            
-            # Add regularization to keep temperature reasonable
+            calibrated = self.forward(uncertainties)
+            nll = F.binary_cross_entropy(calibrated, errors.float())
             temp_reg = 0.01 * F.softplus(self.temperature).abs()
             loss = nll + temp_reg
-            
             loss.backward()
             optimizer.step()
-            
-            # Evaluate
+
             with torch.no_grad():
-                eval_calibrated = self.forward(validation_uncertainties)
-                ece = self.compute_expected_calibration_error(eval_calibrated, validation_errors)
-                
+                eval_calib = self.forward(uncertainties)
+                ece = self.compute_expected_calibration_error(
+                    eval_calib, errors
+                )
                 if ece < best_ece:
                     best_ece = ece
                     best_temp = self.temperature.item()
                     best_bias = self.bias.item()
-                
                 if (iteration + 1) % 10 == 0:
-                    print(f"  Iter {iteration+1}: ECE={ece:.4f}, T={F.softplus(self.temperature).item():.3f}")
-                
-                # Early stopping
+                    print(
+                        f"  Iter {iteration+1}: ECE={ece:.4f}, "
+                        f"T={F.softplus(self.temperature).item():.3f}"
+                    )
                 if ece < target_ece:
                     print(f"\nTarget ECE reached at iteration {iteration+1}")
                     break
-        
-        # Restore best parameters
+
+        return best_temp, best_bias, best_ece
+
+    def _restore_best_params(self, best_temp: float, best_bias: float) -> None:
+        """Restore best temperature and bias, set calibration state."""
         self.temperature.data = torch.tensor(best_temp)
         self.bias.data = torch.tensor(best_bias)
         self.is_calibrated = True
-        
-        # Store calibration values
         self.calibration_temperature = F.softplus(self.temperature).item()
         self.calibration_bias = self.bias.item()
-        
-        # Compute post-calibration metrics
-        post_calib_uncertainties = self.forward(validation_uncertainties)
-        post_ece = self.compute_expected_calibration_error(
-            post_calib_uncertainties, validation_errors
-        )
-        post_brier = self.compute_brier_score(post_calib_uncertainties, validation_errors)
-        
-        self.post_calibration_ece = torch.tensor(post_ece)
-        
-        # Compute NLL
+
+    def _compute_post_metrics(
+        self,
+        uncertainties: torch.Tensor,
+        errors: torch.Tensor,
+    ) -> Tuple[float, float, float]:
+        """Compute post-calibration ECE, Brier, and NLL."""
+        calib = self.forward(uncertainties)
+        ece = self.compute_expected_calibration_error(calib, errors)
+        brier = self.compute_brier_score(calib, errors)
         with torch.no_grad():
-            post_nll = F.binary_cross_entropy(
-                post_calib_uncertainties, validation_errors.float()
+            nll = F.binary_cross_entropy(
+                calib, errors.float()
             ).item()
-        
+        return ece, brier, nll
+
+    def _print_calibration_results(
+        self, pre_ece: float, post_ece: float
+    ) -> None:
+        """Print calibration summary."""
         print()
         print("=" * 60)
         print("CALIBRATION RESULTS")
         print("=" * 60)
         print(f"Pre-calibration ECE:  {pre_ece:.4f}")
         print(f"Post-calibration ECE: {post_ece:.4f}")
-        print(f"Improvement:          {(pre_ece - post_ece):.4f}")
-        print()
+        print(f"Improvement:          {(pre_ece - post_ece):.4f}\n")
         print(f"Optimal temperature: {self.calibration_temperature:.4f}")
-        print(f"Optimal bias:        {self.calibration_bias:.4f}")
-        print()
-        
+        print(f"Optimal bias:        {self.calibration_bias:.4f}\n")
         if post_ece < pre_ece:
             print("✅ Calibration successful: ECE reduced")
         else:
             print("⚠️  Calibration did not improve ECE")
-        
-        metrics = CalibrationMetrics(
+
+    def _build_calibration_metrics(
+        self,
+        post_ece: float,
+        post_brier: float,
+        post_nll: float,
+    ) -> CalibrationMetrics:
+        """Build and return CalibrationMetrics dataclass."""
+        return CalibrationMetrics(
             expected_calibration_error=post_ece,
-            max_calibration_error=0.0,  # Could compute if needed
+            max_calibration_error=0.0,
             brier_score=post_brier,
             negative_log_likelihood=post_nll,
         )
-        
-        return metrics
     
     def save_calibration(self, path: str) -> None:
         """Save calibration parameters to file."""

@@ -354,7 +354,7 @@ class BifrostPipeline(nn.Module):
 
     def _run_attractor_learning(self, bound_st: SpectralTensor) -> SpectralTensor:
         """Extract learned attractors and attach metadata."""
-        if not hasattr(self, 'attractor_learner') or self.attractor_learner is None:
+        if self.attractor_learner is None:
             return bound_st
 
         try:
@@ -363,6 +363,8 @@ class BifrostPipeline(nn.Module):
             bound_st.metadata['attractor_stabilities'] = [
                 a.stability for a in attractors
             ]
+            # Cache attractors for S4 processing
+            self._last_attractors = attractors
         except Exception as e:
             warnings.warn(
                 f"Attractor Learning failed: {str(e)}. "
@@ -372,10 +374,11 @@ class BifrostPipeline(nn.Module):
             )
             bound_st.metadata['attractor_count'] = 0
             bound_st.metadata['attractor_error'] = str(e)
+            self._last_attractors = None
         return bound_st
 
     def _run_semantic_coherence(self, bound_st: SpectralTensor) -> SpectralTensor:
-        """Compute optional Riemannian semantic coherence."""
+        """Compute optional Riemannian semantic coherence (S4)."""
         if (
             not self.use_riemannian_semantic
             or self.riemannian_semantic_coherence is None
@@ -386,15 +389,25 @@ class BifrostPipeline(nn.Module):
         if count <= 1:
             return bound_st
 
+        # Retrieve cached attractors from S3
+        attractors = getattr(self, '_last_attractors', None)
+        if attractors is None or len(attractors) < 2:
+            bound_st.metadata['semantic_coherence_error'] = "Insufficient attractors for S4"
+            return bound_st
+
         try:
             semantic_output = self.riemannian_semantic_coherence(
-                attractors=[],
+                attractors=attractors,
+                return_projection=True,
             )
             bound_st.metadata['semantic_coherence'] = (
                 semantic_output.coherence_scores.mean().item()
             )
             bound_st.metadata['manifold_coords'] = (
                 semantic_output.manifold_coords.cpu().numpy().tolist()
+            )
+            bound_st.metadata['semantic_coherence_max'] = (
+                semantic_output.coherence_scores.max().item()
             )
         except Exception as e:
             bound_st.metadata['semantic_coherence_error'] = str(e)
