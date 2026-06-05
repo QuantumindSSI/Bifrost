@@ -254,115 +254,118 @@ class ComplexBifrostTrainer:
         if self.binding:
             self.binding.train()
 
-        # Forward pass — ComplexSpectralDecomposer returns (SpectralTensor, h_T)
         decomp_out = self.decomposer(spectral_batch)
-        decomposed = decomp_out[0] if isinstance(decomp_out, tuple) else decomp_out
-
-        # Get complex representations for loss computation
-        # Target: next frame prediction
-        z_input = spectral_batch.complex_spectrum()  # (B, n_freq) or (B, T, n_freq)
-
-        if z_input.dim() == 2:
-            # Add temporal dimension if missing
-            z_input = z_input.unsqueeze(1)  # (B, 1, n_freq)
-
-        # Ensure we have at least 2 frames for prediction
-        if z_input.shape[1] < 2:
-            # Replicate to create minimum temporal structure
-            z_input = z_input.repeat(1, 2, 1)
-
-        # Shift to create prediction target: predict frame t+1 from frame t
-        pred_z = z_input[:, :-1, :]  # (B, T-1, n_freq)
-        target_z = z_input[:, 1:, :]  # (B, T-1, n_freq)
-
-        # Interpolate to match decomposer output dimension if needed
-        if pred_z.shape[-1] != decomposed.amplitude.shape[-1] and pred_z.shape[1] > 0:
-            # Complex interpolation: handle real and imag separately
-            # F.interpolate needs 3D: (B, C, L) where C = n_freq, L = T
-            pred_z_real = F.interpolate(
-                pred_z.real.transpose(-2, -1),
-                size=decomposed.amplitude.shape[-1],
-                mode='linear',
-                align_corners=True
-            ).transpose(-2, -1)
-            pred_z_imag = F.interpolate(
-                pred_z.imag.transpose(-2, -1),
-                size=decomposed.amplitude.shape[-1],
-                mode='linear',
-                align_corners=True
-            ).transpose(-2, -1)
-            pred_z = torch.complex(pred_z_real, pred_z_imag)
-
-            target_z_real = F.interpolate(
-                target_z.real.transpose(-2, -1),
-                size=decomposed.amplitude.shape[-1],
-                mode='linear',
-                align_corners=True
-            ).transpose(-2, -1)
-            target_z_imag = F.interpolate(
-                target_z.imag.transpose(-2, -1),
-                size=decomposed.amplitude.shape[-1],
-                mode='linear',
-                align_corners=True
-            ).transpose(-2, -1)
-            target_z = torch.complex(target_z_real, target_z_imag)
-
-        # Convert decomposed output to complex
-        pred_z_complex = torch.complex(
-            decomposed.amplitude[:, :-1, :],
-            decomposed.phase[:, :-1, :]
+        decomposed = (
+            decomp_out[0] if isinstance(decomp_out, tuple) else decomp_out
         )
 
-        # Project to n_freq if needed (d_model -> n_freq)
+        pred_z, target_z = self._prepare_complex_targets(
+            spectral_batch, decomposed
+        )
+        pred_z_complex = self._build_pred_complex(decomposed, pred_z, target_z)
+        loss = self.criterion(pred_z_complex, target_z)
+
+        self._backward_and_step(loss)
+        metrics = self._compute_step_metrics(decomposed, pred_z_complex, loss)
+
+        for key, value in metrics.items():
+            self.metrics_history[key].append(value)
+        return metrics
+
+    def _prepare_complex_targets(
+        self,
+        spectral_batch: SpectralTensor,
+        decomposed: SpectralTensor,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Prepare complex prediction targets from input batch."""
+        z_input = spectral_batch.complex_spectrum()
+        if z_input.dim() == 2:
+            z_input = z_input.unsqueeze(1)
+        if z_input.shape[1] < 2:
+            z_input = z_input.repeat(1, 2, 1)
+
+        pred_z = z_input[:, :-1, :]
+        target_z = z_input[:, 1:, :]
+
+        if (
+            pred_z.shape[-1] != decomposed.amplitude.shape[-1]
+            and pred_z.shape[1] > 0
+        ):
+            pred_z = self._interpolate_complex(pred_z, decomposed.amplitude.shape[-1])
+            target_z = self._interpolate_complex(target_z, decomposed.amplitude.shape[-1])
+
+        return pred_z, target_z
+
+    def _interpolate_complex(
+        self, z: torch.Tensor, size: int
+    ) -> torch.Tensor:
+        """Interpolate complex tensor to target size."""
+        real = F.interpolate(
+            z.real.transpose(-2, -1), size=size, mode='linear',
+            align_corners=True
+        ).transpose(-2, -1)
+        imag = F.interpolate(
+            z.imag.transpose(-2, -1), size=size, mode='linear',
+            align_corners=True
+        ).transpose(-2, -1)
+        return torch.complex(real, imag)
+
+    def _build_pred_complex(
+        self,
+        decomposed: SpectralTensor,
+        pred_z: torch.Tensor,
+        target_z: torch.Tensor,
+    ) -> torch.Tensor:
+        """Build complex prediction tensor from decomposed output."""
+        pred_z_complex = torch.complex(
+            decomposed.amplitude[:, :-1, :],
+            decomposed.phase[:, :-1, :],
+        )
         if self.output_proj:
-            # Project real and imaginary parts separately
             pred_real = self.output_proj(pred_z_complex.real)
             pred_imag = self.output_proj(pred_z_complex.imag)
             pred_z_complex = torch.complex(pred_real, pred_imag)
+        return pred_z_complex
 
-        # Complex loss
-        loss = self.criterion(pred_z_complex, target_z)
-
-        # Backward pass
+    def _backward_and_step(self, loss: torch.Tensor) -> None:
+        """Backward pass with gradient clipping and optimizer step."""
         self.optimizer.zero_grad()
         loss.backward()
-
-        # Gradient clipping for all parameters
         all_params = list(self.decomposer.parameters())
         if self.output_proj:
             all_params.extend(self.output_proj.parameters())
         torch.nn.utils.clip_grad_norm_(all_params, max_norm=1.0)
-
         self.optimizer.step()
 
-        # Compute metrics
-        metrics = {
-            "loss": loss.item(),
-        }
+    def _compute_step_metrics(
+        self,
+        decomposed: SpectralTensor,
+        pred_z_complex: torch.Tensor,
+        loss: torch.Tensor,
+    ) -> Dict[str, float]:
+        """Compute training step metrics."""
+        metrics: Dict[str, float] = {"loss": loss.item()}
 
-        # Binding coherence metrics if available
         if self.binding:
             with torch.no_grad():
                 _, coherence = self.binding(decomposed)
                 if coherence.numel() > 0:
-                    ratio = PhaseCoherenceMetrics.diagonal_coherence_ratio(coherence)
+                    ratio = PhaseCoherenceMetrics.diagonal_coherence_ratio(
+                        coherence
+                    )
                     metrics["coherence_ratio"] = ratio
 
-        # Phase smoothness
-        smoothness = PhaseCoherenceMetrics.phase_gradient_smoothness(decomposed.phase)
+        smoothness = PhaseCoherenceMetrics.phase_gradient_smoothness(
+            decomposed.phase
+        )
         metrics["phase_smoothness"] = smoothness
 
-        # Complex correlation
         if pred_z_complex.shape[1] > 1:
             corr = PhaseCoherenceMetrics.complex_state_correlation(
                 pred_z_complex[:, 0, :],
-                pred_z_complex[:, 1, :]
+                pred_z_complex[:, 1, :],
             )
             metrics["complex_correlation"] = corr
-
-        # Update history
-        for key, value in metrics.items():
-            self.metrics_history[key].append(value)
 
         return metrics
 

@@ -391,12 +391,14 @@ class CoherenceScorer(nn.Module):
             
         Formula: coherence = sigmoid(-(distance - bias) / temperature)
         """
-        # Normalize by mean distance for stability
-        mean_dist = geodesic_distances[geodesic_distances < float('inf')].mean()
-        normalized_dist = geodesic_distances / (mean_dist + 1e-8)
+        # Clip infinite distances for numerical stability
+        finite_distances = torch.clamp(geodesic_distances, max=1e6)
         
-        # Coherence decreases with distance
-        coherence = torch.sigmoid(-(normalized_dist - self.bias) / F.softplus(self.temperature))
+        # Coherence decreases with distance: sigmoid(-(d - bias) / temp)
+        # Small distance -> high coherence (close to 1)
+        # Large distance -> low coherence (close to 0)
+        temp = F.softplus(self.temperature) + 0.1  # Ensure positive with minimum
+        coherence = torch.sigmoid(-(finite_distances - self.bias) / temp)
         
         # Self-coherence is always 1
         coherence.fill_diagonal_(1.0)
