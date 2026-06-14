@@ -77,7 +77,7 @@ def benchmark_signal(
     # Warmup
     for _ in range(warmup):
         with torch.no_grad():
-            _ = pipeline(sig_t, enriched)
+            _ = pipeline(sig_t, meta)
     _sync()
 
     # Measurement
@@ -88,7 +88,7 @@ def benchmark_signal(
     for _ in range(repeats):
         t0 = time.perf_counter()
         with torch.no_grad():
-            _ = pipeline(sig_t, enriched)
+            _ = pipeline(sig_t, meta)
         _sync()
         times_ms.append((time.perf_counter() - t0) * 1000)
 
