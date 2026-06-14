@@ -219,7 +219,7 @@ class ResonanceAttention(nn.Module):
             # have the pre-softmax dynamic range to give a meaningful gradient signal.
             return out, coh
 
-        # --- project Q, K for internal coherence computation -----------------
+        # --- project Q, K for phase coherence computation -----------------
         Q = self._reshape_heads(self.W_q(x))
         K = self._reshape_heads(self.W_k(x))
 

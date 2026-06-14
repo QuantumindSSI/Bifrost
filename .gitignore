@@ -76,6 +76,8 @@ sample_data/
 dev-docs/
 CHANGELOG.md
 benchmarks/
+scripts/
+VALIDATION_REPORT.md
 
 # uv lockfile (regeneratable)
 uv.lock

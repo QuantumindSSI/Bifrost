@@ -1,5 +1,4 @@
-# Bifröst - The Spectral Rainbow Bridge
-# Frequency-Based Cognition (FBC) Framework
+# Bifrost - Multimodal Spectral Processing Framework
 # Core dependencies for production use
 
 # Core ML

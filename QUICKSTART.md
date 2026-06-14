@@ -20,14 +20,12 @@
 ### Option 1: Development Install
 
 ```bash
-cd fbc-phase1
 pip install -e ".[dev]"
 ```
 
 ### Option 2: Production Install
 
 ```bash
-cd fbc-phase1
 pip install -r requirements.txt
 ```
 

@@ -1,4 +1,4 @@
-"""End-to-end integration tests for the FBC pipeline."""
+"""End-to-end integration tests for the Bifrost pipeline."""
 
 import pytest
 import numpy as np

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "quantumind-bifrost"
 version = "0.1.0"
-description = "Bifröst - The Spectral Rainbow Bridge: Frequency-Based Cognition framework with ResonanceAttention"
+description = "Bifrost - Multimodal Spectral Processing with Phase-Coherent Neural Networks"
 readme = "README.md"
 requires-python = ">=3.9,<3.13"
 license = {text = "MIT"}
@@ -14,11 +14,10 @@ authors = [
 ]
 keywords = [
     "bifrost",
-    "fbc",
     "resonance-attention",
-    "phase-cognition",
-    "spectral-computing",
-    "neural-oscillations",
+    "spectral-processing",
+    "phase-coherence",
+    "multimodal",
     "machine-learning",
     "audio-processing"
 ]

@@ -55,7 +55,7 @@ GPU 0: NVIDIA H200
 Mamba-SSM: 2.2.4
 Mamba-SSM GPU installation successful!
 
-FBC Mamba-3 integration: SUCCESS
+Bifrost Mamba-3 integration: SUCCESS
 ```
 
 ## Manual Installation (if script fails)
@@ -72,18 +72,18 @@ export TORCH_CUDA_ARCH_LIST="9.0"
 export CUDA_HOME=/usr/local/cuda
 pip install mamba-ssm>=2.2.4 --no-build-isolation
 
-# Install FBC
+# Install Bifrost dependencies
 pip install -e .
 ```
 
-## Testing Mamba-3 in FBC
+## Testing Mamba-3 in Bifrost
 
 ```python
 import torch
-from fbc.pipeline import FBCPipeline
+from bifrost.pipeline import BifrostPipeline
 
 # Create pipeline with Mamba-3
-pipeline = FBCPipeline(
+pipeline = BifrostPipeline(
     n_fft_s0=1024,
     n_fft_s1=512,
     d_model=256,
@@ -129,7 +129,7 @@ export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 ### Out of memory
 Reduce batch size or d_model:
 ```python
-pipeline = FBCPipeline(d_model=128, n_heads=4)  # Smaller model
+pipeline = BifrostPipeline(d_model=128, n_heads=4)  # Smaller model
 ```
 
 ## Docker Alternative
@@ -140,9 +140,9 @@ FROM pytorch/pytorch:2.3.0-cuda12.8-cudnn8-runtime
 RUN apt-get update && apt-get install -y git ninja-build
 
 WORKDIR /workspace
-COPY . /workspace/fbc-core
+COPY . /workspace/bifrost
 RUN pip install mamba-ssm causal-conv1d
-RUN pip install -e /workspace/fbc-core
+RUN pip install -e /workspace/bifrost
 ```
 
 ## Next Steps

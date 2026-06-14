@@ -53,7 +53,7 @@ class SpectralBinding(nn.Module):
         self.n_freq_in = n_freq_in  # if set, adds a persistent input projection
         # Harmonic coherence blend ratio - validated empirically on 440+880+1320Hz signals
         # Range [0.0, 1.0]: 0.0 = all learned coherence, 1.0 = all harmonic coherence
-        # See scripts/validate_blend_ratio.py for validation methodology
+        # See the blend_ratio hyperparameter in the source code for tuning options
         self.harmonic_blend_ratio = harmonic_blend_ratio
 
         # Persistent input projection when n_freq_in != d_model
@@ -179,7 +179,7 @@ class SpectralBinding(nn.Module):
         # (440Hz, 880Hz, etc. no longer align with distinct bins).
         #
         # Solution: Keep canonical_phase at original n_freq dimensions for coherence_orig,
-        # only interpolate if needed for the legacy path (when use_original_phase is False).
+        # only interpolate if needed when use_original_phase is False.
         if canonical_phase is not None:
             if not torch.isfinite(canonical_phase).all():
                 raise ValueError("canonical_phase contains NaN or Inf values")
@@ -256,7 +256,7 @@ class SpectralBinding(nn.Module):
         #   coherence matrix is peaked for real signals, the weighted-sum output of W_v
         #   differs from the noise case, so var_real carries grad via W_v → amp_proj.
         #
-        # When canonical_phase is NOT available (standalone / legacy use):
+        # When canonical_phase is NOT available (standalone mode):
         #   Fall through to resonance.forward with phase_orig (may collapse eventually
         #   but keeps the module usable independently of the pipeline).
         if canonical_phase is not None:
@@ -271,7 +271,7 @@ class SpectralBinding(nn.Module):
                 precomputed_coherence=precomp_coh,
             )
         else:
-            # Legacy path: use phase_orig through the internal attention mechanism.
+            # Standalone path: use phase_orig through the attention mechanism.
             if phase_orig.shape[-1] != self.d_model:
                 phase_for_attn = torch.nn.functional.interpolate(
                     phase_orig.reshape(-1, 1, phase_orig.shape[-1]),

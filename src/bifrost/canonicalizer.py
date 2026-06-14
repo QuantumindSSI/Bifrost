@@ -211,7 +211,7 @@ class SpectralCanonicalizer(nn.Module):
         return self.forward(tensor, metadata)
 
     # ------------------------------------------------------------------
-    # Internal helpers
+    # Helper functions
     # ------------------------------------------------------------------
 
     @staticmethod

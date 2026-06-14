@@ -69,7 +69,7 @@ from .datasets import (
     create_data_loader,
 )
 
-# Backward compatibility aliases (FBC naming deprecated)
+# Backward compatibility: alternative name
 FBCPipeline = BifrostPipeline
 FBCTrainer = BifrostTrainer
 ComplexFBCTrainer = ComplexBifrostTrainer
