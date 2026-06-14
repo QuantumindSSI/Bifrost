@@ -75,7 +75,6 @@ sample_data/
 # Development documents (separate from source)
 dev-docs/
 CHANGELOG.md
-benchmarks/
 scripts/
 VALIDATION_REPORT.md
 
