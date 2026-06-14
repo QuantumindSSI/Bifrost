@@ -6,6 +6,11 @@ from .complex_decomposer import (
     ComplexSelectiveScan,
     ComplexLinear,
 )
+from .spectral_normalization import (
+    ComplexSpectralNorm,
+    SpectralNormalizedComplexLinear,
+    apply_spectral_norm_to_module,
+)
 from .associative_scan import associative_scan, blelloch_scan
 from .complex_ssm_triton import (
     complex_selective_scan_cuda,
@@ -18,6 +23,9 @@ __all__ = [
     "ComplexSpectralDecomposer",
     "ComplexSelectiveScan",
     "ComplexLinear",
+    "ComplexSpectralNorm",
+    "SpectralNormalizedComplexLinear",
+    "apply_spectral_norm_to_module",
     "associative_scan",
     "blelloch_scan",
     "complex_selective_scan_cuda",

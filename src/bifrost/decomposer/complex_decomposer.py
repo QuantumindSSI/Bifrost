@@ -105,6 +105,7 @@ class ComplexSelectiveScan(nn.Module):
         d_state: int = 16,
         expand: int = 2,
         dt_rank: int | str = "auto",
+        use_spectral_norm: bool = False,
     ) -> None:
         super().__init__()
         self.d_model = d_model
@@ -112,6 +113,7 @@ class ComplexSelectiveScan(nn.Module):
         self.expand = expand
         self.d_inner = int(expand * d_model)
         self.dt_rank = math.ceil(d_model / 16) if dt_rank == "auto" else dt_rank
+        self.use_spectral_norm = use_spectral_norm
 
         # Complex input projection: d_model -> d_inner
         self.in_proj = ComplexLinear(d_model, self.d_inner * 2, bias=True)
@@ -135,6 +137,17 @@ class ComplexSelectiveScan(nn.Module):
 
         # Complex output projection
         self.out_proj = ComplexLinear(self.d_inner, d_model, bias=True)
+
+        # Apply spectral normalization if requested
+        if use_spectral_norm:
+            from .spectral_normalization import ComplexSpectralNorm
+            self.in_proj_norm = ComplexSpectralNorm(self.in_proj, n_power_iterations=1)
+            self.x_proj_norm = ComplexSpectralNorm(self.x_proj, n_power_iterations=1)
+            self.out_proj_norm = ComplexSpectralNorm(self.out_proj, n_power_iterations=1)
+        else:
+            self.in_proj_norm = None
+            self.x_proj_norm = None
+            self.out_proj_norm = None
 
     def _complex_selective_scan(
         self,
@@ -225,13 +238,20 @@ class ComplexSelectiveScan(nn.Module):
                         detached from graph — pass as h_0 to the next call
                         for streaming / stateful inference.
         """
-        # Input projection
-        x_and_res = self.in_proj(x)  # (B, L, d_inner * 2)
+        # Input projection (with optional spectral normalization)
+        if self.in_proj_norm is not None:
+            x_and_res = self.in_proj_norm(x)  # (B, L, d_inner * 2)
+        else:
+            x_and_res = self.in_proj(x)  # (B, L, d_inner * 2)
+        
         x_inner = x_and_res[..., :self.d_inner]  # Complex
         res = x_and_res[..., self.d_inner:]  # Complex residual
 
-        # Compute delta, B, C from x
-        x_proj_out = self.x_proj(x_inner)  # (B, L, dt_rank + 2*d_state)
+        # Compute delta, B, C from x (with optional spectral normalization)
+        if self.x_proj_norm is not None:
+            x_proj_out = self.x_proj_norm(x_inner)  # (B, L, dt_rank + 2*d_state)
+        else:
+            x_proj_out = self.x_proj(x_inner)  # (B, L, dt_rank + 2*d_state)
 
         delta_real = x_proj_out[..., :self.dt_rank].real
         delta_imag = x_proj_out[..., :self.dt_rank].imag
@@ -254,8 +274,11 @@ class ComplexSelectiveScan(nn.Module):
         # Gating with residual
         y = y * F.silu(res.real + res.imag)  # Simple gating
 
-        # Output projection
-        output = self.out_proj(y)
+        # Output projection (with optional spectral normalization)
+        if self.out_proj_norm is not None:
+            output = self.out_proj_norm(y)
+        else:
+            output = self.out_proj(y)
 
         return output, h_T.detach()
 
@@ -280,21 +303,24 @@ class ComplexSpectralDecomposer(nn.Module):
         n_frames: int = 32,
         d_state: int = 16,
         expand: int = 2,
+        use_spectral_norm: bool = False,
     ) -> None:
         super().__init__()
         self.n_fft = n_fft
         self.n_freq = n_fft // 2 + 1
         self.d_model = d_model
         self.n_frames = n_frames
+        self.use_spectral_norm = use_spectral_norm
 
         # Complex projection: n_freq -> d_model
         self.input_proj = ComplexLinear(self.n_freq, d_model, bias=True)
 
-        # Complex SSM
+        # Complex SSM with optional spectral normalization
         self.ssm = ComplexSelectiveScan(
             d_model=d_model,
             d_state=d_state,
             expand=expand,
+            use_spectral_norm=use_spectral_norm,
         )
 
         # Complex normalization (layer norm on real/imag separately)
@@ -303,6 +329,15 @@ class ComplexSpectralDecomposer(nn.Module):
 
         # Complex output projection: d_model -> d_model (keep consistent dimension)
         self.output_proj = ComplexLinear(d_model, d_model, bias=True)
+        
+        # Apply spectral normalization to input/output projections if requested
+        if use_spectral_norm:
+            from .spectral_normalization import ComplexSpectralNorm
+            self.input_proj_norm = ComplexSpectralNorm(self.input_proj, n_power_iterations=1)
+            self.output_proj_norm = ComplexSpectralNorm(self.output_proj, n_power_iterations=1)
+        else:
+            self.input_proj_norm = None
+            self.output_proj_norm = None
 
     def forward(
         self,
@@ -371,8 +406,11 @@ class ComplexSpectralDecomposer(nn.Module):
             else:
                 z_frames = z_rep
 
-        # Project to d_model (complex)
-        h = self.input_proj(z_frames)  # (B, T, d_model) complex
+        # Project to d_model (complex) with optional spectral normalization
+        if self.input_proj_norm is not None:
+            h = self.input_proj_norm(z_frames)  # (B, T, d_model) complex
+        else:
+            h = self.input_proj(z_frames)  # (B, T, d_model) complex
 
         # === INVARIANT CHECK: Complex dtype after projection ===
         assert h.dtype == torch.complex64, f"Expected complex64 after input projection, got {h.dtype}"
@@ -389,8 +427,11 @@ class ComplexSpectralDecomposer(nn.Module):
         assert h.dtype == torch.complex64, f"Expected complex64 after SSM, got {h.dtype}"
         assert torch.isfinite(h).all(), "Non-finite values in SSM hidden state"
 
-        # Output projection
-        z_out = self.output_proj(h)  # (B, T, d_model) complex
+        # Output projection with optional spectral normalization
+        if self.output_proj_norm is not None:
+            z_out = self.output_proj_norm(h)  # (B, T, d_model) complex
+        else:
+            z_out = self.output_proj(h)  # (B, T, d_model) complex
 
         # === INVARIANT CHECK: Complex dtype preserved through pipeline ===
         assert z_out.dtype == torch.complex64, f"Expected complex64 output from SSM, got {z_out.dtype}"

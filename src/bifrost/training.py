@@ -374,29 +374,31 @@ class BifrostTrainer:
         self.pipeline.train()
         signal = signal.to(self.device)
 
-        self.optimizer.zero_grad()
+        bound_real, canonical_real = self._forward_real(signal, metadata)
+        noise_signal = self._build_phase_randomized_signal(signal)
+        bound_noise = self._build_negative_bound(
+            canonical_real, noise_signal, metadata
+        )
 
-        # --- Positive: run real signal through pipeline ---
+        loss = self.criterion(bound_real, bound_noise)
+        return self._update(loss)
+
+    def _forward_real(
+        self,
+        signal: torch.Tensor,
+        metadata: Optional[Dict[str, Any]],
+    ) -> Tuple[SpectralTensor, SpectralTensor]:
+        """Run real signal through pipeline and return bound + canonical."""
         bound_real, _ = self.pipeline(signal, metadata)
-        
-        # Get real signal's canonical representation for negative sample construction
         with torch.no_grad():
             canonical_real = self.pipeline.canonicalizer(signal, metadata)
+        return bound_real, canonical_real
 
-        # --- Negative: STFT-domain phase randomisation ---
-        # Goal: identical per-frame amplitude spectrum, destroyed inter-frame phase coherence.
-        # White noise is too spectrally different (flat vs harmonic peaks) — W_q/W_k learn
-        # amplitude shape discrimination, not phase coherence. Temporal shuffling destroys
-        # frame structure entirely, making the task trivial then forgettable.
-        #
-        # STFT phase randomisation keeps |STFT(x)[f,t]| identical to the original but
-        # assigns a uniform-random phase to each (freq, frame) bin independently.
-        # The reconstructed waveform has the same per-frame spectral envelope but no
-        # consistent phase relationship across frames — forcing the SSM to detect
-        # inter-frame phase coherence, which is the actual training objective.
+    def _build_phase_randomized_signal(
+        self, signal: torch.Tensor
+    ) -> torch.Tensor:
+        """Create phase-randomized negative sample from input signal."""
         if signal.dim() == 2:
-            # (B, L) time-domain: STFT phase randomisation — same amplitude spectrum,
-            # destroyed inter-frame phase coherence. Forces SSM to detect phase structure.
             n_fft = 1024
             hop = n_fft // 4
             B, L = signal.shape
@@ -408,10 +410,10 @@ class BifrostTrainer:
                 return_complex=True,
                 window=win,
                 pad_mode='reflect',
-            )  # (B, F, T)
+            )
             rand_phase = torch.rand_like(spec.real) * 2.0 * _math.pi
             noise_spec = torch.polar(spec.abs(), rand_phase)
-            noise_signal = torch.istft(
+            return torch.istft(
                 noise_spec,
                 n_fft=n_fft,
                 hop_length=hop,
@@ -419,62 +421,56 @@ class BifrostTrainer:
                 length=L,
             )
         else:
-            # (B, T, D) spectral input: RMS-matched white noise fallback
             rms = signal.std(dim=-1, keepdim=True).clamp(min=1e-8)
-            noise_signal = torch.randn_like(signal) * rms
+            return torch.randn_like(signal) * rms
 
-        # --- Negative: same decomposed amplitude, destroyed phase coherence ---
-        # The key insight: W_v learns amplitude shortcuts if decomposed amplitude
-        # differs between positive and negative. We must keep decomposed amplitude
-        # identical, varying ONLY the coherence pattern (via canonical phase).
-        #
-        # Implementation: run canonicalizer on phase-randomized signal to get
-        # destroyed phase, but use the REAL signal's decomposed amplitude.
+    def _build_negative_bound(
+        self,
+        canonical_real: SpectralTensor,
+        noise_signal: torch.Tensor,
+        metadata: Optional[Dict[str, Any]],
+    ) -> SpectralTensor:
+        """Build negative bound sample with real amplitude but random phase."""
         with torch.no_grad():
             self.pipeline.eval()
-            # Get phase-randomized canonical representation
-            canonical_rand = self.pipeline.canonicalizer(noise_signal.detach(), metadata)
-            # Get real signal's decomposed representation
+            canonical_rand = self.pipeline.canonicalizer(
+                noise_signal.detach(), metadata
+            )
             if self.pipeline.use_complex_ssm:
-                decomposed_real_neg, _ = self.pipeline.decomposer(canonical_real, None)
+                decomposed_real_neg, _ = self.pipeline.decomposer(
+                    canonical_real, None
+                )
             else:
                 decomposed_real_neg = self.pipeline.decomposer(canonical_real)
-            # Bind with real amplitude but random phase → destroyed coherence
             bound_noise, _ = self.pipeline.binding(
                 decomposed_real_neg,
                 input_proj=self.pipeline._decomp_to_bind_proj,
                 canonical_phase=canonical_rand.phase,
             )
-        # Restore full train mode on every submodule explicitly
         self.pipeline.train()
         for module in self.pipeline.modules():
             module.training = True
+        return bound_noise
 
-        loss = self.criterion(bound_real, bound_noise)
-
-        # NaN guard: skip step if loss is NaN (prevents gradient corruption)
+    def _update(self, loss: torch.Tensor) -> float:
+        """Backward pass, gradient clip, optimizer step, and bookkeeping."""
         if not torch.isfinite(loss):
             self.optimizer.zero_grad()
             self.step_count += 1
             self.loss_history.append(float('nan'))
             return float('nan')
 
+        self.optimizer.zero_grad()
         loss.backward()
-
         grad_norm = torch.nn.utils.clip_grad_norm_(
-            self.pipeline.parameters(),
-            self.grad_clip,
+            self.pipeline.parameters(), self.grad_clip,
         )
-
-        # Skip optimizer step if gradients exploded (secondary NaN guard)
         if torch.isfinite(grad_norm):
             self.optimizer.step()
         self.scheduler.step()
-
         self.step_count += 1
         loss_val = loss.item()
         self.loss_history.append(loss_val)
-
         return loss_val
 
     def eval_step(
@@ -516,24 +512,27 @@ class BifrostTrainer:
 
             loss = self.criterion(bound_st, target)
 
-            # Coherence statistics
-            coherence_stats = {
-                "coherence_mean": coherence.mean().item(),
-                "coherence_std": coherence.std().item(),
-                "coherence_max": coherence.max().item(),
-            }
+            coherence_stats = self._compute_coherence_stats(coherence)
 
-            # Per-head diagonal ratio (self-attention strength)
-            for h in range(coherence.shape[1]):
-                head_coh = coherence[0, h]  # (T, T)
-                diag = head_coh.diagonal().mean().item()
-                offdiag = head_coh[~torch.eye(head_coh.shape[0], dtype=torch.bool)].mean().item()
-                coherence_stats[f"head_{h}_ratio"] = diag / offdiag if offdiag > 0 else 1.0
+        return {"loss": loss.item(), **coherence_stats}
 
-        return {
-            "loss": loss.item(),
-            **coherence_stats,
+    def _compute_coherence_stats(
+        self, coherence: torch.Tensor
+    ) -> Dict[str, float]:
+        """Compute mean, std, max, and per-head diagonal ratios."""
+        stats = {
+            "coherence_mean": coherence.mean().item(),
+            "coherence_std": coherence.std().item(),
+            "coherence_max": coherence.max().item(),
         }
+        for h in range(coherence.shape[1]):
+            head_coh = coherence[0, h]
+            diag = head_coh.diagonal().mean().item()
+            offdiag = head_coh[
+                ~torch.eye(head_coh.shape[0], dtype=torch.bool)
+            ].mean().item()
+            stats[f"head_{h}_ratio"] = diag / offdiag if offdiag > 0 else 1.0
+        return stats
 
     def save_checkpoint(self, path: str) -> None:
         """Save model checkpoint."""
@@ -577,34 +576,36 @@ def train_fbc_simple(
 
     for epoch in range(epochs):
         epoch_losses = []
-
         for batch_idx, batch in enumerate(dataloader):
-            if isinstance(batch, (list, tuple)):
-                signal, metadata = batch[0], batch[1] if len(batch) > 1 else None
-            else:
-                signal, metadata = batch, None
-
+            signal, metadata = _unpack_batch(batch)
             loss = trainer.train_step(signal, metadata)
             epoch_losses.append(loss)
-
             if batch_idx % 10 == 0:
                 print(f"  Batch {batch_idx}: loss={loss:.4f}")
 
         avg_loss = sum(epoch_losses) / len(epoch_losses)
         print(f"Epoch {epoch}/{epochs}: avg_loss={avg_loss:.4f}")
 
-        # Evaluate every 10 epochs
         if epoch % 10 == 0 and len(dataloader) > 0:
-            batch = next(iter(dataloader))
-            if isinstance(batch, (list, tuple)):
-                signal, metadata = batch[0], batch[1] if len(batch) > 1 else None
-            else:
-                signal, metadata = batch, None
-
-            stats = trainer.eval_step(signal, metadata)
-            print(f"  Eval: loss={stats['loss']:.4f}")
-            print(f"  Coherence: mean={stats['coherence_mean']:.4f}, std={stats['coherence_std']:.4f}")
-            for h in range(4):
-                print(f"  Head {h} ratio: {stats.get(f'head_{h}_ratio', 0):.3f}")
+            signal, metadata = _unpack_batch(next(iter(dataloader)))
+            _print_eval_stats(trainer.eval_step(signal, metadata))
 
     return trainer
+
+
+def _unpack_batch(batch: Any) -> Tuple[Any, Optional[Any]]:
+    """Unpack dataloader batch into signal and optional metadata."""
+    if isinstance(batch, (list, tuple)):
+        return batch[0], batch[1] if len(batch) > 1 else None
+    return batch, None
+
+
+def _print_eval_stats(stats: Dict[str, float]) -> None:
+    """Print evaluation statistics."""
+    print(f"  Eval: loss={stats['loss']:.4f}")
+    print(
+        f"  Coherence: mean={stats['coherence_mean']:.4f}, "
+        f"std={stats['coherence_std']:.4f}"
+    )
+    for h in range(4):
+        print(f"  Head {h} ratio: {stats.get(f'head_{h}_ratio', 0):.3f}")

@@ -34,6 +34,11 @@ from .decomposer.complex_decomposer import (
     ComplexSelectiveScan,
     ComplexLinear,
 )
+from .decomposer.spectral_normalization import (
+    ComplexSpectralNorm,
+    SpectralNormalizedComplexLinear,
+    apply_spectral_norm_to_module,
+)
 from .complex_training import (
     ComplexBifrostTrainer,
     ComplexNextStepLoss,
@@ -98,6 +103,9 @@ __all__ = [
     "ComplexSpectralDecomposer",
     "ComplexSelectiveScan",
     "ComplexLinear",
+    "ComplexSpectralNorm",
+    "SpectralNormalizedComplexLinear",
+    "apply_spectral_norm_to_module",
     "ComplexBifrostTrainer",
     "ComplexFBCTrainer",
     "ComplexNextStepLoss",

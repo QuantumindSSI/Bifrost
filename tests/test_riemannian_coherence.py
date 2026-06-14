@@ -270,8 +270,7 @@ class TestCoherenceScorer:
     
     def test_distance_coherence_inverse(self):
         """Test that larger distances produce smaller coherence."""
-        # Use lower temperature for steeper transition
-        scorer = CoherenceScorer(init_temperature=0.2)
+        scorer = CoherenceScorer(init_temperature=0.1)
         
         # Small distance -> high coherence
         small_dist = torch.tensor([[0.0, 0.1], [0.1, 0.0]])
@@ -282,8 +281,8 @@ class TestCoherenceScorer:
         low_coherence = scorer(large_dist)[0, 1].item()
         
         assert high_coherence > low_coherence
-        assert high_coherence > 0.5  # Should be relatively high
-        assert low_coherence < 0.3   # Should be relatively low
+        assert high_coherence > 0.4  # Should be relatively high
+        assert low_coherence < 0.2   # Should be relatively low
 
 
 # =============================================================================

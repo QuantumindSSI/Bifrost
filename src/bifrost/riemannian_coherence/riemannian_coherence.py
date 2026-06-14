@@ -269,18 +269,21 @@ class GeodesicComputer(nn.Module):
         """
         n = len(attractors)
         
+        # Clamp k_neighbors to n-1 (max possible neighbors excluding self)
+        effective_k = min(self.k_neighbors, n - 1)
+        
         # Compute pairwise Euclidean distances for k-NN selection
         positions = torch.stack([a.centroid for a in attractors], dim=0)
         euclidean_dists = torch.cdist(positions, positions)
         
         # Get k nearest neighbors for each node (excluding self)
-        knn_indices = torch.argsort(euclidean_dists, dim=-1)[:, 1:self.k_neighbors+1]
+        knn_indices = torch.argsort(euclidean_dists, dim=-1)[:, 1:effective_k+1]
         
         # Compute Riemannian edge weights for k-NN edges
         adj_matrix = torch.full((n, n), float('inf'), device=device)
         
         for i in range(n):
-            for j_idx in range(self.k_neighbors):
+            for j_idx in range(effective_k):
                 j = knn_indices[i, j_idx].item()
                 
                 # Use metric at node i for edge weight
