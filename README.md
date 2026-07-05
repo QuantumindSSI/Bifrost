@@ -1,195 +1,185 @@
 # Bifrost
 
-**Spectral Neural Computation Framework**
+**Spectral neural processing with phase-coherent representations**
 
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](./tests/)
-[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/pytorch-2.3%2B-orange.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
+[![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)](./pyproject.toml)
 
-Bifrost is a frequency-domain neural computation framework that processes information through complex-valued spectral representations. By operating jointly in the amplitude and phase domains, Bifrost enables phase-coherent attention mechanisms and unified multi-modal spectral processing across audio, text, and image modalities.
+---
 
-## Overview
+Bifrost is a PyTorch framework for processing continuous signals through the frequency domain. It represents all inputs as complex spectra — carrying both amplitude and phase — and routes information based on phase coherence rather than scalar similarity.
 
-Traditional neural architectures process information as scalar activations, capturing signal magnitude while discarding phase structure. Bifrost addresses this by representing information as complex spectra — mathematical entities with both magnitude and angular components — enabling the system to capture phase alignment patterns that encode structural and topical relationships.
+The core claim: **phase alignment encodes structural relationships that amplitude alone cannot**. Two signals with identical spectra but opposite phase are structurally antithetical. Bifrost makes this distinction computationally tractable.
 
-### Architecture
+---
 
-The framework implements a modular processing pipeline:
+## Pipeline
 
-1. **Signal Canonicalization** — Converts raw multi-modal inputs into unified spectral tensor representations via Fourier transforms, with per-channel normalization and uncertainty quantification.
+Every input passes through four stages, each operating on `SpectralTensor(amplitude, phase, scale, uncertainty)`:
 
-2. **Spectral Decomposition** — Processes complex spectra through complex-valued state space models. The core recurrence is implemented via a parallel associative scan (Blelloch algorithm, O(log n) depth) for efficient long-sequence modeling.
+```
+Input (audio / image / text / sensor)
+  │
+  ▼  S0  Canonicalization     STFT → complex spectrum z = A·exp(iφ)
+  │
+  ▼  S1  Complex SSM          h[t] = exp(−Δ·A)·h[t−1] + Δ·B[t]·x[t]
+  │                           Parallel Blelloch scan — O(log L) depth
+  │
+  ▼  S2  Spectral Binding     C(i,j) = Σ_b w_b · mean_f[cos(φ_q[i,f] − φ_k[j,f])]
+  │                           Attention over phase alignment, not dot products
+  │
+  ▼  S3  Phase-Lock Bridge    Stable attractor extraction via Adler equation
+                              Cross-modal transfer grounded in oscillator physics
+```
 
-3. **Resonance Attention** — Routes information based on phase coherence alignment rather than dot-product similarity, enabling attention to topological relationships beyond semantic similarity.
+An optional S4 stage fits a Riemannian metric (G = LLᵀ via Cholesky) over attractor embeddings and computes geodesic distances for semantic coherence scoring.
 
-4. **Phase-Lock Bridge** — Extracts stable frequency attractors with learned stability dynamics for cross-modal knowledge transfer, grounded in coupled oscillator physics via the Adler equation.
-
-## Key Features
-
-- **Spectral-First Processing** — All inputs converted to frequency domain for structural invariance
-- **Phase-Coherence Routing** — Attention based on phase alignment across spectral components
-- **Complex SSM Architecture** — Mathematically correct complex-valued state space model with parallel associative scan
-- **Multi-Modal Canonicalization** — Unified spectral representation for audio, text, and image modalities
-- **Learned Attractor Dynamics** — Neural stability predictor with temporal consistency tracking
-- **GPU Acceleration** — Native CUDA support via PyTorch
+---
 
 ## Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/quantumind/bifrost.git
 cd bifrost
-
-# Install with CPU support
 pip install -e .
 
-# Development setup
+# With development tooling
 pip install -e ".[dev]"
 ```
 
-## Quick Start
+**Requirements:** Python 3.9+, PyTorch 2.3+, numpy, scipy, librosa, Pillow
 
-### Option 1: Using Bundled Sample Data
+---
 
-```python
-from bifrost.data import quick_start_pipeline, list_samples
-
-# See available samples
-print(list_samples())
-# {'audio': ['mono_16khz', 'mono_8khz', 'stereo_44khz'],
-#  'image': ['gray', 'rgb', 'rgb_large']}
-
-# Run full pipeline on sample audio
-canonical, decomposed, spectral, attention = quick_start_pipeline("mono_16khz")
-print(f"Spectral tensor: {spectral.amplitude.shape}")
-print(f"Attention weights: {attention.shape}")
-```
-
-### Option 2: Manual Pipeline Setup
+## Quick start
 
 ```python
 import torch
-from bifrost.data import load_sample_audio
-from bifrost.canonicalizer.canonicalizer import SpectralCanonicalizer
-from bifrost.decomposer.complex_decomposer import ComplexSpectralDecomposer
-from bifrost.resonance_attention.attention import ResonanceAttention
+from bifrost.pipeline import BifrostPipeline
 
-# Load sample audio
-audio, sr = load_sample_audio("mono_16khz")
+pipe = BifrostPipeline(d_model=256, use_complex_ssm=True, use_s3_attractor=True)
 
-# Initialize pipeline
-canonicalizer = SpectralCanonicalizer(n_fft=1024, normalize_input=True)
-decomposer = ComplexSpectralDecomposer(d_model=256, d_state=64)
-attention = ResonanceAttention(num_heads=8, hidden_dim=256)
+signal = torch.randn(1, 16000)          # 1s at 16 kHz
+output, coherence = pipe(signal)
 
-# Process
-canonical = canonicalizer(audio)
-spectral = decomposer(canonical)
-output, weights = attention(spectral)
+print(output.amplitude.shape)           # spectral embedding
+print(coherence.mean().item())          # phase coherence score [0, 1]
 ```
 
-## Command Line Interface
+```python
+# Stateful streaming — SSM state persists across chunks
+h = None
+for chunk in audio_stream:
+    output, coherence, h = pipe.forward_stateful(chunk, h_0=h)
+```
 
-After installation, use the `bifrost` command:
+```python
+# Multi-modal: audio, image, text, or sensor in the same pipeline
+from bifrost.multimodal_pipeline import create_multimodal_pipeline, Modality
+
+pipe = create_multimodal_pipeline(d_model=256)
+output = pipe(signal, modality=Modality.AUDIO)
+```
+
+---
+
+## Key components
+
+| Module | Class | What it does |
+|---|---|---|
+| `canonicalizer` | `SpectralCanonicalizer` | STFT → `SpectralTensor` with per-channel normalisation and uncertainty |
+| `decomposer` | `ComplexSpectralDecomposer` | Complex-valued SSM; parallel Blelloch scan for O(log L) depth |
+| `decomposer` | `ComplexSpectralNorm` | Spectral normalisation for complex layers; stabilises Lipschitz constant |
+| `resonance_attention` | `ResonanceAttention` | Multi-band phase-coherence attention |
+| `resonance_attention` | `HarmonicBinding` | Explicit overtone-series routing (f, 2f, 3f, …) |
+| `resonance_attention` | `SpectralBinding` | Collapse-proof pipeline; coherence derived from canonical phase |
+| `phase_lock_bridge` | `PhaseLockBridge` | Cross-modal attractor bridging |
+| `phase_lock_bridge` | `TruePhaseLockDetector` | Adler-equation phase-lock detection |
+| `s3_attractor` | `AttractorLearningModule` | VQ-VAE codebook over stable spectral patterns |
+| `riemannian_coherence` | `RiemannianMetricLearner` | Learned Riemannian metric; geodesic semantic distances |
+| `llm_adapter` | `BifrostEnhancedLLM` | Injects spectral representations into frozen LLMs |
+| `training` | `BifrostTrainer` | Contrastive phase loss + InfoNCE |
+| `uncertainty_calibration` | `UncertaintyCalibrator` | Temperature scaling; evaluates via ECE |
+
+---
+
+## CLI
 
 ```bash
-# Run atomic demos
-bifrost demo 1              # Anti-phase discrimination
-bifrost demo 2              # Harmonic binding
-bifrost demo 3              # Cross-modal retrieval
-bifrost demo all            # Run all demos
-
-# Process audio through pipeline
-bifrost process mono_16khz              # Process sample
-bifrost process myfile.wav -o output.pt # Process file, save results
+# Process a file through the full pipeline
+bifrost process audio.wav -o output.pt
 
 # Extract frequency attractors
-bifrost attractors mono_16khz -o attractors.pt
-bifrost attractors myfile.wav -o att.pt --domain audio
+bifrost attractors audio.wav -o attractors.pt
 
-# Evaluate phase-lock bridge between attractor sets
-bifrost bridge attractors_a.pt attractors_b.pt
-bifrost bridge src.pt tgt.pt -o bridges.pt --min-locked 3
+# Evaluate cross-domain phase-lock bridge
+bifrost bridge set_a.pt set_b.pt --min-locked 3
 
-# List available sample data
-bifrost samples
+# Run built-in demos
+bifrost demo 1          # anti-phase discrimination
+bifrost demo 2          # harmonic binding
+bifrost demo 3          # cross-modal retrieval
 
-# Run benchmarks
-bifrost bench attention     # Attention comparison benchmark
-bifrost bench realistic     # Realistic workload benchmark
-
-# Get help
-bifrost --help
+# Benchmarks
+bifrost bench attention  # ResonanceAttention vs dot-product
+bifrost bench realistic  # throughput benchmark
 ```
+
+---
 
 ## Testing
 
 ```bash
-# Run all tests
 pytest tests/ -v
-
-# Run with coverage
 pytest tests/ --cov=bifrost --cov-report=html
-
-# Run specific component tests
-pytest tests/test_canonicalizer.py -v
-pytest tests/test_decomposer.py -v
 ```
 
-## Benchmarking
+---
 
-```bash
-# Compare resonance attention vs dot-product attention
-python benchmarks/attention_comparison.py \
-  --seq_len 512 \
-  --hidden_dim 256 \
-  --num_heads 8 \
-  --num_iters 100
-```
-
-## Project Structure
+## Project layout
 
 ```
-bifrost/
-├── src/bifrost/                # Core source code
-│   ├── __init__.py
-│   ├── cli/                    # Command line interface
-│   ├── data/                   # Sample data utilities
-│   ├── canonicalizer/          # Signal canonicalization
-│   ├── decomposer/             # Spectral decomposition
-│   ├── resonance_attention/    # Phase-coherence attention
-│   ├── phase_lock_bridge/      # Cross-modal transfer
-│   ├── s3_attractor/           # Learned attractor dynamics
-│   ├── semantic_coherence/     # Semantic coherence metrics
-│   ├── spectral_tensor.py      # Data structures
-│   ├── pipeline.py             # End-to-end pipeline
-│   └── llm_adapter.py          # LLM integration adapter
-├── tests/                      # Unit tests
-├── benchmarks/                 # Performance benchmarks
-├── demos/                      # Atomic demos
-├── docs/                       # Documentation
-│   ├── guides/
-│   ├── design/
-│   └── api/
-├── sample_data/                # Bundled audio/image samples
-├── configs/                    # Configuration files
-├── pyproject.toml              # Package config
-├── README.md
-└── LICENSE
+src/bifrost/
+├── spectral_tensor.py          # SpectralTensor dataclass
+├── pipeline.py                 # BifrostPipeline (end-to-end)
+├── multimodal_pipeline.py      # Per-modality routing
+├── llm_adapter.py              # LLM integration
+├── canonicalizer/              # S0 — STFT canonicalisation
+├── decomposer/                 # S1 — complex SSM + associative scan
+├── resonance_attention/        # S2 — phase-coherence binding
+├── phase_lock_bridge/          # S3 — attractor extraction + bridging
+├── s3_attractor/               # S3 — learned attractor dynamics
+├── riemannian_coherence/       # S4 — Riemannian metric + geodesics
+├── tokenization/               # Discrete attractor tokeniser
+├── semantic_coherence/         # Training objectives and metrics
+├── validation/                 # Empirical claim validation suite
+├── ingest/                     # Raw media ingestion (audio, image, text)
+├── training.py                 # BifrostTrainer
+├── distributed_training.py     # DDP multi-GPU/multi-node
+├── checkpoint_manager.py       # Versioned checkpointing
+├── contrastive_loss.py         # ContrastivePhaseLoss + InfoNCE
+└── evaluation.py               # Evaluation metrics
 ```
 
-## Research References
+---
 
-- Gu & Dao (2023): Mamba — Linear-Time Sequence Modeling with Selective State Spaces
-- Trabelsi et al. (2018): Deep Complex Networks
-- Blelloch (1990): Prefix Sums and Their Applications
-- Adler (1946): A Study of Locking Phenomena in Oscillators
+## References
+
+- Gu & Dao (2023) — Mamba: Linear-Time Sequence Modeling with Selective State Spaces
+- Trabelsi et al. (2018) — Deep Complex Networks
+- Blelloch (1990) — Prefix Sums and Their Applications
+- Adler (1946) — A Study of Locking Phenomena in Oscillators
+- Nickel & Kiela (2017) — Poincaré Embeddings for Learning Hierarchical Representations
+
+---
 
 ## License
 
-MIT License. See [LICENSE](./LICENSE) for details.
+MIT. See [LICENSE](./LICENSE).
 
 ## Contact
 
-**Quantumind**  
-engineering@quantumind.io
+**Quantumind** — engineering@quantumind.io

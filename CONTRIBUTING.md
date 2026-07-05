@@ -1,93 +1,45 @@
 # Contributing to Bifrost
 
-Thank you for your interest in contributing. This document provides guidelines for participation.
-
-## Code of Conduct
-
-- Be respectful and inclusive
-- Focus on constructive feedback
-- Help others learn and grow
-
-## Getting Started
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Make your changes
-4. Write or update tests
-5. Submit a pull request
-
-## Development Setup
+## Setup
 
 ```bash
-# Clone the repository
 git clone https://github.com/quantumind/bifrost.git
 cd bifrost
-
-# Create virtual environment
-python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run tests
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 pytest tests/ -v
 ```
 
-## Code Standards
+## Standards
 
-- Follow PEP 8
-- Use meaningful variable names
-- Document all public functions (purpose, parameters, returns)
-- Keep functions focused and small (single responsibility)
-- Handle errors explicitly; silent failures are prohibited
-- Non-trivial functions document Big-O complexity
+- Follow PEP 8. Use `black` (line length 100).
+- Document all public functions: purpose, parameters, return type.
+- Non-trivial algorithms note Big-O complexity.
+- Handle errors explicitly; silent failures are not acceptable.
+- Target > 85% test coverage for new code.
 
-## Testing Requirements
+## Workflow
 
-- Write tests for new features
-- Ensure all existing tests pass
-- Aim for >85% code coverage
-- Test edge cases and error conditions
+1. Fork the repository and create a feature branch.
+2. Write a failing test for the behaviour you are adding or fixing.
+3. Implement the change.
+4. Confirm all tests pass: `pytest tests/ -v`.
+5. Submit a pull request with a clear description of the change and why.
 
-## Commit Messages
+## Commit messages
 
-Use clear, descriptive commit messages:
 ```
-Short description (50 chars or less)
+Short description (≤ 50 characters)
 
-Longer explanation if needed (70 chars or less per line)
+Longer explanation if needed (wrap at 72 characters).
 
 Fixes #123
 ```
 
-## Pull Requests
+## Reporting issues
 
-- Reference related issues
-- Describe changes clearly
-- Include test cases
-- Update documentation as needed
-
-## Documentation
-
-- Update README.md if changing behavior
-- Add docstrings to code
-- Create examples for new features
-- Update API documentation
-
-## Reporting Issues
-
-Include:
-- Python version
-- Operating system
-- Steps to reproduce
-- Expected vs actual behavior
-- Error messages and stack traces
+Include: Python version, OS, steps to reproduce, expected vs. actual behaviour, full error traceback.
 
 ## Questions
 
-Open an issue or refer to the documentation in the project.
-
----
-
-**Thank you for contributing.**
+Open an issue or email engineering@quantumind.io.
