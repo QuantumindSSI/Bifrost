@@ -42,6 +42,7 @@ All documents in this directory are kept in the repository for peer review and r
 | `13_ENGINEERING_REQUIREMENTS.md` | Engineering required to prove the Bifrost thesis | Complete |
 | `14_REFINED_ENGINEERING_PLAN_STEPS_1_3.md` | Concrete plan for steps 1-3 (minimal viable proof) | Complete |
 | `15_ENGINEERING_LESSONS.md` | Non-obvious insights from proving steps 1-3 | Complete |
+| `16_LM_INTEGRATION_RESEARCH.md` | Research survey: integrating structured resonance into language models | Complete |
 
 ---
 
