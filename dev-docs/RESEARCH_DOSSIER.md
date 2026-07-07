@@ -1,8 +1,10 @@
 # Bifrost Research Dossier
 
 **Project**: Bifrost — Spectral neural processing with phase-coherent representations  
+**Vision**: Establish structural intelligence across data modalities for AI, AGI, and ASI  
+**Thesis**: Intelligence is structured resonance — semantic structure is encoded in the phase coherence of oscillatory components across multiple scales, and this principle generalizes across all modalities and all levels of intelligence.  
 **Maintainer**: Oluwaferanmi Oluwagbamila (Type Ω Epistemic Intelligence)  
-**Status**: Active research — first positive result achieved (CBMPC, H2 supported)  
+**Status**: Active research — first positive result achieved (CBMPC, H2 supported); MSC framework defined; AGI/ASI path mapped  
 **Last updated**: July 2026
 
 ---
@@ -27,9 +29,18 @@ All documents in this directory are kept in the repository for peer review and r
 | `RESEARCH_DOSSIER.md` | This file — top-level synthesis and navigation | Living document |
 | `01_EPISTEMIC_AUDIT_SUMMARY.md` | Summary of the Type Ω audit of the first validation loop | Complete |
 | `02_CBMPC_TECHNIQUE_OVERVIEW.md` | Overview of the new CBMPC technique and its theoretical grounding | Complete |
-| `03_CBMPC_PRE_SSM_INTEGRATION_PLAN.md` | Implementation plan: integrating CBMPC as a pre-SSM feature extraction layer | In progress |
-| `04_MODULATION_PRESERVING_SSM_INVESTIGATION.md` | Investigation of SSM architectures that preserve modulation structure | In progress |
-| `05_ESC50_GENERALIZATION_TEST_PLAN.md` | Protocol for testing CBMPC generalization on ESC-50 | In progress |
+| `03_CBMPC_PRE_SSM_INTEGRATION_PLAN.md` | Implementation plan: integrating CBMPC as a pre-SSM feature extraction layer | Complete |
+| `04_MODULATION_PRESERVING_SSM_INVESTIGATION.md` | Investigation of SSM architectures that preserve modulation structure | Complete |
+| `05_ESC50_GENERALIZATION_TEST_PLAN.md` | Protocol for testing CBMPC generalization on ESC-50 | Complete |
+| `06_MSC_FRAMEWORK.md` | Multi-Scale Structural Coherence framework — the unifying principle | Complete |
+| `07_MSC_MODALITY_INSTANCES.md` | Modality-specific MSC instances (audio, image, sensor, text) | Complete |
+| `08_CROSS_MODAL_VALIDATION_PROTOCOL.md` | Pre-registered protocol for cross-modal validation | Complete |
+| `09_RESEARCH_PATHS_COMPENDIUM.md` | Complete catalog of all research directions | Complete |
+| `10_FREQUENCY_LEVEL_DATA_MODELS.md` | Survey of frequency representations and their structural priors | Complete |
+| `11_AGI_ASI_STRUCTURAL_INTELLIGENCE.md` | Strategic synthesis: Bifrost's path to AGI/ASI | Complete |
+| `12_LITERATURE_SURVEY_EXTERNAL.md` | External research papers grounding the project | Complete |
+| `13_ENGINEERING_REQUIREMENTS.md` | Engineering required to prove the Bifrost thesis | Complete |
+| `14_REFINED_ENGINEERING_PLAN_STEPS_1_3.md` | Concrete plan for steps 1-3 (minimal viable proof) | Complete |
 
 ---
 

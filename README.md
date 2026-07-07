@@ -1,180 +1,193 @@
 # Bifrost
 
-**Spectral neural processing with phase-coherent representations**
+**Testing the Structured Resonance Thesis: intelligence is structured resonance, and phase-coherent multi-scale representations capture semantic structure across modalities.**
 
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](./tests/)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/pytorch-2.3%2B-orange.svg)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.1-blue.svg)](./pyproject.toml)
 
 ---
 
-## What it is
+## The thesis
 
-Bifrost is a framework for learning representations of meaning from the structure of signals — not from token statistics.
+**Intelligence is structured resonance. Semantic structure is encoded in the phase coherence of oscillatory components across multiple scales, and this principle generalizes across all modalities.**
 
-The premise is that **semantic understanding is not a single property but the product of several distinct structural layers**, each requiring different mathematics. Current deep learning (transformers, SSMs, multimodal models) captures distributional statistics well. It does not capture causal direction, topological structure, compositional hierarchy, symmetry, or disentangled factors — not because these are unsolvable but because the representations used discard the information required to reason about them.
+This is not a metaphor. It is a testable claim with five load-bearing sub-claims:
 
-Bifrost is being built to address this. Every design decision derives from what structure is actually present in continuous signals and what mathematical object is required to represent it faithfully.
+| Claim | Statement | Evidence required |
+|---|---|---|
+| C1 | Phase coherence captures semantic structure | Phase-coherent features > phase-invariant features on semantic tasks |
+| C2 | Multi-scale coherence is necessary | Cross-scale coherence > single-scale coherence |
+| C3 | The principle generalizes across modalities | Same coherence metric works on audio, image, sensor |
+| C4 | Cross-modal alignment is possible | Phase coherence patterns align across modalities |
+| C5 | This enables AGI-level generalization | Compositional generalization from phase structure |
 
----
-
-## The central mechanism: phase coherence
-
-All inputs — audio, image, text, sensor data — are converted to complex spectra: `z = A·exp(iφ)`, carrying both amplitude and phase. The system then routes information based on **phase coherence** — the alignment of oscillatory phases across frequencies and time — rather than dot-product similarity.
-
-Phase coherence is physically grounded. The Adler equation describes how two coupled oscillators synchronise:
-
-```
-dφ/dt = Δω + K·sin(φ_target − φ)
-```
-
-Phase-lock occurs when `|Δω| < K`: the coupling strength overcomes the frequency difference. Bifrost implements this as a learned detector over spectral attractors. Two signals that share structural relationships — a spoken word and its visual referent, two harmonically related frequencies, a question and its answer — will phase-lock in ways that structurally unrelated pairs will not.
-
-This is not metaphor. It is a testable, measurable signal with quantifiable thresholds.
+Bifrost is the engineering framework designed to prove or falsify each claim. The engineering IS the experiment.
 
 ---
 
-## The pipeline
+## Research backing the thesis
 
-Every input passes through the same four-stage pipeline, with each stage operating on `SpectralTensor(amplitude, phase, scale, uncertainty)`:
+The thesis is grounded in converging evidence from multiple independent research traditions:
+
+### Phase congruency detects image structure
+
+Kovesi, P. (1999). "Image Features From Phase Congruency." *Videre: Journal of Computer Vision Research*, 1(3). — Image features (edges, lines, corners) appear at points where Fourier components are maximally in phase. Phase congruency is invariant to illumination and contrast, providing an absolute measure of feature significance.
+
+### Wavelet coherence captures cross-scale phase relationships
+
+Grinsted, A., Moore, J.C., Jevrejeva, S. (2004). "Application of the cross wavelet transform and wavelet coherence to geophysical time series." *Nonlinear Processes in Geophysics*, 11, 561-566. — Wavelet coherence finds significant phase relationships between time series even when common power is low. Phase angle statistics reveal causal relationships.
+
+### Neural networks have spectral bias toward low frequencies
+
+Rahaman, N. et al. (2019). "On the Spectral Bias of Neural Networks." *ICML 2019*, PMLR 97:5301-5310. — Deep ReLU networks learn low-frequency functions first, with frequency-dependent learning speed. This bias is key to generalization. Operating in the frequency domain allows direct control of which frequencies the system learns.
+
+### Theta-gamma coupling is a ubiquitous brain mechanism
+
+(2024). "Theta-gamma coupling as a ubiquitous brain mechanism: implications for memory, attention, dreaming, imagination, and consciousness." *Current Opinion in Behavioral Sciences*. — Cross-frequency coupling between slow (theta) and fast (gamma) oscillations is a primary mechanism for information integration, memory, and consciousness. Different frequency bands serve different cognitive functions.
+
+### Phase synchronization encodes semantic structure
+
+(2019). "Neural theta oscillations support semantic memory retrieval." *Scientific Reports*. — Theta-band phase synchronization is causally involved in semantic memory retrieval. Phase-specific stimulation modulates semantic processing.
+
+(2019). "EEG phase synchronization during semantic unification relates to individual differences in children's vocabulary skill." *Developmental Cognitive Neuroscience*. — Delta-band phase synchrony supports top-down semantic unification. Children with stronger vocabulary show greater phase synchrony.
+
+(2024). "Binding of cortical functional modules by synchronous high-frequency oscillations." *Nature Human Behaviour*. — Cortico-cortical co-ripples (~90 Hz) increase during reading and semantic decisions. Phase-locked at zero lag over long distances.
+
+### Cross-modal integration relies on phase alignment
+
+(2015). "Neuro-Oscillatory Phase Alignment Drives Speeded Multisensory Response Times." *Journal of Neuroscience*. — Delta-band phase alignment between auditory and sensorimotor cortex drives faster multisensory responses. Phase alignment is the mechanism of cross-modal integration.
+
+(2010). "Auditory Cortex Tracks Both Auditory and Visual Stimulus Dynamics Using Low-Frequency Neuronal Phase Modulation." *PLOS Biology*. — Delta-theta (2-7 Hz) phase modulation carries dynamic multi-sensory information, tracking both auditory and visual stimulus dynamics concurrently.
+
+### Resonance theory of consciousness
+
+(2019). "The Easy Part of the Hard Problem: A Resonance Theory of Consciousness." *Frontiers in Human Neuroscience*, 13, 378. — Shared resonance allows different brain regions to achieve a phase transition in information flow. The combination problem of consciousness is solved by shared resonance: phase-locked oscillation enables unified experience.
+
+### Spectral neuro-symbolic reasoning
+
+Kiruluta, A., Burity, P. (2025). "From Eigenmodes to Proofs: Integrating Graph Spectral Operators with Symbolic Interpretable Reasoning." *arXiv:2509.07017*. — Spectral NSR performs reasoning directly in the graph spectral domain, embedding logical rules as spectral templates. Outperforms transformers on reasoning benchmarks. Reasoning can be done in the frequency domain.
+
+### Wavelet scattering preserves phase across scales
+
+Bruna, J., Mallat, S. (2013). "Invariant Scattering Convolution Networks." *IEEE TPAMI*. — Wavelet scattering networks cascade wavelet convolutions with modulus nonlinearity for translation-invariant, deformation-stable features. Incorporates higher-order moments that capture phase relationships. Discriminates textures with the same Fourier power spectrum.
+
+### Complex-valued networks preserve phase
+
+Trabelsi, C. et al. (2018). "Deep Complex Networks." *ICLR 2018*. — Complex-valued neural networks with complex convolutions, batch normalization, and weight initialization. Complex numbers provide richer representational capacity and preserve phase as a first-class citizen.
+
+### Fourier neural operator learns in spectral domain
+
+Li, Z. et al. (2020). "Fourier Neural Operator for Parametric Partial Differential Equations." *ICLR 2021*. — Parameterizes integral kernels in Fourier space. Resolution-invariant learning. 1000x faster than traditional PDE solvers. Demonstrates that frequency-domain learning can be both efficient and generalizable.
+
+### Graph wavelets extend multi-scale analysis to graphs
+
+Hammond, D.K., Vandergheynst, P., Gribonval, R. (2011). "Wavelets on graphs via spectral graph theory." *Applied and Computational Harmonic Analysis*, 30(2), 129-150. — Constructs wavelet transforms on arbitrary weighted graphs via Laplacian spectral decomposition. Extends multi-scale analysis to non-Euclidean data.
+
+### Structural general intelligence
+
+(2025). "Structural General Intelligence (SGI): A System-Level Framework for the Shift from Scaling to Coherence." — Intelligence arises from coherence rather than magnitude. The interaction of heterogeneous subsystems converges toward a structural fixed point. Directly aligns with the Bifrost thesis.
+
+### Full literature survey
+
+See [dev-docs/12_LITERATURE_SURVEY_EXTERNAL.md](./dev-docs/12_LITERATURE_SURVEY_EXTERNAL.md) for the complete survey with 30+ verified citations across phase congruency, wavelet coherence, spectral neuro-symbolic reasoning, neural oscillations, cross-modal integration, consciousness theory, topological data analysis, and AGI frameworks.
+
+---
+
+## The framework
+
+Bifrost processes all inputs through a phase-preserving spectral pipeline:
 
 ```
 Input  (audio / image / text / sensor / any continuous signal)
   │
   ▼  S0  Canonicalization
-  │      STFT → complex spectrum z = A·exp(iφ)
-  │      Per-channel normalisation, uncertainty quantification
+  │      FFT → complex spectrum z = A·exp(iφ)
+  │      SpectralTensor(amplitude, phase, scale, uncertainty)
   │
   ▼  S1  Complex SSM
   │      h[t] = exp(−Δ·A)·h[t−1] + Δ·B[t]·x[t]   (A complex diagonal)
   │      Parallel Blelloch associative scan — O(log L) depth
-  │      Learns temporal phase coherence over arbitrary sequence lengths
+  │      Phase preserved through complex state transitions
   │
   ▼  S2  Spectral Binding
   │      C(i,j) = Σ_b w_b · mean_f[cos(φ_q[i,f] − φ_k[j,f])]
   │      Attention over phase alignment across frequency bands
   │      Harmonic overtone routing: energy at f, 2f, 3f, …
-  │      Collapse-proof: base coherence derived from canonical phase, no learned params
   │
   ▼  S3  Phase-Lock Bridge
-         Stable frequency attractors identified via Adler equation dynamics
-         VQ-VAE codebook (65K entries) over attractor feature space
-         Cross-modal transfer: attractors from different domains phase-lock
-         when they share structural relationships
+  │      Stable frequency attractors via Adler equation dynamics
+  │      VQ-VAE codebook (65K entries) over attractor space
+  │      Cross-modal transfer via phase-locked attractors
+  │
+  ▼  S4  Riemannian Coherence (optional)
+         Learned metric tensor G = LLᵀ over attractor embeddings
+         Geodesic distances as semantic coherence scores
 ```
 
-**S4 (optional):** Riemannian metric over attractor embeddings via Cholesky factorisation `G = LLᵀ`. Geodesic distances between attractors serve as semantic coherence scores. Triplet loss trains the metric so synonyms are close and antonyms are far on the manifold.
+### Multi-Scale Structural Coherence (MSC)
 
----
+The MSC framework is the operationalization of the thesis. Each modality has a specific MSC instance that measures phase coherence across scales:
 
-## Where this is going
+| Modality | MSC instance | What it measures | Reference |
+|---|---|---|---|
+| Audio | CBMPC (Cross-Band Modulation Phase Coherence) | Phase locking of temporal modulations across mel frequency bands | Validated: +13.65 pp on SpeechCommands (p = 0.0033) |
+| Image | Phase Congruency | Phase alignment across log-Gabor spatial frequency scales | Kovesi (1999) |
+| Sensor | Wavelet Coherence | Cross-channel wavelet coherence at multiple time scales | Grinsted et al. (2004) |
+| Text | Graph Spectral Coherence | Cross-role phase locking in dependency parse tree via graph wavelets | Hammond et al. (2011) |
 
-The current pipeline addresses two of the seven structural layers that constitute semantic understanding. The roadmap extends it to all seven:
-
-```
-Layer 1  DISTRIBUTIONAL        Statistical co-occurrence in context
-         Current state:  SpectralBinding captures spectral covariance
-         LLM comparison: LLMs do this well; Bifrost adds structural co-occurrence
-
-Layer 2  COMPOSITIONAL         Recursive part-whole structure
-         Current state:  Not yet implemented
-         Roadmap:        Hierarchical SSM — five-level timescale pyramid
-                         10ms (phoneme) → 100ms (syllable) → 500ms (word)
-                         → 2s (phrase) → 10s (discourse)
-                         Cross-level attention learns which timescale is active per frame
-
-Layer 3  CAUSAL                Directed influence, counterfactual reasoning
-         Current state:  Not yet implemented. All current representations are symmetric.
-         Roadmap:        Granger causality over spectral bands from SSM transition matrices
-                         GC(i→j) = log( Var[ê_j^(−i)] / Var[ê_j] )
-                         First asymmetric (directed) signal in the pipeline
-                         Enables: "band A predicts band B" ≠ "band B predicts band A"
-
-Layer 4  TOPOLOGICAL           Curved manifold structure of concept space
-         Current state:  RiemannianMetricLearner — learned metric G = LLᵀ (implemented)
-         Roadmap:        TDA persistence diagrams — Betti numbers [β₀, β₁, β₂]
-                         Parameter-free topological fingerprints, no training required
-                         Different phonemes, chords, and word classes have distinct
-                         topological signatures that Riemannian geometry alone misses
-
-Layer 5  TEMPORAL              Discourse structure, event sequences, narrative arcs
-         Current state:  Complex SSM captures temporal phase coherence (implemented)
-         Roadmap:        Allen interval algebra over attractor activations
-                         13 qualitative temporal relations: before, meets, overlaps,
-                         starts, during, finishes, equals, and their inverses
-                         Enables explicit narrative structure representation
-
-Layer 6  SYMMETRY              What transformations leave meaning invariant
-         Current state:  HarmonicBinding hardcodes octave invariance (f → 2f)
-         Roadmap:        SymmetryTensor — detect the invariance group the signal
-                         actually obeys rather than assuming it
-                         Generalises to speech formants, image rotations, sensor
-                         periodicities at non-integer frequency ratios
-
-Layer 7  DISENTANGLEMENT       Statistically independent generative factors
-         Current state:  Not yet implemented. VQ-VAE mixes content, style, and noise.
-         Roadmap:        Total Correlation VAE — penalise TC(z) = KL(q(z) || ∏ q(z_i))
-                         Separate content (what) from style (how) from temporal (when)
-                         MI matrix I(z_i; z_j) quantifies residual entanglement
-                         Enables controlled style transfer without retraining
-```
-
-LLMs address Layer 1 well and Layer 5 partially within context window limits. Layers 2–4 and 6–7 are structurally unaddressed by token-based architectures — not because transformers are inadequate at their task, but because the information required for these layers is discarded before the architecture ever sees the input.
-
----
-
-## LLM integration
-
-Bifrost is not a replacement for language models. It is a complement. Three integration modes are implemented:
-
-**Spectral prefix** — Bifrost encodes audio, image, or sensor input into spectral embeddings projected as prefix tokens. A frozen LLM receives `[spectral prefix | text tokens]` and processes them jointly. Provides grounded multimodal context without retraining the language model.
-
-**Parameter-efficient adapter** — The complex SSM is injected between frozen LLM layers. ~5M trainable parameters (~4% of GPT-2). Provides long-context phase coherence tracking and per-token uncertainty estimates beyond the context window.
-
-**Structural coherence verifier** — For chain-of-thought reasoning: each reasoning step is encoded via Bifrost alongside the problem context. Phase-lock score and prediction error provide a structural consistency signal — a step that is structurally incoherent with the problem will have low phase-lock and high prediction error. This signal is grounded in physics, not in a learned reward model, and cannot be gamed by reward hacking.
-
----
-
-## What the pipeline enables beyond language
-
-**Pure spectral sequence model** — EEG, ECG, industrial vibration, sonar, IMU data processed directly in the frequency domain. No tokenisation, no vocabulary, no discrete bottleneck. The complex SSM maintains state across arbitrary sequence lengths.
-
-**Phase-lock cross-modal fusion** — Structural correspondence between modalities computed via oscillator physics, not cross-attention over tokens. Audio and visual patterns that share temporal structure will phase-lock; structurally unrelated pairs will not. No language intermediary required.
-
-**Attractor-based geometric reasoning** — The Riemannian manifold as a reasoning substrate. Analogy completion is a geodesic midpoint computation. Problem solving is a path from a problem attractor to a solution attractor. The geometry is learned, not hand-designed.
-
-**Hierarchical timescale processor** — Five parallel SSMs at 10ms, 100ms, 500ms, 2s, 10s capture phoneme, syllable, word, phrase, and discourse structure simultaneously in a single forward pass.
+All instances produce coherence features that can be projected to a unified coherence space for cross-modal comparison.
 
 ---
 
 ## Current implementation status
 
-| Component | Status |
-|---|---|
-| SpectralCanonicalizer (S0) | Complete |
-| ComplexSpectralDecomposer — complex SSM, Blelloch scan (S1) | Complete |
-| SpectralNormalization for complex layers (S1) | Complete |
-| ResonanceAttention — multi-band phase coherence (S2) | Complete |
-| HarmonicBinding — overtone-series routing (S2) | Complete |
-| SpectralBinding — collapse-proof pipeline (S2) | Complete |
-| PhaseLockBridge — cross-modal attractor bridging (S3) | Complete |
-| TruePhaseLockDetector — Adler equation (S3) | Complete |
-| AttractorLearningModule — VQ-VAE 65K codebook (S3) | Complete |
-| RiemannianMetricLearner + GeodesicComputer (S4) | Complete |
-| BifrostEnhancedLLM — 3 adapter modes | Architecture complete, untrained |
-| Distributed training infrastructure (DDP, 8× A100) | Complete |
-| Empirical validation suite | Complete |
-| Multi-modal data curation pipeline | Complete — data ingestion in progress |
-| Hierarchical multi-timescale SSM | Planned |
-| Granger causal graph | Planned |
-| TDA persistence diagrams | Planned |
-| Symmetry detection | Planned |
-| Disentangled VAE | Planned |
-| Allen interval algebra | Planned |
+| Component | Status | File |
+|---|---|---|
+| SpectralTensor (amplitude, phase, scale, uncertainty) | Complete | `src/bifrost/spectral_tensor.py` |
+| SpectralCanonicalizer (1D/2D FFT) | Complete | `src/bifrost/canonicalizer/` |
+| ComplexSpectralDecomposer (complex SSM + Blelloch scan) | Complete | `src/bifrost/decomposer/complex_decomposer.py` |
+| CBMPC (audio cross-band phase coherence) | Complete + validated | `src/bifrost/cbmpc.py` |
+| PhaseCongruencyExtractor (image MSC) | Complete, validation pending | `src/bifrost/msc_image.py` |
+| ResonanceAttention (phase-based attention) | Complete | `src/bifrost/resonance_attention/` |
+| HarmonicBinding (overtone routing) | Complete | `src/bifrost/resonance_attention/harmonic_binding.py` |
+| PhaseLockBridge (Adler equation cross-modal) | Complete | `src/bifrost/phase_lock_bridge/` |
+| RiemannianMetricLearner + GeodesicComputer | Complete | `src/bifrost/riemannian_coherence/` |
+| MultiModalSpectralPipeline (audio/image/text/tensor) | Complete | `src/bifrost/multimodal_pipeline.py` |
+| Complex training (loss, optimizer, distributed) | Complete | `src/bifrost/complex_training.py` |
+| WaveletCoherenceExtractor (sensor MSC) | To build | — |
+| CrossScaleCoherence module | To build | — |
+| Phase ablation harness | To build | — |
+| Unified coherence metric | To build | — |
 
-The full engineering specification — component interfaces, mathematical derivations, timelines, and success criteria for each layer — is in [ENGINEERING_PLAN.md](./ENGINEERING_PLAN.md).
+---
+
+## The proof plan
+
+The thesis is tested in five steps, each building on the one below. Steps 1-3 are the minimal viable proof.
+
+### Step 1: Prove phase coherence captures semantic structure (C1)
+
+Build a phase ablation harness that selectively destroys phase at any pipeline layer. Run on SpeechCommands (audio) and CIFAR-10 (image). If phase-coherent features outperform phase-ablated features (p < 0.05), phase coherence captures semantic structure.
+
+### Step 2: Prove multi-scale coherence is necessary (C2)
+
+Build a cross-scale coherence module that computes PLV between wavelet scales. Run scale ablations: single-scale vs multi-scale vs cross-scale-destroyed. If cross-scale coherence outperforms single-scale and cross-scale-destroyed (p < 0.05), multi-scale coherence is necessary.
+
+### Step 3: Prove cross-modal generalization (C3)
+
+Implement wavelet coherence for sensors. Validate all three MSC instances (audio, image, sensor). Build a unified coherence metric. Test cross-modal transfer: can audio coherence features classify image samples? If yes (above chance, p < 0.05), the principle generalizes.
+
+### Step 4: Prove cross-modal alignment (C4) — future
+
+Build cross-modal phase binding. Test cross-modal retrieval: given an audio sample, retrieve the image with the most similar coherence pattern.
+
+### Step 5: Prove compositional generalization (C5) — future
+
+Build compositional structure extractor. Test compositional generalization: train on compositions A/B/C, test on novel D/E/F.
+
+**Full plan**: [dev-docs/14_REFINED_ENGINEERING_PLAN_STEPS_1_3.md](./dev-docs/14_REFINED_ENGINEERING_PLAN_STEPS_1_3.md)
 
 ---
 
@@ -209,13 +222,6 @@ print(coherence.mean().item())       # phase coherence score ∈ [0, 1]
 ```
 
 ```python
-# Stateful streaming — SSM state persists across chunk boundaries
-h = None
-for chunk in audio_stream:
-    output, coherence, h = pipe.forward_stateful(chunk, h_0=h)
-```
-
-```python
 # Multi-modal
 from bifrost.multimodal_pipeline import create_multimodal_pipeline, Modality
 
@@ -224,16 +230,19 @@ output = pipe(signal, modality=Modality.AUDIO)
 ```
 
 ```python
-# LLM integration
-from bifrost.llm_adapter import BifrostEnhancedLLM
+# CBMPC feature extraction (audio MSC)
+from bifrost.cbmpc import CBMPCExtractor
 
-model = BifrostEnhancedLLM(
-    llm_name="gpt2",
-    adapter_mode="intermediate",
-    spectral_dim=128,
-    freeze_llm=True,
-)
-result = model.generate_with_spectral("The experiment showed", max_length=50)
+extractor = CBMPCExtractor()
+features = extractor(signal, sample_rate=16000)  # cross-band phase coherence features
+```
+
+```python
+# Phase congruency (image MSC)
+from bifrost.msc_image import PhaseCongruencyExtractor
+
+extractor = PhaseCongruencyExtractor(n_scales=5, n_orientations=6)
+features = extractor(image)  # phase congruency across spatial frequency scales
 ```
 
 ---
@@ -247,7 +256,6 @@ bifrost bridge a.pt b.pt --min-locked 3      # cross-modal bridge evaluation
 bifrost demo 1                               # anti-phase discrimination
 bifrost demo 2                               # harmonic binding
 bifrost demo 3                               # cross-modal retrieval
-bifrost bench attention                      # ResonanceAttention vs dot-product
 ```
 
 ---
@@ -265,39 +273,72 @@ pytest tests/ --cov=bifrost --cov-report=html
 
 ```
 src/bifrost/
-├── spectral_tensor.py          # SpectralTensor dataclass
+├── spectral_tensor.py          # SpectralTensor (amplitude, phase, scale, uncertainty)
 ├── pipeline.py                 # BifrostPipeline
 ├── multimodal_pipeline.py      # Per-modality routing
-├── llm_adapter.py              # LLM integration
-├── canonicalizer/              # S0
-├── decomposer/                 # S1 — complex SSM, associative scan, spectral norm
-├── resonance_attention/        # S2 — phase coherence, harmonic binding
-├── phase_lock_bridge/          # S3 — attractor extraction, Adler detection
-├── s3_attractor/               # S3 — VQ-VAE attractor learning
-├── riemannian_coherence/       # S4 — Riemannian metric, geodesics
-├── tokenization/               # Discrete attractor tokeniser
+├── cbmpc.py                    # Audio MSC: cross-band modulation phase coherence
+├── msc_image.py                # Image MSC: phase congruency
+├── canonicalizer/              # S0: signal → SpectralTensor
+├── decomposer/                 # S1: complex SSM, associative scan, wavelet bank
+├── resonance_attention/        # S2: phase coherence attention, harmonic binding
+├── phase_lock_bridge/          # S3: Adler equation, attractor extraction
+├── s3_attractor/               # S3: VQ-VAE attractor learning
+├── riemannian_coherence/       # S4: Riemannian metric, geodesics
 ├── semantic_coherence/         # Training objectives
 ├── validation/                 # Empirical validation suite
 ├── ingest/                     # Raw media ingestion
 ├── training.py                 # BifrostTrainer, contrastive phase loss
+├── complex_training.py         # Complex-valued training
 ├── distributed_training.py     # DDP multi-GPU/multi-node
-├── checkpoint_manager.py       # Versioned checkpointing
-└── evaluation.py               # Evaluation metrics
+└── checkpoint_manager.py       # Versioned checkpointing
+
+dev-docs/                       # Research documentation
+├── RESEARCH_DOSSIER.md         # Top-level synthesis and navigation
+├── 01_EPISTEMIC_AUDIT_SUMMARY.md
+├── 02_CBMPC_TECHNIQUE_OVERVIEW.md
+├── 03_CBMPC_PRE_SSM_INTEGRATION_PLAN.md
+├── 04_MODULATION_PRESERVING_SSM_INVESTIGATION.md
+├── 05_ESC50_GENERALIZATION_TEST_PLAN.md
+├── 06_MSC_FRAMEWORK.md
+├── 07_MSC_MODALITY_INSTANCES.md
+├── 08_CROSS_MODAL_VALIDATION_PROTOCOL.md
+├── 09_RESEARCH_PATHS_COMPENDIUM.md
+├── 10_FREQUENCY_LEVEL_DATA_MODELS.md
+├── 11_AGI_ASI_STRUCTURAL_INTELLIGENCE.md
+├── 12_LITERATURE_SURVEY_EXTERNAL.md
+├── 13_ENGINEERING_REQUIREMENTS.md
+└── 14_REFINED_ENGINEERING_PLAN_STEPS_1_3.md
+
+research_dir/                   # Experiment scripts
+├── experiment_cbmpc_comparison.py
+├── experiment_cbmpc_esc50.py
+├── experiment_cbmpc_pre_ssm.py
+├── experiment_msc_image_cifar10.py
+└── results/                    # Experiment outputs
 ```
 
 ---
 
-## References
+## Key references
 
-- Gu & Dao (2023) — Mamba: Linear-Time Sequence Modeling with Selective State Spaces
-- Trabelsi et al. (2018) — Deep Complex Networks
-- Blelloch (1990) — Prefix Sums and Their Applications
-- Adler (1946) — A Study of Locking Phenomena in Oscillators
-- Nickel & Kiela (2017) — Poincaré Embeddings for Learning Hierarchical Representations
-- Pearl (2009) — Causality: Models, Reasoning, and Inference
-- Carlsson (2009) — Topology and Data
-- Allen (1983) — Maintaining Knowledge about Temporal Intervals
-- Higgins et al. (2017) — beta-VAE: Learning Basic Visual Concepts with a Constrained VAE
+| Reference | Contribution |
+|---|---|
+| Kovesi (1999) | Phase congruency for image features |
+| Grinsted et al. (2004) | Wavelet coherence for cross-scale phase |
+| Rahaman et al. (2019) | Spectral bias of neural networks |
+| Trabelsi et al. (2018) | Deep complex networks |
+| Li et al. (2020) | Fourier neural operator |
+| Hammond et al. (2011) | Graph wavelets via spectral graph theory |
+| Bruna & Mallat (2013) | Wavelet scattering transform |
+| Kiruluta & Burity (2025) | Spectral neuro-symbolic reasoning |
+| Frontiers Hum Neurosci (2019) | Resonance theory of consciousness |
+| J Neurosci (2015) | Phase alignment drives multisensory integration |
+| Sci Rep (2019) | Theta oscillations in semantic retrieval |
+| Nat Hum Behav (2024) | Synchronous oscillations bind cortical modules |
+| Gu & Dao (2023) | Mamba: selective state spaces |
+| Adler (1946) | Oscillator locking phenomena |
+
+**Full survey**: [dev-docs/12_LITERATURE_SURVEY_EXTERNAL.md](./dev-docs/12_LITERATURE_SURVEY_EXTERNAL.md)
 
 ---
 
