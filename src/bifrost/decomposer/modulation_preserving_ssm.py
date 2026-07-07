@@ -16,13 +16,13 @@ investigation plan.
 
 from __future__ import annotations
 
-import math
 from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
 
-from .spectral_tensor import SpectralTensor
+from ..utils.spectral_utils import EPS, hz_to_mel, mel_to_hz
+from ..spectral_tensor import SpectralTensor
 
 
 class MelProjection(nn.Module):
@@ -39,8 +39,6 @@ class MelProjection(nn.Module):
     def _build_mel_filterbank(self, n_fft: int, n_mels: int, sr: int) -> torch.Tensor:
         n_freq = n_fft // 2 + 1
         f_min, f_max = 0.0, sr / 2.0
-        def hz_to_mel(f): return 2595.0 * math.log10(1.0 + f / 700.0)
-        def mel_to_hz(m): return 700.0 * (10 ** (m / 2595.0) - 1.0)
         mel_min, mel_max = hz_to_mel(f_min), hz_to_mel(f_max)
         mel_points = torch.linspace(mel_min, mel_max, n_mels + 2)
         hz_points = torch.tensor([mel_to_hz(m.item()) for m in mel_points])
@@ -52,9 +50,9 @@ class MelProjection(nn.Module):
                 f = fft_freqs[k]
                 if f < left or f > right: continue
                 if f <= center:
-                    fb[m, k] = (f - left) / (center - left + 1e-8)
+                    fb[m, k] = (f - left) / (center - left + EPS)
                 else:
-                    fb[m, k] = (right - f) / (right - center + 1e-8)
+                    fb[m, k] = (right - f) / (right - center + EPS)
         return fb
 
     def forward(self, stft_mag: torch.Tensor) -> torch.Tensor:

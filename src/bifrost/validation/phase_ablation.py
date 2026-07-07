@@ -26,6 +26,7 @@ import torch
 import torch.nn as nn
 
 from ..spectral_tensor import SpectralTensor
+from ..utils.spectral_utils import wrap_phase
 
 
 class PhaseAblationHarness(nn.Module):
@@ -82,7 +83,7 @@ class PhaseAblationHarness(nn.Module):
                             dtype=st.phase.dtype) * sigma
         phase = st.phase + noise
         # Wrap to [-pi, pi]
-        phase = torch.atan2(torch.sin(phase), torch.cos(phase))
+        phase = wrap_phase(phase)
         return SpectralTensor(
             amplitude=st.amplitude.clone(),
             phase=phase,
@@ -97,7 +98,7 @@ class PhaseAblationHarness(nn.Module):
         step = 2 * torch.pi / n_levels
         phase = torch.round(st.phase / step) * step
         # Wrap to [-pi, pi]
-        phase = torch.atan2(torch.sin(phase), torch.cos(phase))
+        phase = wrap_phase(phase)
         return SpectralTensor(
             amplitude=st.amplitude.clone(),
             phase=phase,
@@ -146,7 +147,7 @@ class PhaseAblationHarness(nn.Module):
                                 device=st.phase.device,
                                 dtype=st.phase.dtype) * 2 * torch.pi - torch.pi
             phase = st.phase + offset
-            phase = torch.atan2(torch.sin(phase), torch.cos(phase))
+            phase = wrap_phase(phase)
             result.append(SpectralTensor(
                 amplitude=st.amplitude.clone(),
                 phase=phase,

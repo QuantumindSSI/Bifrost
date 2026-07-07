@@ -35,6 +35,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .utils.spectral_utils import EPS, circular_mean
+
 
 class WaveletCoherenceExtractor(nn.Module):
     """Sensor MSC instance: Cross-channel wavelet coherence.
@@ -207,7 +209,7 @@ class WaveletCoherenceExtractor(nn.Module):
 
         # Coherence: R^2 = |S(W_ij)|^2 / (S(|W_i|^2) * S(|W_j|^2))
         coherence = (s_ij.real ** 2 + s_ij.imag ** 2) / \
-                    (s_smooth_ii * s_smooth_jj + 1e-10)
+                    (s_smooth_ii * s_smooth_jj + EPS)
         coherence = torch.clamp(coherence, 0.0, 1.0)
 
         # Phase angle
@@ -254,9 +256,7 @@ class WaveletCoherenceExtractor(nn.Module):
                 features.append(mean_coh_per_scale)
 
                 # Mean phase per scale (circular mean over time)
-                mean_phase_sin = torch.sin(phase).mean(dim=-1)  # (B, n_scales)
-                mean_phase_cos = torch.cos(phase).mean(dim=-1)  # (B, n_scales)
-                mean_phase = torch.atan2(mean_phase_sin, mean_phase_cos)
+                mean_phase = circular_mean(phase, dim=-1)  # (B, n_scales)
                 features.append(mean_phase)
 
                 # Per-pair mean coherence (average over scales and time)

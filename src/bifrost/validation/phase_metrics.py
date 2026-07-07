@@ -26,6 +26,8 @@ from typing import Optional
 import torch
 import torch.nn as nn
 
+from ..utils.spectral_utils import EPS, circular_mean, compute_plv
+
 
 class PhaseCoherenceSignalMetrics(nn.Module):
     """Phase coherence metrics computable at any pipeline layer.
@@ -63,7 +65,7 @@ class PhaseCoherenceSignalMetrics(nn.Module):
             PLV values with dim reduced.
         """
         diff = phases_a - phases_b
-        return torch.abs(torch.mean(torch.exp(1j * diff), dim=dim)).real
+        return compute_plv(diff, dim=dim)
 
     def weighted_plv(
         self,
@@ -80,7 +82,7 @@ class PhaseCoherenceSignalMetrics(nn.Module):
         """
         diff = phases_a - phases_b
         weighted = weight * torch.exp(1j * diff)
-        return torch.abs(weighted.sum(dim=dim) / (weight.sum(dim=dim) + 1e-8)).real
+        return torch.abs(weighted.sum(dim=dim) / (weight.sum(dim=dim) + EPS)).real
 
     def phase_entropy(self, phases: torch.Tensor, n_bins: int = 32,
                       dim: int = -1) -> torch.Tensor:
@@ -102,9 +104,9 @@ class PhaseCoherenceSignalMetrics(nn.Module):
             else:
                 p = phases_flat
             hist = torch.histc(p, bins=n_bins, min=-torch.pi, max=torch.pi)
-            hist = hist / (hist.sum() + 1e-8)
+            hist = hist / (hist.sum() + EPS)
             # Shannon entropy: -sum(p * log(p))
-            entropy = -(hist * torch.log(hist + 1e-8)).sum()
+            entropy = -(hist * torch.log(hist + EPS)).sum()
             # Normalize by max entropy
             entropies.append(entropy / torch.log(torch.tensor(float(n_bins))))
         return torch.stack(entropies) if entropies else torch.tensor(0.0)
@@ -145,7 +147,7 @@ class PhaseCoherenceSignalMetrics(nn.Module):
 
         # Energy: |sum A cos(phi - phi_bar)|
         energy = (amplitudes * torch.cos(phase_diff)).sum(dim=scale_dim)
-        total_amplitude = amplitudes.sum(dim=scale_dim) + 1e-8
+        total_amplitude = amplitudes.sum(dim=scale_dim) + EPS
 
         return energy.abs() / total_amplitude
 
@@ -184,9 +186,7 @@ class PhaseCoherenceSignalMetrics(nn.Module):
         high_phases = phases.index_select(freq_dim, torch.tensor(high_freq_idx,
                                                                   device=phases.device))
         # Compute mean phase via circular mean
-        high_sum_sin = torch.sin(high_phases).sum(dim=freq_dim)
-        high_sum_cos = torch.cos(high_phases).sum(dim=freq_dim)
-        high_mean_phase = torch.atan2(high_sum_sin, high_sum_cos)
+        high_mean_phase = circular_mean(high_phases, dim=freq_dim)
 
         # PLV between each low-freq band and high-freq mean phase
         coupling_values = []
@@ -226,7 +226,7 @@ class PhaseCoherenceSignalMetrics(nn.Module):
         # Circular variance: R = |mean(exp(i*phase))|
         # var = 1 - R^2 (range [0, 1])
         # stability = 1 - var = R^2
-        R = torch.abs(torch.mean(torch.exp(1j * phases_over_time), dim=time_dim))
+        R = compute_plv(phases_over_time, dim=time_dim)
         return R ** 2
 
     def coherence_profile(self, st_phases: torch.Tensor,
@@ -277,8 +277,9 @@ class PhaseCoherenceSignalMetrics(nn.Module):
         features.append(entropy.mean().unsqueeze(0))
 
         # 3. Phase stability (if temporal dimension exists)
+        time_dim = -2 if freq_dim == -1 else -1
         if st_phases.dim() >= 2 and time_dim != freq_dim:
-            stability = self.phase_stability(st_phases, time_dim=-2 if freq_dim == -1 else -1)
+            stability = self.phase_stability(st_phases, time_dim=time_dim)
             features.append(stability.mean().unsqueeze(0))
 
         # 4. Cross-frequency coupling (first third vs last third of bands)

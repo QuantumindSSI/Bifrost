@@ -29,6 +29,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .utils.spectral_utils import EPS, compute_plv, wrap_phase
+
 
 class CrossScaleCoherence(nn.Module):
     """Computes phase coherence between different analysis scales.
@@ -100,15 +102,13 @@ class CrossScaleCoherence(nn.Module):
 
             # PLV per sample: |mean_N exp(i*(phase_i - phase_j))|
             diff = phase_i_flat - phase_j_flat  # (B, N)
-            plv = torch.abs(torch.mean(torch.exp(1j * diff), dim=-1)).real  # (B,)
+            plv = compute_plv(diff, dim=-1)  # (B,)
             plv_per_sample.append(plv)
 
             if self.dyadic:
                 ratio = 2 ** (j - i)
                 expected_phase = phase_i_flat * ratio
-                expected_phase = torch.atan2(
-                    torch.sin(expected_phase), torch.cos(expected_phase)
-                )
+                expected_phase = wrap_phase(expected_phase)
                 deviation = torch.angle(
                     torch.exp(1j * (phase_j_flat - expected_phase))
                 )  # (B, N)
@@ -131,7 +131,7 @@ class CrossScaleCoherence(nn.Module):
     def _plv(self, phase_a: torch.Tensor, phase_b: torch.Tensor) -> torch.Tensor:
         """Phase Locking Value between two phase tensors."""
         diff = phase_a - phase_b
-        return torch.abs(torch.mean(torch.exp(1j * diff))).real
+        return compute_plv(diff)
 
     def _weighted_plv(
         self,
@@ -142,7 +142,7 @@ class CrossScaleCoherence(nn.Module):
         """Amplitude-weighted PLV."""
         diff = phase_a - phase_b
         weighted = weight * torch.exp(1j * diff)
-        return torch.abs(weighted.sum() / (weight.sum() + 1e-8)).real
+        return torch.abs(weighted.sum() / (weight.sum() + EPS)).real
 
     def extra_repr(self) -> str:
         return (f"n_scales={self.n_scales}, dyadic={self.dyadic}, "

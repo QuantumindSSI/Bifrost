@@ -45,6 +45,7 @@ All documents in this directory are kept in the repository for peer review and r
 | `16_LM_INTEGRATION_RESEARCH.md` | Research survey: integrating structured resonance into language models | Complete |
 | `17_HONEST_ASSESSMENT_REAL_DATA.md` | Real-data experiments: honest negative/mixed results | Complete |
 | `18_REVISED_THESIS_AND_FALSIFIABILITY.md` | Revised thesis matching evidence, falsifiability criteria | Complete |
+| `19_LM_REASONING_EXPERIMENT.md` | Phase coherence vs spectral alpha in LLM hidden states | Complete |
 
 ---
 

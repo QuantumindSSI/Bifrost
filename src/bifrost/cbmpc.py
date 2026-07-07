@@ -17,11 +17,12 @@ used as a feature extractor in front of any classifier.
 
 from __future__ import annotations
 
-import math
 from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
+
+from .utils.spectral_utils import EPS, hz_to_mel, mel_to_hz
 
 
 class CBMPCExtractor(nn.Module):
@@ -88,13 +89,6 @@ class CBMPCExtractor(nn.Module):
         f_min = 0.0
         f_max = self.sample_rate / 2.0
 
-        # Mel scale
-        def hz_to_mel(f):
-            return 2595.0 * math.log10(1.0 + f / 700.0)
-
-        def mel_to_hz(m):
-            return 700.0 * (10 ** (m / 2595.0) - 1.0)
-
         mel_min = hz_to_mel(f_min)
         mel_max = hz_to_mel(f_max)
         mel_points = torch.linspace(mel_min, mel_max, self.n_mels + 2)
@@ -114,9 +108,9 @@ class CBMPCExtractor(nn.Module):
                 if f < left or f > right:
                     continue
                 if f <= center:
-                    fb[m, k] = (f - left) / (center - left + 1e-8)
+                    fb[m, k] = (f - left) / (center - left + EPS)
                 else:
-                    fb[m, k] = (right - f) / (right - center + 1e-8)
+                    fb[m, k] = (right - f) / (right - center + EPS)
         return fb
 
     def _stft_to_mel(self, stft_mag: torch.Tensor) -> torch.Tensor:
@@ -167,7 +161,7 @@ class CBMPCExtractor(nn.Module):
         mel_mag = self._stft_to_mel(stft_mag)  # (B, n_mels, T_frames)
 
         # Step 3: Log compression
-        log_mag = torch.log(mel_mag + 1e-8)  # (B, n_mels, T_frames)
+        log_mag = torch.log(mel_mag + EPS)  # (B, n_mels, T_frames)
 
         # Step 4: Temporal FFT (modulation spectrum)
         # FFT along the time axis (last dim)

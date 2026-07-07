@@ -25,6 +25,8 @@ from typing import List, Optional
 import torch
 import torch.nn as nn
 
+from ..utils.spectral_utils import wrap_phase
+
 
 class ScaleAblationHarness(nn.Module):
     """Tests whether cross-scale coherence matters beyond single-scale.
@@ -157,7 +159,7 @@ class ScaleAblationHarness(nn.Module):
                                 device=multi_scale_phases[i].device,
                                 dtype=multi_scale_phases[i].dtype) * torch.pi
             phase = multi_scale_phases[i] + noise
-            phase = torch.atan2(torch.sin(phase), torch.cos(phase))
+            phase = wrap_phase(phase)
             shuffled_phases.append(phase)
         return shuffled_phases, multi_scale_amplitudes
 

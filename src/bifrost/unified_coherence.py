@@ -88,7 +88,9 @@ class UnifiedCoherenceMetric(nn.Module):
         torch.Tensor
             Normalized coherence embedding in shared space. Shape (B, target_dim).
         """
-        mod_idx = {"audio": 0, "image": 1, "sensor": 2}[modality]
+        mod_idx = {"audio": 0, "image": 1, "sensor": 2}.get(modality)
+        if mod_idx is None:
+            raise ValueError(f"Unknown modality: {modality}")
         mod_token = self.modality_embed(
             torch.tensor(mod_idx, device=coherence_features.device)
         )
