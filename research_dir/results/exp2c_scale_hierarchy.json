@@ -1,0 +1,42 @@
+{
+  "audio": {
+    "silhouette_score": 0.017422500997781754,
+    "same_class_similarity": {
+      "mean": 0.9779673218727112,
+      "std": 0.013477818109095097,
+      "n": 49500
+    },
+    "diff_class_similarity": {
+      "mean": 0.9688796997070312,
+      "std": 0.011184576898813248,
+      "n": 450000
+    },
+    "mann_whitney_u": {
+      "u_statistic": 15821465497.0,
+      "p_value": 0.0,
+      "significant": true
+    },
+    "cohens_d": 0.7337957620620728,
+    "delta_similarity": 0.009087622165679932
+  },
+  "image": {
+    "silhouette_score": -0.2939901053905487,
+    "same_class_similarity": {
+      "mean": 0.7886902093887329,
+      "std": 0.22725428640842438,
+      "n": 49500
+    },
+    "diff_class_similarity": {
+      "mean": 0.6751190423965454,
+      "std": 0.24032001197338104,
+      "n": 450000
+    },
+    "mann_whitney_u": {
+      "u_statistic": 13971318278.5,
+      "p_value": 0.0,
+      "significant": true
+    },
+    "cohens_d": 0.485599160194397,
+    "delta_similarity": 0.1135711669921875
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "baseline": {
+    "mean_accuracy": 0.3470000000000001,
+    "std_accuracy": 0.026758176320519307,
+    "accuracies": [
+      0.375,
+      0.3,
+      0.34,
+      0.35,
+      0.37
+    ]
+  },
+  "single_scale_0": {
+    "mean_accuracy": 0.19,
+    "std_accuracy": 0.012247448713915893,
+    "accuracies": [
+      0.21,
+      0.195,
+      0.19,
+      0.18,
+      0.175
+    ]
+  },
+  "single_scale_1": {
+    "mean_accuracy": 0.227,
+    "std_accuracy": 0.02657066051117285,
+    "accuracies": [
+      0.27,
+      0.2,
+      0.205,
+      0.215,
+      0.245
+    ]
+  },
+  "scale_subset_half": {
+    "mean_accuracy": 0.259,
+    "std_accuracy": 0.02709243436828813,
+    "accuracies": [
+      0.22,
+      0.275,
+      0.245,
+      0.255,
+      0.3
+    ]
+  },
+  "cross_scale_destroy": {
+    "mean_accuracy": 0.22600000000000003,
+    "std_accuracy": 0.019339079605813717,
+    "accuracies": [
+      0.23,
+      0.23,
+      0.255,
+      0.22,
+      0.195
+    ]
+  },
+  "statistical_tests": {
+    "single_scale_0": {
+      "t_statistic": 10.549036308729313,
+      "p_value": 0.0004567939449424776,
+      "delta_accuracy": 0.15700000000000008,
+      "significant": true
+    },
+    "single_scale_1": {
+      "t_statistic": 16.180796699117796,
+      "p_value": 8.534407491951803e-05,
+      "delta_accuracy": 0.12000000000000008,
+      "significant": true
+    },
+    "scale_subset_half": {
+      "t_statistic": 4.176295181310994,
+      "p_value": 0.013959999759927434,
+      "delta_accuracy": 0.08800000000000008,
+      "significant": true
+    },
+    "cross_scale_destroy": {
+      "t_statistic": 6.260947574031086,
+      "p_value": 0.0033198436808062246,
+      "delta_accuracy": 0.12100000000000005,
+      "significant": true
+    }
+  }
+}

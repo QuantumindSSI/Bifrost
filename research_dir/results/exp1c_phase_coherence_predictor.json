@@ -1,0 +1,86 @@
+{
+  "audio": {
+    "modality": "audio",
+    "overall_accuracy": 0.91,
+    "mean_confidence": 0.5839752232001693,
+    "correlations": {
+      "plv": {
+        "pearson_r": -0.21197268120970333,
+        "p_value": 1.2712110388813304e-11,
+        "significant": true,
+        "n_samples": 1000
+      },
+      "phase_entropy": {
+        "pearson_r": 0.2966210139437763,
+        "p_value": 9.266021203699575e-22,
+        "significant": true,
+        "n_samples": 1000
+      },
+      "phase_stability": {
+        "pearson_r": -0.31172919010092437,
+        "p_value": 5.632571370065889e-24,
+        "significant": true,
+        "n_samples": 1000
+      }
+    },
+    "correctness_correlations": {
+      "plv": {
+        "point_biserial_r": -0.08044047481821483,
+        "p_value": 0.010937345760524585,
+        "significant": true
+      },
+      "phase_entropy": {
+        "point_biserial_r": 0.10835080318976088,
+        "p_value": 0.0005987572093589768,
+        "significant": true
+      },
+      "phase_stability": {
+        "point_biserial_r": -0.11122693981628856,
+        "p_value": 0.0004253333620351372,
+        "significant": true
+      }
+    }
+  },
+  "image": {
+    "modality": "image",
+    "overall_accuracy": 1.0,
+    "mean_confidence": 0.6293686961523848,
+    "correlations": {
+      "phase_congruency": {
+        "pearson_r": NaN,
+        "p_value": NaN,
+        "significant": false,
+        "n_samples": 1000
+      },
+      "cross_band_plv": {
+        "pearson_r": -0.02191093129173381,
+        "p_value": 0.4888739242536734,
+        "significant": false,
+        "n_samples": 1000
+      },
+      "phase_entropy": {
+        "pearson_r": -0.08237272313813594,
+        "p_value": 0.009159948809227082,
+        "significant": true,
+        "n_samples": 1000
+      }
+    },
+    "correctness_correlations": {
+      "phase_congruency": {
+        "point_biserial_r": NaN,
+        "p_value": NaN,
+        "significant": false
+      },
+      "cross_band_plv": {
+        "point_biserial_r": NaN,
+        "p_value": NaN,
+        "significant": false
+      },
+      "phase_entropy": {
+        "point_biserial_r": NaN,
+        "p_value": NaN,
+        "significant": false
+      }
+    }
+  }
+}
