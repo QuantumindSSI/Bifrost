@@ -70,15 +70,25 @@ class BifrostPipeline(nn.Module):
         use_s3_attractor: bool = True,  # Enable learned attractor dynamics
         use_riemannian_semantic: bool = False,  # Enable Riemannian semantic coherence
         riemannian_metric_dim: int = 64,  # Manifold dimension for semantic coherence
+        use_cbmpc: bool = False,  # Enable CBMPC pre-SSM feature extraction
+        cbmpc_n_mels: int = 64,  # Number of mel bands for CBMPC
+        cbmpc_modulation_freqs: Optional[list] = None,  # Modulation frequencies for CBMPC
+        cbmpc_duration_seconds: float = 1.0,  # Expected clip duration for CBMPC
     ) -> None:
         super().__init__()
         self.use_complex_ssm = use_complex_ssm
         self.use_harmonic_binding = use_harmonic_binding
         self.use_s3_attractor = use_s3_attractor
         self.use_riemannian_semantic = use_riemannian_semantic
+        self.use_cbmpc = use_cbmpc
+        self.sample_rate = sample_rate
 
         self._init_attractor_learner(d_model, n_bands)
         self._init_riemannian_semantic(d_model, riemannian_metric_dim)
+        self._init_cbmpc_extractor(
+            use_cbmpc, sample_rate, n_fft_canonical,
+            cbmpc_n_mels, cbmpc_modulation_freqs, cbmpc_duration_seconds,
+        )
 
         if not use_complex_ssm:
             warnings.warn(
@@ -146,7 +156,6 @@ class BifrostPipeline(nn.Module):
                 "Riemannian semantic coherence requires use_s3_attractor=True "
                 "to provide FrequencyAttractors"
             )
-
         try:
             from .riemannian_coherence import RiemannianSemanticCoherence
             self.riemannian_semantic_coherence = RiemannianSemanticCoherence(
@@ -169,6 +178,39 @@ class BifrostPipeline(nn.Module):
                 stacklevel=2,
             )
             self.use_riemannian_semantic = False
+
+    def _init_cbmpc_extractor(
+        self,
+        use_cbmpc: bool,
+        sample_rate: float,
+        n_fft: int,
+        n_mels: int,
+        modulation_freqs: Optional[list],
+        duration_seconds: float,
+    ) -> None:
+        """Initialize optional CBMPC pre-SSM feature extractor."""
+        self.cbmpc_extractor = None
+        if not use_cbmpc:
+            return
+        try:
+            from .cbmpc import CBMPCExtractor
+            self.cbmpc_extractor = CBMPCExtractor(
+                sample_rate=int(sample_rate),
+                n_fft=n_fft,
+                hop_length=n_fft // 2,
+                n_mels=n_mels,
+                modulation_freqs=modulation_freqs,
+                duration_seconds=duration_seconds,
+                feature_mode="rich",
+            )
+        except ImportError as e:
+            warnings.warn(
+                f"Bifrost Pipeline: CBMPC extractor import failed ({str(e)}). "
+                f"CBMPC feature extraction disabled.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            self.use_cbmpc = False
 
     def _build_decomposer(
         self,
@@ -265,6 +307,24 @@ class BifrostPipeline(nn.Module):
         self._validate_input(signal)
 
         canonical = self.canonicalizer(signal, metadata)
+
+        # Extract CBMPC features from the raw signal (pre-SSM) if enabled.
+        # These features capture modulation phase coherence that the SSM
+        # would otherwise destroy. They are attached to the output metadata
+        # for downstream classifiers to use alongside the SSM embedding.
+        cbmpc_features = None
+        if self.use_cbmpc and self.cbmpc_extractor is not None:
+            # CBMPC operates on the raw audio, not the canonical spectrogram,
+            # because it needs to compute its own STFT with specific parameters.
+            if signal.dim() == 1:
+                cbmpc_input = signal.unsqueeze(0)
+            elif signal.dim() == 2:
+                cbmpc_input = signal
+            else:
+                # 3D: (B, C, T) → mixdown to (B, T)
+                cbmpc_input = signal.mean(dim=1)
+            cbmpc_features = self.cbmpc_extractor(cbmpc_input)
+
         if self.use_complex_ssm:
             decomposed, _ = self.decomposer(canonical, h_0)
         else:
@@ -273,6 +333,11 @@ class BifrostPipeline(nn.Module):
         bound_st, coherence = self._run_binding(decomposed, canonical)
         bound_st = self._run_attractor_learning(bound_st)
         bound_st = self._run_semantic_coherence(bound_st)
+
+        # Attach CBMPC features to the output metadata for downstream use.
+        if cbmpc_features is not None:
+            bound_st.metadata['cbmpc_features'] = cbmpc_features
+
         return bound_st, coherence
 
     def _validate_input(self, signal: torch.Tensor) -> None:

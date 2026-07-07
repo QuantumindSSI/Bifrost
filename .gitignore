@@ -73,8 +73,7 @@ data/
 # Logs
 *.log
 
-# Development documents (separate from source)
-dev-docs/
+# Development documents (kept in repo for research review)
 CHANGELOG.md
 scripts/
 VALIDATION_REPORT.md

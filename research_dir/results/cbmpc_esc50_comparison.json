@@ -1,0 +1,168 @@
+{
+  "cbmpc_stft": {
+    "accuracy": {
+      "mean": 0.11699999999999999,
+      "std": 0.016077935190813523,
+      "values": [
+        0.115,
+        0.125,
+        0.1425,
+        0.1075,
+        0.095
+      ]
+    },
+    "f1_macro": {
+      "mean": 0.08920473362124157,
+      "std": 0.010981859664353753,
+      "values": [
+        0.09213931654412204,
+        0.096491986115758,
+        0.1033534451056672,
+        0.08171746867240966,
+        0.07232145166825099
+      ]
+    }
+  },
+  "stft_baseline": {
+    "accuracy": {
+      "mean": 0.1565,
+      "std": 0.02576819745345025,
+      "values": [
+        0.1425,
+        0.1375,
+        0.1475,
+        0.2075,
+        0.1475
+      ]
+    },
+    "f1_macro": {
+      "mean": 0.11634689627438757,
+      "std": 0.023064303305731306,
+      "values": [
+        0.11190546807042971,
+        0.09421023717613947,
+        0.11684950061513769,
+        0.15946647993117702,
+        0.09930279557905393
+      ]
+    }
+  },
+  "mel_baseline": {
+    "accuracy": {
+      "mean": 0.20550000000000002,
+      "std": 0.03519232870953556,
+      "values": [
+        0.2325,
+        0.15,
+        0.1775,
+        0.2325,
+        0.235
+      ]
+    },
+    "f1_macro": {
+      "mean": 0.17435675070743845,
+      "std": 0.034980023234041605,
+      "values": [
+        0.21433851184921895,
+        0.12519283118370222,
+        0.14238579512902874,
+        0.18412945362016916,
+        0.20573716175507306
+      ]
+    }
+  },
+  "paired_t_tests": {
+    "cbmpc_vs_stft": {
+      "t": -2.301242032427625,
+      "p": 0.08282580461686301
+    },
+    "cbmpc_vs_mel": {
+      "t": -3.6559013026162224,
+      "p": 0.021658415300599306
+    }
+  },
+  "config": {
+    "n_classes": 50,
+    "samples_per_class": 40,
+    "duration_seconds": 5.0,
+    "sample_rate": 16000,
+    "n_fft": 2048,
+    "hop_length": 1024,
+    "n_mels": 64,
+    "epochs": 30,
+    "batch_size": 32,
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "dropout": 0.3
+  },
+  "class_names": [
+    "dog",
+    "rooster",
+    "pig",
+    "cow",
+    "frog",
+    "cat",
+    "hen",
+    "insects",
+    "sheep",
+    "crow",
+    "rain",
+    "sea_waves",
+    "crackling_fire",
+    "crickets",
+    "chirping_birds",
+    "water_drops",
+    "wind",
+    "pouring_water",
+    "toilet_flush",
+    "thunderstorm",
+    "crying_baby",
+    "sneezing",
+    "clapping",
+    "breathing",
+    "coughing",
+    "footsteps",
+    "laughing",
+    "brushing_teeth",
+    "snoring",
+    "drinking_sipping",
+    "door_wood_knock",
+    "mouse_click",
+    "keyboard_typing",
+    "door_wood_creaks",
+    "can_opening",
+    "washing_machine",
+    "vacuum_cleaner",
+    "clock_alarm",
+    "clock_tick",
+    "glass_breaking",
+    "helicopter",
+    "chainsaw",
+    "siren",
+    "car_horn",
+    "engine",
+    "train",
+    "church_bells",
+    "airplane",
+    "fireworks",
+    "hand_saw"
+  ],
+  "modulation_freqs": [
+    0.5,
+    1.0,
+    2.0,
+    4.0,
+    8.0,
+    16.0,
+    32.0,
+    64.0
+  ],
+  "hypothesis_evaluation": {
+    "H1_cbmpc_beats_stft": {
+      "delta_accuracy": -0.03950000000000001,
+      "p_value": 0.08282580461686301,
+      "bonferroni_alpha": 0.025,
+      "supported": false
+    }
+  }
+}
