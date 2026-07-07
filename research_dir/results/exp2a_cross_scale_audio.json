@@ -1,0 +1,117 @@
+{
+  "baseline": {
+    "mean_accuracy": 0.8389999999999999,
+    "std_accuracy": 0.024779023386727727,
+    "accuracies": [
+      0.83,
+      0.87,
+      0.865,
+      0.825,
+      0.805
+    ]
+  },
+  "single_scale_0": {
+    "mean_accuracy": 0.343,
+    "std_accuracy": 0.03529872518944557,
+    "accuracies": [
+      0.385,
+      0.34,
+      0.365,
+      0.345,
+      0.28
+    ]
+  },
+  "single_scale_2": {
+    "mean_accuracy": 0.30900000000000005,
+    "std_accuracy": 0.036386810797320486,
+    "accuracies": [
+      0.35,
+      0.28,
+      0.305,
+      0.35,
+      0.26
+    ]
+  },
+  "single_scale_4": {
+    "mean_accuracy": 0.37299999999999994,
+    "std_accuracy": 0.016613247725836163,
+    "accuracies": [
+      0.385,
+      0.36,
+      0.36,
+      0.36,
+      0.4
+    ]
+  },
+  "scale_subset_half": {
+    "mean_accuracy": 0.555,
+    "std_accuracy": 0.040373258476372686,
+    "accuracies": [
+      0.595,
+      0.51,
+      0.605,
+      0.555,
+      0.51
+    ]
+  },
+  "scale_shuffle": {
+    "mean_accuracy": 0.868,
+    "std_accuracy": 0.0280356915377524,
+    "accuracies": [
+      0.855,
+      0.91,
+      0.87,
+      0.88,
+      0.825
+    ]
+  },
+  "cross_scale_destroy": {
+    "mean_accuracy": 0.098,
+    "std_accuracy": 0.020149441679609883,
+    "accuracies": [
+      0.12,
+      0.075,
+      0.1,
+      0.12,
+      0.075
+    ]
+  },
+  "statistical_tests": {
+    "single_scale_0": {
+      "t_statistic": 31.78573027115524,
+      "p_value": 5.8393191372427025e-06,
+      "delta_accuracy": 0.49599999999999983,
+      "significant": true
+    },
+    "single_scale_2": {
+      "t_statistic": 23.411483527867464,
+      "p_value": 1.9732015536192284e-05,
+      "delta_accuracy": 0.5299999999999998,
+      "significant": true
+    },
+    "single_scale_4": {
+      "t_statistic": 23.873903212360897,
+      "p_value": 1.825554253125746e-05,
+      "delta_accuracy": 0.4659999999999999,
+      "significant": true
+    },
+    "scale_subset_half": {
+      "t_statistic": 13.336126131619196,
+      "p_value": 0.00018277893757563915,
+      "delta_accuracy": 0.2839999999999998,
+      "significant": true
+    },
+    "scale_shuffle": {
+      "t_statistic": -3.3826286924148596,
+      "p_value": 0.02771803331386704,
+      "delta_accuracy": -0.029000000000000137,
+      "significant": true
+    },
+    "cross_scale_destroy": {
+      "t_statistic": 43.25279284145739,
+      "p_value": 1.7082388375877589e-06,
+      "delta_accuracy": 0.7409999999999999,
+      "significant": true
+    }
+  }
+}

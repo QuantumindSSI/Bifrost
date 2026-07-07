@@ -1,0 +1,66 @@
+{
+  "wavelet_coherence": {
+    "mean_accuracy": 0.9983333333333334,
+    "std_accuracy": 0.003333333333333322,
+    "accuracies": [
+      0.9916666666666667,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "fft_magnitude": {
+    "mean_accuracy": 0.16666666666666666,
+    "std_accuracy": 0.03073181485764296,
+    "accuracies": [
+      0.19166666666666668,
+      0.19166666666666668,
+      0.175,
+      0.16666666666666666,
+      0.10833333333333334
+    ]
+  },
+  "statistical": {
+    "mean_accuracy": 1.0,
+    "std_accuracy": 0.0,
+    "accuracies": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "raw": {
+    "mean_accuracy": 1.0,
+    "std_accuracy": 0.0,
+    "accuracies": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "statistical_tests": {
+    "fft_magnitude": {
+      "t_statistic": 51.605351461502956,
+      "p_value": 8.438900883123132e-07,
+      "delta_accuracy": 0.8316666666666668,
+      "significant": true
+    },
+    "statistical": {
+      "t_statistic": -0.9999999999999999,
+      "p_value": 0.373900966300059,
+      "delta_accuracy": -0.0016666666666665941,
+      "significant": false
+    },
+    "raw": {
+      "t_statistic": -0.9999999999999999,
+      "p_value": 0.373900966300059,
+      "delta_accuracy": -0.0016666666666665941,
+      "significant": false
+    }
+  }
+}

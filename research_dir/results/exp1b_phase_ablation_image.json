@@ -1,0 +1,83 @@
+{
+  "baseline": {
+    "mean_accuracy": 0.999,
+    "std_accuracy": 0.0020000000000000018,
+    "accuracies": [
+      1.0,
+      1.0,
+      1.0,
+      0.995,
+      1.0
+    ]
+  },
+  "phase_zero": {
+    "mean_accuracy": 0.9880000000000001,
+    "std_accuracy": 0.00509901951359279,
+    "accuracies": [
+      0.995,
+      0.985,
+      0.98,
+      0.99,
+      0.99
+    ]
+  },
+  "phase_randomize": {
+    "mean_accuracy": 0.8619999999999999,
+    "std_accuracy": 0.022494443758404006,
+    "accuracies": [
+      0.86,
+      0.88,
+      0.855,
+      0.89,
+      0.825
+    ]
+  },
+  "phase_noise": {
+    "mean_accuracy": 0.9720000000000001,
+    "std_accuracy": 0.016613247725836167,
+    "accuracies": [
+      0.945,
+      0.975,
+      0.995,
+      0.98,
+      0.965
+    ]
+  },
+  "cross_band_scramble": {
+    "mean_accuracy": 0.8489999999999999,
+    "std_accuracy": 0.024372115213907867,
+    "accuracies": [
+      0.84,
+      0.875,
+      0.845,
+      0.875,
+      0.81
+    ]
+  },
+  "statistical_tests": {
+    "phase_zero": {
+      "t_statistic": 3.7729688731351945,
+      "p_value": 0.019554212720304612,
+      "delta_accuracy": 0.010999999999999899,
+      "significant": true
+    },
+    "phase_randomize": {
+      "t_statistic": 11.517079036832031,
+      "p_value": 0.0003245364363644626,
+      "delta_accuracy": 0.13700000000000012,
+      "significant": true
+    },
+    "phase_noise": {
+      "t_statistic": 3.138686246083121,
+      "p_value": 0.034891860922137995,
+      "delta_accuracy": 0.026999999999999913,
+      "significant": true
+    },
+    "cross_band_scramble": {
+      "t_statistic": 11.766968108291048,
+      "p_value": 0.0002984465548148543,
+      "delta_accuracy": 0.15000000000000013,
+      "significant": true
+    }
+  }
+}

@@ -51,6 +51,17 @@ from .validation.empirical_validation import (
     ValidationReport,
     run_empirical_validation,
 )
+from .validation.phase_ablation import PhaseAblationHarness
+from .validation.phase_metrics import PhaseCoherenceSignalMetrics
+from .validation.scale_ablation import ScaleAblationHarness
+from .cross_scale_coherence import CrossScaleCoherence
+from .msc_sensor import WaveletCoherenceExtractor
+from .unified_coherence import (
+    UnifiedCoherenceMetric,
+    CrossModalCoherenceLoss,
+    CoherenceClassifier,
+    UnifiedCoherenceClassifier,
+)
 from .semantic_coherence import (
     SemanticCoherenceMetrics,
     PhaseCoherenceExtractor,
@@ -115,6 +126,15 @@ __all__ = [
     "PhaseCoherenceValidator",
     "ValidationReport",
     "run_empirical_validation",
+    "PhaseAblationHarness",
+    "PhaseCoherenceSignalMetrics",
+    "ScaleAblationHarness",
+    "CrossScaleCoherence",
+    "WaveletCoherenceExtractor",
+    "UnifiedCoherenceMetric",
+    "CrossModalCoherenceLoss",
+    "CoherenceClassifier",
+    "UnifiedCoherenceClassifier",
     "SemanticCoherenceMetrics",
     "PhaseCoherenceExtractor",
     "SupervisedSemanticCoherenceLoss",

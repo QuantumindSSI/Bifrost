@@ -1,0 +1,83 @@
+{
+  "audio_within": {
+    "mean_accuracy": 0.9974999999999999,
+    "std_accuracy": 0.004999999999999982,
+    "accuracies": [
+      1.0,
+      1.0,
+      0.9875,
+      1.0,
+      1.0
+    ],
+    "delta_vs_chance": 0.7974999999999999
+  },
+  "image_within": {
+    "mean_accuracy": 1.0,
+    "std_accuracy": 0.0,
+    "accuracies": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "delta_vs_chance": 0.8
+  },
+  "audio_to_image": {
+    "mean_accuracy": 1.0,
+    "std_accuracy": 0.0,
+    "accuracies": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "delta_vs_chance": 0.8
+  },
+  "image_to_audio": {
+    "mean_accuracy": 0.9974999999999999,
+    "std_accuracy": 0.004999999999999982,
+    "accuracies": [
+      1.0,
+      1.0,
+      0.9875,
+      1.0,
+      1.0
+    ],
+    "delta_vs_chance": 0.7974999999999999
+  },
+  "amplitude_only": {
+    "mean_accuracy": 0.2,
+    "std_accuracy": 0.0,
+    "accuracies": [
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.2
+    ],
+    "delta_vs_chance": 0.0
+  },
+  "chance_level": 0.2,
+  "statistical_tests": {
+    "audio_to_image": {
+      "t_statistic": Infinity,
+      "p_value": 0.0,
+      "delta_vs_chance": 0.8,
+      "significant": true
+    },
+    "image_to_audio": {
+      "t_statistic": 319.0000000000011,
+      "p_value": 5.793754205962526e-10,
+      "delta_vs_chance": 0.7974999999999999,
+      "significant": true
+    },
+    "cross_modal_vs_amplitude": {
+      "t_statistic": Infinity,
+      "p_value": 0.0,
+      "delta": 0.8,
+      "significant": true
+    }
+  }
+}
