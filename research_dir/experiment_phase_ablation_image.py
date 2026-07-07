@@ -40,68 +40,44 @@ from bifrost.validation.phase_ablation import PhaseAblationHarness
 
 def generate_synthetic_images(n_classes: int = 10, n_samples_per_class: int = 200,
                                image_size: int = 32) -> Tuple[torch.Tensor, torch.Tensor]:
-    """Generate synthetic images with class-specific structural patterns.
+    """Generate synthetic images where classes differ ONLY in phase structure.
 
-    Each class has different geometric structures (edges, corners, textures)
-    that produce distinct phase congruency patterns.
+    All classes share the same spatial frequency content (same frequencies,
+    same amplitudes, same orientations). Classes differ only in the phase
+    relationships between frequency components. This ensures that phase is
+    the only distinguishing feature — amplitude-only features are identical
+    across classes.
+
+    Without phase information, all classes are identical and classification
+    should drop to chance.
     """
     n_samples = n_classes * n_samples_per_class
     images = torch.zeros(n_samples, 1, image_size, image_size)
     labels = torch.zeros(n_samples, dtype=torch.long)
 
+    # Shared spatial frequencies and amplitudes for all classes
+    # (same as audio experiment — control for amplitude)
+    freqs_x = [2, 4, 6, 8, 10]
+    freqs_y = [3, 5, 7, 9, 11]
+    amps = [1.0, 0.5, 0.33, 0.25, 0.2]
+
+    y_grid, x_grid = torch.meshgrid(
+        torch.linspace(0, 2 * np.pi, image_size),
+        torch.linspace(0, 2 * np.pi, image_size),
+    )
+
     idx = 0
     for c in range(n_classes):
         for s in range(n_samples_per_class):
             img = torch.zeros(image_size, image_size)
-            t = torch.linspace(0, 2 * np.pi, image_size)
 
-            if c == 0:  # Horizontal edges
-                freq = 2 + s % 5
-                for y in range(image_size):
-                    img[y, :] = torch.sin(freq * t + y * 0.1)
-            elif c == 1:  # Vertical edges
-                freq = 2 + s % 5
-                for x in range(image_size):
-                    img[:, x] = torch.sin(freq * t + x * 0.1)
-            elif c == 2:  # Diagonal
-                freq = 3 + s % 4
-                for i in range(image_size):
-                    img[i, :] = torch.sin(freq * t + i * 0.3)
-            elif c == 3:  # Circles
-                cx, cy = image_size // 2, image_size // 2
-                y, x = torch.meshgrid(torch.arange(image_size), torch.arange(image_size))
-                r = torch.sqrt((x - cx)**2 + (y - cy)**2)
-                n_rings = 2 + s % 4
-                img = torch.sin(n_rings * r * 0.5)
-            elif c == 4:  # Cross
-                freq = 2 + s % 5
-                img = torch.sin(freq * t).unsqueeze(0) + torch.sin(freq * t).unsqueeze(1)
-            elif c == 5:  # Checkerboard
-                n = 2 + s % 5
-                for y in range(image_size):
-                    for x in range(image_size):
-                        img[y, x] = ((x // (image_size // n)) + (y // (image_size // n))) % 2
-            elif c == 6:  # Radial
-                cx, cy = image_size // 2, image_size // 2
-                y, x = torch.meshgrid(torch.arange(image_size), torch.arange(image_size))
-                theta = torch.atan2(y - cy, x - cx)
-                n_spokes = 3 + s % 5
-                img = torch.cos(n_spokes * theta)
-            elif c == 7:  # Spiral
-                cx, cy = image_size // 2, image_size // 2
-                y, x = torch.meshgrid(torch.arange(image_size), torch.arange(image_size))
-                r = torch.sqrt((x - cx)**2 + (y - cy)**2)
-                theta = torch.atan2(y - cy, x - cx)
-                tightness = 0.1 + s * 0.01
-                img = torch.cos(theta + tightness * r)
-            elif c == 8:  # Wave interference
-                y, x = torch.meshgrid(torch.arange(image_size), torch.arange(image_size))
-                f1, f2 = 0.3 + s * 0.01, 0.5 + s * 0.01
-                img = torch.sin(f1 * x) * torch.cos(f2 * y)
-            elif c == 9:  # Texture
-                y, x = torch.meshgrid(torch.arange(image_size), torch.arange(image_size))
-                freq = 0.5 + s * 0.02
-                img = torch.sin(freq * x) * torch.sin(freq * y) + 0.5 * torch.cos(2 * freq * x)
+            for i, (fx, fy, amp) in enumerate(zip(freqs_x, freqs_y, amps)):
+                # Class-specific phase per frequency component — this is
+                # the ONLY feature that distinguishes classes
+                phase_x = c * 0.3 * (i + 1) + s * 0.005 * i
+                phase_y = c * 0.2 * (i + 1) + s * 0.003 * i
+                img += amp * torch.sin(freqs_x[i] * x_grid + phase_x) * \
+                       torch.cos(freqs_y[i] * y_grid + phase_y)
 
             # Normalize to [0, 1]
             img = (img - img.min()) / (img.max() - img.min() + 1e-8)
@@ -156,11 +132,35 @@ def extract_pc_with_ablation(
     if ablation == "phase_zero":
         st = harness.phase_zero(st)
     elif ablation == "phase_randomize":
-        st = harness.phase_randomize(st)
+        # Replace phase with independent random values per element
+        random_phase = (torch.rand(st.phase.shape,
+                                    device=st.phase.device,
+                                    dtype=st.phase.dtype) * 2 * torch.pi - torch.pi)
+        st = SpectralTensor(
+            amplitude=st.amplitude, phase=random_phase,
+            scale=st.scale, uncertainty=st.uncertainty,
+            metadata={**st.metadata, "ablation": "phase_randomize"},
+        )
     elif ablation == "phase_noise":
         st = harness.phase_noise(st, sigma=0.5)
+    elif ablation == "phase_noise_severe":
+        st = harness.phase_noise(st, sigma=2.0)
     elif ablation == "cross_band_scramble":
-        st = harness.cross_band_scramble(st)
+        # Per-sample random offsets per spatial frequency band (W dimension).
+        # st.phase is (B, H, W) from 2D FFT. Add per-W-frequency offsets
+        # that are the same across H, destroying cross-frequency phase
+        # relationships while preserving within-frequency structure.
+        n_bands = st.phase.shape[-1]  # W dimension = frequency bins
+        offsets = (torch.rand(st.phase.shape[0], 1, n_bands,
+                              device=st.phase.device,
+                              dtype=st.phase.dtype) * 2 * torch.pi - torch.pi)
+        scrambled = st.phase + offsets  # (B, H, W) + (B, 1, W) → (B, H, W)
+        scrambled = torch.atan2(torch.sin(scrambled), torch.cos(scrambled))
+        st = SpectralTensor(
+            amplitude=st.amplitude, phase=scrambled,
+            scale=st.scale, uncertainty=st.uncertainty,
+            metadata={**st.metadata, "ablation": "cross_band_scramble"},
+        )
     else:
         raise ValueError(f"Unknown ablation: {ablation}")
 
@@ -195,6 +195,7 @@ def run_experiment(
         "phase_zero",
         "phase_randomize",
         "phase_noise",
+        "phase_noise_severe",
         "cross_band_scramble",
     ]
 
@@ -297,7 +298,7 @@ def main():
 
     baseline_acc = results["baseline"]["mean_accuracy"]
     for ablation in ["baseline", "phase_zero", "phase_randomize", "phase_noise",
-                      "cross_band_scramble"]:
+                      "phase_noise_severe", "cross_band_scramble"]:
         acc = results[ablation]["mean_accuracy"]
         std = results[ablation]["std_accuracy"]
         delta = acc - baseline_acc if ablation != "baseline" else 0.0
@@ -325,7 +326,7 @@ def main():
     n_significant = sum(1 for t in results["statistical_tests"].values() if t["significant"])
     print(f"Baseline accuracy: {baseline_acc:.4f}")
     print(f"Significant ablations (p < 0.05): {n_significant}/{len(results['statistical_tests'])}")
-    if n_significant >= 2:
+    if n_significant >= 3:
         print("SUPPORTS C1: Phase coherence captures semantic structure in images.")
     else:
         print("INSUFFICIENT EVIDENCE for C1 on this dataset.")

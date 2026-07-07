@@ -50,8 +50,20 @@ def generate_cross_modal_pairs(
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Generate paired audio + image data with shared semantic categories.
 
-    Each class has a characteristic "frequency signature" that appears
-    in both audio (as temporal frequency) and image (as spatial frequency).
+    Each class has a characteristic structure in BOTH audio and image, but
+    the structures are generated INDEPENDENTLY — they share only the label,
+    not the exact phase parameters. This prevents circular reasoning where
+    the cross-modal correspondence is baked into the data generation.
+
+    Audio: class-specific modulation patterns (temporal phase relationships)
+    Image: class-specific spatial phase patterns (spatial frequency relationships)
+
+    The correspondence between audio and image is only through the label c.
+    The UCM must learn to map both to the same semantic space.
+
+    Both modalities share the same amplitude spectrum across classes (controlled
+    for amplitude), so phase is the only distinguishing feature within each
+    modality.
     """
     T = int(sample_rate * duration)
     n_samples = n_classes * n_samples_per_class
@@ -61,38 +73,48 @@ def generate_cross_modal_pairs(
     audio_labels = torch.zeros(n_samples, dtype=torch.long)
     image_labels = torch.zeros(n_samples, dtype=torch.long)
 
+    # Shared audio frequencies for all classes (control for amplitude)
+    audio_freqs = [200, 400, 600, 800, 1000]
+    audio_amps = [1.0, 0.5, 0.33, 0.25, 0.2]
+
+    # Shared image spatial frequencies for all classes (control for amplitude)
+    img_freqs_x = [2, 4, 6, 8, 10]
+    img_freqs_y = [3, 5, 7, 9, 11]
+    img_amps = [1.0, 0.5, 0.33, 0.25, 0.2]
+
+    y_grid, x_grid = torch.meshgrid(
+        torch.linspace(0, 2 * np.pi, image_size),
+        torch.linspace(0, 2 * np.pi, image_size),
+    )
+
     idx = 0
     for c in range(n_classes):
-        # Class-specific frequency signature
-        base_freq = 100 + c * 80
-        n_harmonics = 2 + c
-
         for s in range(n_samples_per_class):
-            # Audio: temporal frequencies
+            # === AUDIO ===
+            # Class-specific phase relationships between harmonics
+            # (INDEPENDENTLY generated from image — different formula)
             t = torch.arange(T) / sample_rate
             sig = torch.zeros(T)
-            for h in range(1, n_harmonics + 1):
-                freq = base_freq * h
-                amp = 1.0 / h
-                phase = c * 0.15 * h + s * 0.01
-                sig += amp * torch.sin(2 * np.pi * freq * t + phase)
+            for i, (freq, amp) in enumerate(zip(audio_freqs, audio_amps)):
+                audio_phase = c * 0.3 * (i + 1) + s * 0.005 * i
+                sig += amp * torch.sin(2 * np.pi * freq * t + audio_phase)
+            # Shared amplitude modulation (same for all classes)
+            mod_freq = 4.0
+            envelope = 1 + 0.2 * torch.sin(2 * np.pi * mod_freq * t)
+            sig = sig * envelope
             sig += 0.05 * torch.randn(T)
             audio[idx] = sig
             audio_labels[idx] = c
 
-            # Image: spatial frequencies matching the audio structure
-            y, x = torch.meshgrid(
-                torch.linspace(0, 2 * np.pi, image_size),
-                torch.linspace(0, 2 * np.pi, image_size),
-            )
+            # === IMAGE ===
+            # Class-specific spatial phase relationships
+            # (INDEPENDENTLY generated from audio — DIFFERENT formula)
             img = torch.zeros(image_size, image_size)
-            for h in range(1, n_harmonics + 1):
-                spatial_freq = (c + 1) * h * 0.5
-                amp = 1.0 / h
-                phase = c * 0.15 * h + s * 0.01
-                img += amp * torch.sin(spatial_freq * x + phase) * \
-                       torch.cos(spatial_freq * y + phase * 0.7)
-
+            for i, (fx, fy, amp) in enumerate(zip(img_freqs_x, img_freqs_y, img_amps)):
+                img_phase_x = c * 0.25 * (i + 1) + s * 0.004 * i
+                img_phase_y = c * 0.18 * (i + 1) + s * 0.003 * i
+                img += amp * torch.sin(fx * x_grid + img_phase_x) * \
+                       torch.cos(fy * y_grid + img_phase_y)
             img = (img - img.min()) / (img.max() - img.min() + 1e-8)
             img += 0.05 * torch.randn_like(img)
             img = torch.clamp(img, 0, 1)
@@ -201,37 +223,57 @@ def run_experiment(
             acc_image = clf.score(test_image.numpy(), test_labels.numpy())
             results["image_within"]["accuracies"].append(acc_image)
 
-            # Amplitude-only baseline: cross-modal transfer using only
-            # amplitude features (no phase coherence)
-            # For audio: zero out PLV components (first half of compact features)
-            n_mod = len(audio_extractor.modulation_freqs)
-            audio_amp_only = audio_features.clone()
-            audio_amp_only[:, :n_mod] = 0  # zero out PLV
-            train_amp = audio_amp_only[train_idx]
-            test_amp = audio_amp_only[test_idx]
+        # Amplitude-only baseline: train a SEPARATE UCM on amplitude-only
+        # features, then test cross-modal transfer. This is a fair
+        # comparison — same architecture, same training, same loss,
+        # but amplitude features instead of coherence features.
+        #
+        # NOTE: This must be OUTSIDE the torch.no_grad() block above
+        # because we need gradients for training.
+        #
+        # For audio: zero out PLV components (phase-based), keep amplitude
+        n_mod = len(audio_extractor.modulation_freqs)
+        audio_amp_only = audio_features.clone()
+        audio_amp_only[:, :n_mod] = 0  # zero out PLV (phase-based)
 
-            # For image: use amplitude-only features (zero out PC histogram
-            # which is phase-based, keep only amplitude stats)
-            # Simple approach: train on audio amplitude, test on image amplitude
-            # using a simple projection (pad to same dim)
-            img_amp = image_features.clone()
-            # Zero out the first n_pc_bins (PC histogram is phase-based)
-            n_pc_bins = image_extractor.n_pc_bins
-            img_amp[:, :n_pc_bins] = 0
+        # For image: zero out PC histogram (phase-based), keep amplitude
+        img_amp = image_features.clone()
+        n_pc_bins = image_extractor.n_pc_bins
+        img_amp[:, :n_pc_bins] = 0
 
-            train_img_amp = img_amp[train_idx]
-            test_img_amp = img_amp[test_idx]
+        train_amp_a = audio_amp_only[train_idx]
+        test_amp_a = audio_amp_only[test_idx]
+        train_amp_i = img_amp[train_idx]
+        test_amp_i = img_amp[test_idx]
 
-            # Pad to same dimension for cross-modal transfer
-            dim = max(train_amp.shape[1], train_img_amp.shape[1])
-            train_amp_pad = torch.zeros(len(train_idx), dim)
-            train_amp_pad[:, :train_amp.shape[1]] = train_amp
-            test_img_amp_pad = torch.zeros(len(test_idx), dim)
-            test_img_amp_pad[:, :test_img_amp.shape[1]] = test_img_amp
+        # Train a separate UCM on amplitude-only features
+        amp_ucm = UnifiedCoherenceMetric(
+            audio_dim=audio_dim,
+            image_dim=image_dim,
+            sensor_dim=10,
+            target_dim=64,
+        )
+        amp_loss_fn = CrossModalCoherenceLoss(temperature=0.07)
+        amp_optimizer = torch.optim.Adam(amp_ucm.parameters(), lr=lr)
+
+        amp_ucm.train()
+        for epoch in range(n_epochs):
+            amp_optimizer.zero_grad()
+            a_emb = amp_ucm(train_amp_a, "audio")
+            i_emb = amp_ucm(train_amp_i, "image")
+            loss = amp_loss_fn(a_emb, i_emb, train_labels)
+            loss.backward()
+            amp_optimizer.step()
+
+        # Evaluate cross-modal transfer with amplitude-only UCM
+        amp_ucm.eval()
+        with torch.no_grad():
+            train_a_emb_amp = amp_ucm(train_amp_a, "audio")
+            test_i_emb_amp = amp_ucm(test_amp_i, "image")
 
             clf = LogisticRegression(max_iter=1000, C=1.0, random_state=42)
-            clf.fit(train_amp_pad.numpy(), train_labels.numpy())
-            acc_amp = clf.score(test_img_amp_pad.numpy(), test_labels.numpy())
+            clf.fit(train_a_emb_amp.numpy(), train_labels.numpy())
+            acc_amp = clf.score(test_i_emb_amp.numpy(), test_labels.numpy())
             results["amplitude_only"]["accuracies"].append(acc_amp)
 
     # Compute statistics
@@ -343,11 +385,27 @@ def main():
     cm_acc = results["audio_to_image"]["mean_accuracy"]
     cm_delta = results["audio_to_image"]["delta_vs_chance"]
     cm_sig = results["statistical_tests"]["audio_to_image"]["significant"]
-    print(f"Cross-modal transfer (audio→image): {cm_acc:.4f}")
-    print(f"Delta vs chance: {cm_delta:+.4f} (target: > 0.05)")
-    print(f"Statistically significant: {cm_sig}")
-    if cm_delta > 0.05 and cm_sig:
-        print("SUPPORTS C3: Coherence principle generalizes across modalities.")
+    amp_acc = results["amplitude_only"]["mean_accuracy"]
+    amp_delta = results["amplitude_only"]["delta_vs_chance"]
+    cm_vs_amp = results["statistical_tests"]["cross_modal_vs_amplitude"]
+    print(f"Cross-modal transfer (audio→image, coherence): {cm_acc:.4f}")
+    print(f"Cross-modal transfer (audio→image, amplitude):  {amp_acc:.4f}")
+    print(f"Chance level: {chance:.4f}")
+    print(f"Coherence delta vs chance: {cm_delta:+.4f} (target: > 0.05)")
+    print(f"Amplitude delta vs chance: {amp_delta:+.4f}")
+    print(f"Coherence vs amplitude:     {cm_vs_amp['delta']:+.4f} (p={cm_vs_amp['p_value']:.4f})")
+    print()
+    print("NOTE: UCM is trained with SUPERVISED contrastive loss using class")
+    print("  labels. This is NOT zero-shot cross-modal transfer. The test is")
+    print("  whether coherence features enable better cross-modal alignment")
+    print("  than amplitude features under the same supervised training.")
+    print()
+    if cm_delta > 0.05 and cm_sig and cm_vs_amp["significant"]:
+        print("SUPPORTS C3: Coherence features enable cross-modal transfer that")
+        print("  significantly exceeds both chance AND amplitude-only baseline.")
+    elif cm_delta > 0.05 and cm_sig:
+        print("PARTIAL SUPPORT for C3: Cross-modal transfer exceeds chance,")
+        print("  but does not significantly beat amplitude-only baseline.")
     else:
         print("INSUFFICIENT EVIDENCE for C3 cross-modal on this dataset.")
 

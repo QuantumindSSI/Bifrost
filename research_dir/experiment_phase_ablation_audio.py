@@ -138,7 +138,19 @@ def extract_cbmpc_with_ablation(
     if ablation == "phase_zero":
         mod_st = harness.phase_zero(mod_st)
     elif ablation == "phase_randomize":
-        mod_st = harness.phase_randomize(mod_st)
+        # Replace phase with independent random values per element.
+        # This destroys ALL phase structure (not just temporal or cross-band).
+        g = torch.Generator(device=mod_st.phase.device).manual_seed(42)
+        random_phase = (torch.rand(mod_st.phase.shape, generator=g,
+                                    device=mod_st.phase.device,
+                                    dtype=mod_st.phase.dtype) * 2 * torch.pi - torch.pi)
+        mod_st = SpectralTensor(
+            amplitude=mod_st.amplitude,
+            phase=random_phase,
+            scale=mod_st.scale,
+            uncertainty=mod_st.uncertainty,
+            metadata={**mod_st.metadata, "ablation": "phase_randomize"},
+        )
     elif ablation == "phase_noise":
         mod_st = harness.phase_noise(mod_st, sigma=0.5)
     elif ablation == "phase_noise_severe":
@@ -146,14 +158,13 @@ def extract_cbmpc_with_ablation(
     elif ablation == "phase_quantize":
         mod_st = harness.phase_quantize(mod_st, n_levels=4)
     elif ablation == "cross_band_scramble":
-        # Add independent random phase offset to each mel band — this
-        # directly destroys the cross-band phase coherence that PLV measures.
-        # PLV = |mean_f exp(i*phase_f)| requires phases to be aligned across
-        # bands. Adding independent offsets makes them incoherent.
-        g = torch.Generator(device=mod_st.phase.device).manual_seed(42)
+        # Add independent random phase offset per mel band PER SAMPLE.
+        # This destroys cross-band phase coherence that PLV measures.
+        # Using per-sample offsets (not fixed seed) ensures the ablation
+        # is not a deterministic transformation that a classifier could
+        # learn to invert.
         n_mels = mod_st.phase.shape[1]
-        # Random offset per mel band: (1, n_mels, 1)
-        offsets = (torch.rand(1, n_mels, 1, generator=g,
+        offsets = (torch.rand(mod_st.phase.shape[0], n_mels, 1,
                               device=mod_st.phase.device,
                               dtype=mod_st.phase.dtype) * 2 * torch.pi - torch.pi)
         scrambled_phase = mod_st.phase + offsets

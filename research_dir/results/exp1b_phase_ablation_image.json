@@ -1,82 +1,99 @@
 {
   "baseline": {
-    "mean_accuracy": 0.999,
-    "std_accuracy": 0.0020000000000000018,
+    "mean_accuracy": 1.0,
+    "std_accuracy": 0.0,
     "accuracies": [
       1.0,
       1.0,
       1.0,
-      0.995,
+      1.0,
       1.0
     ]
   },
   "phase_zero": {
-    "mean_accuracy": 0.9880000000000001,
-    "std_accuracy": 0.00509901951359279,
+    "mean_accuracy": 0.524,
+    "std_accuracy": 0.023323807579381184,
     "accuracies": [
-      0.995,
-      0.985,
-      0.98,
-      0.99,
-      0.99
+      0.515,
+      0.53,
+      0.515,
+      0.495,
+      0.565
     ]
   },
   "phase_randomize": {
-    "mean_accuracy": 0.8619999999999999,
-    "std_accuracy": 0.022494443758404006,
+    "mean_accuracy": 0.10200000000000001,
+    "std_accuracy": 0.00979795897113271,
     "accuracies": [
-      0.86,
-      0.88,
-      0.855,
-      0.89,
-      0.825
+      0.1,
+      0.12,
+      0.1,
+      0.09,
+      0.1
     ]
   },
   "phase_noise": {
-    "mean_accuracy": 0.9720000000000001,
-    "std_accuracy": 0.016613247725836167,
+    "mean_accuracy": 0.6639999999999999,
+    "std_accuracy": 0.0285306852353742,
     "accuracies": [
-      0.945,
-      0.975,
-      0.995,
-      0.98,
-      0.965
+      0.67,
+      0.655,
+      0.63,
+      0.715,
+      0.65
+    ]
+  },
+  "phase_noise_severe": {
+    "mean_accuracy": 0.132,
+    "std_accuracy": 0.022934689882359426,
+    "accuracies": [
+      0.14,
+      0.11,
+      0.1,
+      0.155,
+      0.155
     ]
   },
   "cross_band_scramble": {
-    "mean_accuracy": 0.8489999999999999,
-    "std_accuracy": 0.024372115213907867,
+    "mean_accuracy": 0.188,
+    "std_accuracy": 0.022045407685048608,
     "accuracies": [
-      0.84,
-      0.875,
-      0.845,
-      0.875,
-      0.81
+      0.175,
+      0.2,
+      0.155,
+      0.19,
+      0.22
     ]
   },
   "statistical_tests": {
     "phase_zero": {
-      "t_statistic": 3.7729688731351945,
-      "p_value": 0.019554212720304612,
-      "delta_accuracy": 0.010999999999999899,
+      "t_statistic": 40.816663263917135,
+      "p_value": 2.1531058423189367e-06,
+      "delta_accuracy": 0.476,
       "significant": true
     },
     "phase_randomize": {
-      "t_statistic": 11.517079036832031,
-      "p_value": 0.0003245364363644626,
-      "delta_accuracy": 0.13700000000000012,
+      "t_statistic": 183.30348241827434,
+      "p_value": 5.313518817442413e-09,
+      "delta_accuracy": 0.898,
       "significant": true
     },
     "phase_noise": {
-      "t_statistic": 3.138686246083121,
-      "p_value": 0.034891860922137995,
-      "delta_accuracy": 0.026999999999999913,
+      "t_statistic": 23.553587811021472,
+      "p_value": 1.9262915289306156e-05,
+      "delta_accuracy": 0.3360000000000001,
+      "significant": true
+    },
+    "phase_noise_severe": {
+      "t_statistic": 75.69319702618999,
+      "p_value": 1.825654909312249e-07,
+      "delta_accuracy": 0.868,
       "significant": true
     },
     "cross_band_scramble": {
-      "t_statistic": 11.766968108291048,
-      "p_value": 0.0002984465548148543,
-      "delta_accuracy": 0.15000000000000013,
+      "t_statistic": 73.66613596814604,
+      "p_value": 2.0349153582057864e-07,
+      "delta_accuracy": 0.812,
       "significant": true
     }
   }

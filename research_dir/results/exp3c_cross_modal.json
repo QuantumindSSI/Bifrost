@@ -1,15 +1,15 @@
 {
   "audio_within": {
-    "mean_accuracy": 0.9974999999999999,
-    "std_accuracy": 0.004999999999999982,
+    "mean_accuracy": 0.7849999999999999,
+    "std_accuracy": 0.03657184709581949,
     "accuracies": [
-      1.0,
-      1.0,
-      0.9875,
-      1.0,
-      1.0
+      0.725,
+      0.8125,
+      0.7625,
+      0.825,
+      0.8
     ],
-    "delta_vs_chance": 0.7974999999999999
+    "delta_vs_chance": 0.585
   },
   "image_within": {
     "mean_accuracy": 1.0,
@@ -24,60 +24,60 @@
     "delta_vs_chance": 0.8
   },
   "audio_to_image": {
-    "mean_accuracy": 1.0,
-    "std_accuracy": 0.0,
+    "mean_accuracy": 0.6775,
+    "std_accuracy": 0.13379088160259653,
     "accuracies": [
-      1.0,
-      1.0,
-      1.0,
-      1.0,
-      1.0
+      0.45,
+      0.8,
+      0.7625,
+      0.6,
+      0.775
     ],
-    "delta_vs_chance": 0.8
+    "delta_vs_chance": 0.4775
   },
   "image_to_audio": {
-    "mean_accuracy": 0.9974999999999999,
-    "std_accuracy": 0.004999999999999982,
+    "mean_accuracy": 0.59,
+    "std_accuracy": 0.044300112866673395,
     "accuracies": [
-      1.0,
-      1.0,
-      0.9875,
-      1.0,
-      1.0
+      0.5125,
+      0.6,
+      0.6,
+      0.65,
+      0.5875
     ],
-    "delta_vs_chance": 0.7974999999999999
+    "delta_vs_chance": 0.38999999999999996
   },
   "amplitude_only": {
-    "mean_accuracy": 0.2,
-    "std_accuracy": 0.0,
+    "mean_accuracy": 0.65,
+    "std_accuracy": 0.13532368602724357,
     "accuracies": [
-      0.2,
-      0.2,
-      0.2,
-      0.2,
-      0.2
+      0.75,
+      0.6125,
+      0.7375,
+      0.4,
+      0.75
     ],
-    "delta_vs_chance": 0.0
+    "delta_vs_chance": 0.45
   },
   "chance_level": 0.2,
   "statistical_tests": {
     "audio_to_image": {
-      "t_statistic": Infinity,
-      "p_value": 0.0,
-      "delta_vs_chance": 0.8,
+      "t_statistic": 7.138005135780987,
+      "p_value": 0.0020372893609865482,
+      "delta_vs_chance": 0.4775,
       "significant": true
     },
     "image_to_audio": {
-      "t_statistic": 319.0000000000011,
-      "p_value": 5.793754205962526e-10,
-      "delta_vs_chance": 0.7974999999999999,
+      "t_statistic": 17.60717861707272,
+      "p_value": 6.110969916707442e-05,
+      "delta_vs_chance": 0.38999999999999996,
       "significant": true
     },
     "cross_modal_vs_amplitude": {
-      "t_statistic": Infinity,
-      "p_value": 0.0,
-      "delta": 0.8,
-      "significant": true
+      "t_statistic": 0.30496783515078496,
+      "p_value": 0.7756003758466432,
+      "delta": 0.02749999999999997,
+      "significant": false
     }
   }
 }

@@ -1,116 +1,116 @@
 {
   "baseline": {
-    "mean_accuracy": 0.8879999999999999,
-    "std_accuracy": 0.011224972160321834,
+    "mean_accuracy": 0.901,
+    "std_accuracy": 0.02222611077089289,
     "accuracies": [
-      0.89,
-      0.885,
-      0.905,
-      0.87,
-      0.89
+      0.915,
+      0.88,
+      0.875,
+      0.935,
+      0.9
     ]
   },
   "phase_zero": {
-    "mean_accuracy": 0.743,
-    "std_accuracy": 0.017492855684535916,
+    "mean_accuracy": 0.731,
+    "std_accuracy": 0.018275666882497082,
     "accuracies": [
-      0.745,
-      0.76,
-      0.745,
-      0.755,
-      0.71
+      0.735,
+      0.705,
+      0.75,
+      0.75,
+      0.715
     ]
   },
   "phase_randomize": {
-    "mean_accuracy": 0.8859999999999999,
-    "std_accuracy": 0.012806248474865708,
+    "mean_accuracy": 0.727,
+    "std_accuracy": 0.012489995996796807,
     "accuracies": [
-      0.885,
-      0.885,
-      0.905,
-      0.865,
-      0.89
+      0.73,
+      0.71,
+      0.74,
+      0.74,
+      0.715
     ]
   },
   "phase_noise": {
-    "mean_accuracy": 0.884,
-    "std_accuracy": 0.01959591794226544,
+    "mean_accuracy": 0.89,
+    "std_accuracy": 0.018165902124584965,
     "accuracies": [
-      0.88,
-      0.88,
-      0.92,
-      0.86,
-      0.88
+      0.91,
+      0.865,
+      0.875,
+      0.91,
+      0.89
     ]
   },
   "phase_noise_severe": {
-    "mean_accuracy": 0.741,
-    "std_accuracy": 0.009695359714832666,
+    "mean_accuracy": 0.733,
+    "std_accuracy": 0.013638181696985868,
     "accuracies": [
+      0.755,
       0.725,
-      0.75,
-      0.745,
-      0.75,
-      0.735
+      0.73,
+      0.74,
+      0.715
     ]
   },
   "phase_quantize": {
-    "mean_accuracy": 0.913,
-    "std_accuracy": 0.009273618495495713,
+    "mean_accuracy": 0.915,
+    "std_accuracy": 0.03521363372331801,
     "accuracies": [
-      0.905,
-      0.91,
-      0.93,
-      0.905,
+      0.925,
+      0.885,
+      0.875,
+      0.975,
       0.915
     ]
   },
   "cross_band_scramble": {
-    "mean_accuracy": 0.7929999999999999,
-    "std_accuracy": 0.012884098726725137,
+    "mean_accuracy": 0.7289999999999999,
+    "std_accuracy": 0.022891046284519215,
     "accuracies": [
-      0.805,
-      0.8,
-      0.805,
-      0.775,
-      0.78
+      0.74,
+      0.705,
+      0.74,
+      0.76,
+      0.7
     ]
   },
   "statistical_tests": {
     "phase_zero": {
-      "t_statistic": 12.365641548625396,
-      "p_value": 0.00024580076917219063,
-      "delta_accuracy": 0.1449999999999999,
+      "t_statistic": 14.909986328219487,
+      "p_value": 0.00011784995671246408,
+      "delta_accuracy": 0.17000000000000004,
       "significant": true
     },
     "phase_randomize": {
-      "t_statistic": 1.6329931618554523,
-      "p_value": 0.1778078083562211,
-      "delta_accuracy": 0.0020000000000000018,
-      "significant": false
+      "t_statistic": 16.515349126093472,
+      "p_value": 7.871530065786439e-05,
+      "delta_accuracy": 0.17400000000000004,
+      "significant": true
     },
     "phase_noise": {
-      "t_statistic": 0.8251369970070347,
-      "p_value": 0.45565953995797087,
-      "delta_accuracy": 0.0039999999999998925,
+      "t_statistic": 2.557448052364024,
+      "p_value": 0.06280761100070116,
+      "delta_accuracy": 0.01100000000000001,
       "significant": false
     },
     "phase_noise_severe": {
-      "t_statistic": 17.384584442079017,
-      "p_value": 6.426496170835592e-05,
-      "delta_accuracy": 0.1469999999999999,
+      "t_statistic": 17.807964384106835,
+      "p_value": 5.842772787621058e-05,
+      "delta_accuracy": 0.16800000000000004,
       "significant": true
     },
     "phase_quantize": {
-      "t_statistic": -7.905694150420949,
-      "p_value": 0.0013849379404235027,
-      "delta_accuracy": -0.025000000000000133,
-      "significant": true
+      "t_statistic": -2.0102828441296694,
+      "p_value": 0.11476192246455869,
+      "delta_accuracy": -0.014000000000000012,
+      "significant": false
     },
     "cross_band_scramble": {
-      "t_statistic": 20.02775851439971,
-      "p_value": 3.668072767399015e-05,
-      "delta_accuracy": 0.09499999999999997,
+      "t_statistic": 16.474612105803793,
+      "p_value": 7.948726829958209e-05,
+      "delta_accuracy": 0.17200000000000015,
       "significant": true
     }
   }

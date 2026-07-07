@@ -203,7 +203,6 @@ def run_experiment(
         "single_scale_2",
         "single_scale_4",
         "scale_subset_half",
-        "scale_shuffle",
         "cross_scale_destroy",
     ]
 
@@ -301,7 +300,7 @@ def main():
     )
     print(f"Generated {len(waveforms)} samples")
 
-    print(f"\nRunning {args.n_folds}-fold cross-validation with 7 scale conditions...")
+    print(f"\nRunning {args.n_folds}-fold cross-validation with 6 scale conditions...")
     results = run_experiment(waveforms, labels, n_scales=args.n_scales, n_folds=args.n_folds)
 
     # Print results
@@ -313,7 +312,7 @@ def main():
 
     baseline_acc = results["baseline"]["mean_accuracy"]
     for ablation in ["baseline", "single_scale_0", "single_scale_2", "single_scale_4",
-                      "scale_subset_half", "scale_shuffle", "cross_scale_destroy"]:
+                      "scale_subset_half", "cross_scale_destroy"]:
         acc = results[ablation]["mean_accuracy"]
         std = results[ablation]["std_accuracy"]
         delta = acc - baseline_acc if ablation != "baseline" else 0.0
@@ -345,6 +344,8 @@ def main():
         print("SUPPORTS C2: Multi-scale coherence is necessary for audio semantic structure.")
     else:
         print("INSUFFICIENT EVIDENCE for C2 on this dataset.")
+    if n_significant < len(results['statistical_tests']):
+        print("NOTE: Some ablations were not significant — see details above.")
 
 
 if __name__ == "__main__":
