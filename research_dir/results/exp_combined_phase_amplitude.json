@@ -1,0 +1,202 @@
+{
+  "speechcommands": {
+    "fft_only": {
+      "mean_accuracy": 0.4505,
+      "std_accuracy": 0.018124568960391857,
+      "accuracies": [
+        0.4775,
+        0.45,
+        0.435,
+        0.4275,
+        0.4625
+      ]
+    },
+    "cbmpc_only": {
+      "mean_accuracy": 0.231,
+      "std_accuracy": 0.019078784028338916,
+      "accuracies": [
+        0.25,
+        0.21,
+        0.21,
+        0.255,
+        0.23
+      ]
+    },
+    "fft_plus_cbmpc": {
+      "mean_accuracy": 0.46749999999999997,
+      "std_accuracy": 0.019170289512680804,
+      "accuracies": [
+        0.4975,
+        0.45,
+        0.4825,
+        0.45,
+        0.4575
+      ]
+    },
+    "fft_plus_phase_randomized": {
+      "mean_accuracy": 0.46699999999999997,
+      "std_accuracy": 0.020334699407662752,
+      "accuracies": [
+        0.505,
+        0.4575,
+        0.4675,
+        0.46,
+        0.445
+      ]
+    },
+    "statistical_tests": {
+      "fft_plus_cbmpc_vs_fft_only": {
+        "t_statistic": 1.8212833856189732,
+        "p_value": 0.14266424745459672,
+        "delta_accuracy": 0.01699999999999996,
+        "significant": false,
+        "interpretation": "Does adding phase features improve amplitude-only?"
+      },
+      "fft_plus_randomized_vs_fft_only": {
+        "t_statistic": 1.7063893769835632,
+        "p_value": 0.16312916603947322,
+        "delta_accuracy": 0.01649999999999996,
+        "significant": false,
+        "interpretation": "Does adding RANDOMIZED phase features improve amplitude-only?"
+      },
+      "real_vs_randomized_phase_combined": {
+        "t_statistic": 0.09186304243492316,
+        "p_value": 0.9312235778880689,
+        "delta_accuracy": 0.0005000000000000004,
+        "significant": false,
+        "interpretation": "Does REAL phase add more than RANDOMIZED phase?"
+      }
+    }
+  },
+  "esc50": {
+    "fft_only": {
+      "mean_accuracy": 0.6825,
+      "std_accuracy": 0.04847679857416329,
+      "accuracies": [
+        0.75,
+        0.6875,
+        0.7,
+        0.675,
+        0.6
+      ]
+    },
+    "cbmpc_only": {
+      "mean_accuracy": 0.4625,
+      "std_accuracy": 0.04401704215414749,
+      "accuracies": [
+        0.5125,
+        0.4,
+        0.5125,
+        0.4375,
+        0.45
+      ]
+    },
+    "fft_plus_cbmpc": {
+      "mean_accuracy": 0.7275,
+      "std_accuracy": 0.02423839928708164,
+      "accuracies": [
+        0.7375,
+        0.7625,
+        0.725,
+        0.6875,
+        0.725
+      ]
+    },
+    "fft_plus_phase_randomized": {
+      "mean_accuracy": 0.7,
+      "std_accuracy": 0.04257346591481599,
+      "accuracies": [
+        0.725,
+        0.7625,
+        0.7,
+        0.6375,
+        0.675
+      ]
+    },
+    "statistical_tests": {
+      "fft_plus_cbmpc_vs_fft_only": {
+        "t_statistic": 1.8323517548134356,
+        "p_value": 0.1408426053934373,
+        "delta_accuracy": 0.04500000000000004,
+        "significant": false,
+        "interpretation": "Does adding phase features improve amplitude-only?"
+      },
+      "fft_plus_randomized_vs_fft_only": {
+        "t_statistic": 0.7219948723811542,
+        "p_value": 0.5102492390442809,
+        "delta_accuracy": 0.01749999999999996,
+        "significant": false,
+        "interpretation": "Does adding RANDOMIZED phase features improve amplitude-only?"
+      },
+      "real_vs_randomized_phase_combined": {
+        "t_statistic": 2.7500000000000036,
+        "p_value": 0.05137443084436784,
+        "delta_accuracy": 0.02750000000000008,
+        "significant": false,
+        "interpretation": "Does REAL phase add more than RANDOMIZED phase?"
+      }
+    }
+  },
+  "ucihar": {
+    "fft_only": {
+      "mean_accuracy": 0.6325000000000001,
+      "std_accuracy": 0.027813865447131044,
+      "accuracies": [
+        0.625,
+        0.6375,
+        0.6625,
+        0.6541666666666667,
+        0.5833333333333334
+      ]
+    },
+    "wc_only": {
+      "mean_accuracy": 0.6908333333333333,
+      "std_accuracy": 0.019614337159899672,
+      "accuracies": [
+        0.6833333333333333,
+        0.675,
+        0.6791666666666667,
+        0.6875,
+        0.7291666666666666
+      ]
+    },
+    "fft_plus_wc": {
+      "mean_accuracy": 0.7708333333333334,
+      "std_accuracy": 0.014191155304938663,
+      "accuracies": [
+        0.7916666666666666,
+        0.7708333333333334,
+        0.75,
+        0.7625,
+        0.7791666666666667
+      ]
+    },
+    "stat_plus_wc": {
+      "mean_accuracy": 0.7675,
+      "std_accuracy": 0.020138409955990966,
+      "accuracies": [
+        0.775,
+        0.7291666666666666,
+        0.7666666666666667,
+        0.7833333333333333,
+        0.7833333333333333
+      ]
+    },
+    "statistical_tests": {
+      "fft_plus_wc_vs_fft_only": {
+        "t_statistic": 7.08793574896132,
+        "p_value": 0.0020918572423533973,
+        "delta_accuracy": 0.1383333333333333,
+        "significant": true,
+        "interpretation": "Does adding wavelet coherence improve FFT?"
+      },
+      "stat_plus_wc_vs_fft_only": {
+        "t_statistic": 7.0601808649746305,
+        "p_value": 0.002122883053839463,
+        "delta_accuracy": 0.1349999999999999,
+        "significant": true,
+        "interpretation": "Does stat+wavelet coherence beat FFT?"
+      }
+    }
+  }
+}

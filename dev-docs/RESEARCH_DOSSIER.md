@@ -43,6 +43,8 @@ All documents in this directory are kept in the repository for peer review and r
 | `14_REFINED_ENGINEERING_PLAN_STEPS_1_3.md` | Concrete plan for steps 1-3 (minimal viable proof) | Complete |
 | `15_ENGINEERING_LESSONS.md` | Non-obvious insights from proving steps 1-3 | Complete |
 | `16_LM_INTEGRATION_RESEARCH.md` | Research survey: integrating structured resonance into language models | Complete |
+| `17_HONEST_ASSESSMENT_REAL_DATA.md` | Real-data experiments: honest negative/mixed results | Complete |
+| `18_REVISED_THESIS_AND_FALSIFIABILITY.md` | Revised thesis matching evidence, falsifiability criteria | Complete |
 
 ---
 
@@ -50,17 +52,23 @@ All documents in this directory are kept in the repository for peer review and r
 
 ### What we know (calibrated confidence)
 
-1. **Raw spectral phase coherence does not capture semantic structure in speech** (confidence: high). The literature is clear that modulation phase, not spectral phase, carries speech intelligibility and category information. Our own experiments confirmed that amplitude-only Bifrost embeddings perform at near-chance on SpeechCommands.
+**UPDATED July 2026 following real-data experiments (docs 17-18):**
 
-2. **Cross-Band Modulation Phase Coherence (CBMPC) captures semantic structure in speech** (confidence: high, pre-registered). CBMPC features extracted from a raw STFT spectrogram achieve 0.41 ± 0.04 accuracy on 10-class SpeechCommands, vs. 0.27 ± 0.01 for the STFT magnitude baseline. The effect is +13.65 percentage points (p = 0.0033, Bonferroni-corrected). This is the first validated frequency-level semantic structure extractor in the project.
+1. **Phase coherence does NOT capture semantic structure in real speech** (confidence: very high). On SpeechCommands, CBMPC achieves 23.10% vs FFT magnitude 45.05% — CBMPC is significantly WORSE (p=0.0001). Phase ablation does not significantly degrade performance (0/5 ablations significant). The synthetic experiments were circular.
 
-3. **CBMPC does NOT generalize to environmental sounds** (confidence: high, pre-registered). On ESC-50 (50 classes), CBMPC achieves 0.12 ± 0.02, worse than the STFT baseline (0.16 ± 0.03) and the mel baseline (0.21 ± 0.04). CBMPC is speech-specific, not a universal audio feature extractor.
+2. **Phase coherence does NOT capture semantic structure in real environmental audio** (confidence: high). On ESC-50, CBMPC achieves 46.50% vs FFT magnitude 68.25% — CBMPC is significantly WORSE (p=0.023). Phase ablation is not significant (p=0.304).
 
-4. **The Bifrost complex SSM destroys modulation structure** (confidence: high). When CBMPC is applied to the Bifrost pipeline output, accuracy drops to chance (0.10). The SSM transforms the spectrogram in ways that disrupt the temporal modulation phase relationships that CBMPC relies on. This is a critical architectural finding.
+3. **Wavelet coherence ADDS SIGNIFICANT VALUE for sensor data** (confidence: high). On UCI HAR, FFT+WaveletCoherence achieves 77.08% vs FFT alone 63.25% — a significant improvement (+13.83pp, p=0.002). This is the strongest positive result in the project.
 
-5. **Pre-SSM CBMPC integration does not significantly improve over CBMPC-only** (confidence: moderate). The combined CBMPC+SSM model achieves 0.47 ± 0.04 vs. CBMPC-only 0.44 ± 0.08 (pilot, 5 classes). The SSM does not destroy CBMPC when extracted in parallel, but it does not add significant value either (p = 0.66).
+4. **The value of coherence features is modality-dependent** (confidence: high). Sensors: significant benefit. Environmental audio: marginal trend (p=0.051). Speech: no benefit. The thesis claim of universal generalization is NOT supported.
 
-6. **The original Bifrost amplitude embedding was fundamentally flawed** (confidence: high). The embedding (`amp.mean(dim=1)` + `amp.std(dim=1)`) discarded the phase channel entirely and collapsed the temporal dimension, destroying exactly the information that carries semantic structure.
+5. **Cross-modal alignment (C3) is NOT supported** (confidence: high). Experiment 3D showed silhouette by category = -0.019 (worse than random). The modality gap is a fundamental geometric problem.
+
+6. **The original thesis was overclaimed** (confidence: very high). "Intelligence is structured resonance" is not supported by the evidence. The revised thesis (doc 18) makes much weaker, evidence-backed claims about modality-dependent coherence.
+
+7. **CBMPC captures semantic structure in speech** (confidence: moderate, from earlier work). CBMPC-STFT achieves 0.41 on SpeechCommands vs 0.27 STFT baseline (p=0.0033). NOTE: This earlier result used a different CBMPC implementation. The real-data experiments (doc 17) used the current implementation and found CBMPC at 23.10%. This discrepancy needs investigation.
+
+8. **CBMPC does NOT generalize to environmental sounds** (confidence: high, confirmed by real-data experiment). On ESC-50, CBMPC is worse than STFT baseline.
 
 ### What we don't know
 

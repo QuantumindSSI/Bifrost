@@ -1,0 +1,266 @@
+{
+  "random_noise": {
+    "baseline": {
+      "mean_accuracy": 0.23700000000000002,
+      "std_accuracy": 0.016309506430300096,
+      "accuracies": [
+        0.23,
+        0.265,
+        0.215,
+        0.24,
+        0.235
+      ]
+    },
+    "phase_randomize": {
+      "mean_accuracy": 0.21799999999999997,
+      "std_accuracy": 0.02379075450674064,
+      "accuracies": [
+        0.235,
+        0.23,
+        0.175,
+        0.21,
+        0.24
+      ]
+    },
+    "phase_zero": {
+      "mean_accuracy": 0.21800000000000003,
+      "std_accuracy": 0.03414674215792775,
+      "accuracies": [
+        0.19,
+        0.195,
+        0.275,
+        0.19,
+        0.24
+      ]
+    },
+    "fft_magnitude": {
+      "mean_accuracy": 0.20600000000000002,
+      "std_accuracy": 0.011575836902790225,
+      "accuracies": [
+        0.21,
+        0.205,
+        0.19,
+        0.225,
+        0.2
+      ]
+    },
+    "statistical_tests": {
+      "phase_randomize": {
+        "t_statistic": 1.9144123430675388,
+        "p_value": 0.12809308525398497,
+        "delta_accuracy": 0.019000000000000045,
+        "significant": false
+      },
+      "phase_zero": {
+        "t_statistic": 0.8168738027454605,
+        "p_value": 0.45985834648189183,
+        "delta_accuracy": 0.01899999999999999,
+        "significant": false
+      },
+      "cbmpc_vs_fft_magnitude": {
+        "t_statistic": 3.890225991856581,
+        "p_value": 0.017687223478610254,
+        "delta_accuracy": 0.031,
+        "significant": true
+      }
+    }
+  },
+  "pure_tones": {
+    "baseline": {
+      "mean_accuracy": 0.9029999999999999,
+      "std_accuracy": 0.015033296378372923,
+      "accuracies": [
+        0.885,
+        0.91,
+        0.92,
+        0.915,
+        0.885
+      ]
+    },
+    "phase_randomize": {
+      "mean_accuracy": 0.687,
+      "std_accuracy": 0.024617067250182322,
+      "accuracies": [
+        0.685,
+        0.73,
+        0.655,
+        0.675,
+        0.69
+      ]
+    },
+    "phase_zero": {
+      "mean_accuracy": 0.881,
+      "std_accuracy": 0.009165151389911688,
+      "accuracies": [
+        0.89,
+        0.87,
+        0.89,
+        0.87,
+        0.885
+      ]
+    },
+    "fft_magnitude": {
+      "mean_accuracy": 1.0,
+      "std_accuracy": 0.0,
+      "accuracies": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "statistical_tests": {
+      "phase_randomize": {
+        "t_statistic": 13.70220796142391,
+        "p_value": 0.00016433244603550548,
+        "delta_accuracy": 0.21599999999999986,
+        "significant": true
+      },
+      "phase_zero": {
+        "t_statistic": 2.1318069656906404,
+        "p_value": 0.10000447794944234,
+        "delta_accuracy": 0.02199999999999991,
+        "significant": false
+      },
+      "cbmpc_vs_fft_magnitude": {
+        "t_statistic": -12.904688041612127,
+        "p_value": 0.00020795639829046913,
+        "delta_accuracy": -0.09700000000000009,
+        "significant": true
+      }
+    }
+  },
+  "constant_signal": {
+    "baseline": {
+      "mean_accuracy": 0.21000000000000002,
+      "std_accuracy": 2.7755575615628914e-17,
+      "accuracies": [
+        0.21,
+        0.21,
+        0.21,
+        0.21,
+        0.21
+      ]
+    },
+    "phase_randomize": {
+      "mean_accuracy": 0.19499999999999998,
+      "std_accuracy": 0.00894427190999916,
+      "accuracies": [
+        0.2,
+        0.18,
+        0.205,
+        0.19,
+        0.2
+      ]
+    },
+    "phase_zero": {
+      "mean_accuracy": 0.21000000000000002,
+      "std_accuracy": 2.7755575615628914e-17,
+      "accuracies": [
+        0.21,
+        0.21,
+        0.21,
+        0.21,
+        0.21
+      ]
+    },
+    "fft_magnitude": {
+      "mean_accuracy": 0.21000000000000002,
+      "std_accuracy": 2.7755575615628914e-17,
+      "accuracies": [
+        0.21,
+        0.21,
+        0.21,
+        0.21,
+        0.21
+      ]
+    },
+    "statistical_tests": {
+      "phase_randomize": {
+        "t_statistic": 3.3541019662496816,
+        "p_value": 0.028460203254338432,
+        "delta_accuracy": 0.015000000000000041,
+        "significant": true
+      },
+      "phase_zero": {
+        "t_statistic": NaN,
+        "p_value": NaN,
+        "delta_accuracy": 0.0,
+        "significant": false
+      },
+      "cbmpc_vs_fft_magnitude": {
+        "t_statistic": NaN,
+        "p_value": NaN,
+        "delta_accuracy": 0.0,
+        "significant": false
+      }
+    }
+  },
+  "shuffled_speechcommands": {
+    "baseline": {
+      "mean_accuracy": 0.23399999999999999,
+      "std_accuracy": 0.04487761134463376,
+      "accuracies": [
+        0.32,
+        0.195,
+        0.235,
+        0.21,
+        0.21
+      ]
+    },
+    "phase_randomize": {
+      "mean_accuracy": 0.227,
+      "std_accuracy": 0.026758176320519318,
+      "accuracies": [
+        0.28,
+        0.21,
+        0.22,
+        0.21,
+        0.215
+      ]
+    },
+    "phase_zero": {
+      "mean_accuracy": 0.223,
+      "std_accuracy": 0.02821347195933177,
+      "accuracies": [
+        0.25,
+        0.19,
+        0.26,
+        0.195,
+        0.22
+      ]
+    },
+    "fft_magnitude": {
+      "mean_accuracy": 0.203,
+      "std_accuracy": 0.03969886648255842,
+      "accuracies": [
+        0.165,
+        0.215,
+        0.275,
+        0.175,
+        0.185
+      ]
+    },
+    "statistical_tests": {
+      "phase_randomize": {
+        "t_statistic": 0.7317917228850432,
+        "p_value": 0.5048610641641942,
+        "delta_accuracy": 0.0069999999999999785,
+        "significant": false
+      },
+      "phase_zero": {
+        "t_statistic": 0.6776452139970666,
+        "p_value": 0.5351686177321571,
+        "delta_accuracy": 0.010999999999999982,
+        "significant": false
+      },
+      "cbmpc_vs_fft_magnitude": {
+        "t_statistic": 0.9127522126224402,
+        "p_value": 0.4130098457261558,
+        "delta_accuracy": 0.030999999999999972,
+        "significant": false
+      }
+    }
+  }
+}
