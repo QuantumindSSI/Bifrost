@@ -65,6 +65,7 @@ node_modules/
 
 # Project specific
 sample_data/
+data/
 *.wav
 *.png
 *.jpg

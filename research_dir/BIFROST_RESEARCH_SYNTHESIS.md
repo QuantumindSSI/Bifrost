@@ -220,7 +220,65 @@ Full survey is in `AGENTS.md` as a research reference.
 
 ---
 
-## 9. Key principles for the project going forward
+## 9. First experimental validation loop (post-persona audit)
+
+A Type Ω epistemic audit was applied to the first hypothesis test. The audit document is `research_dir/EPISTEMIC_AUDIT.md`.
+
+### Hypothesis under test
+
+> Bifrost phase coherence correlates with semantic category similarity on real audio.
+
+### Experiments run
+
+| Experiment | Dataset | Result | Interpretation |
+|---|---|---|---|
+| Untrained synthetic correlation | 5 synthetic tone/noise classes | r = 0.14, p < 0.001 | Weak, below threshold; inconclusive |
+| Fine-tuned synthetic classification | 5 synthetic tone/noise classes | test acc = 0.98, r = 0.92 | Sanity check only; trivial frequency separation |
+| Fine-tuned real-data classification | SpeechCommands, 5 classes, 150 samples | train acc = 1.00, test acc = 0.33 | Severe overfitting; no generalization |
+| Fine-tuned real-data classification | SpeechCommands, 10 classes, 500 samples | train acc = 0.99, test acc = 0.16 | Confirmed overfitting at larger scale |
+| **Baseline comparison (pilot)** | SpeechCommands, 5 classes, 50 samples/class, 3-fold CV | Bifrost ft = 0.28 ± 0.08; STFT = 0.35 ± 0.09; Bifrost frozen = 0.20 ± 0.01 | Bifrost does not beat a simple STFT-magnitude baseline; no evidence for phase-coherence advantage |
+
+### Key audit findings
+
+1. **HARKing**: the protocol was modified after observing weak initial results (adding training, classification head, dataset change). This is exploratory, not confirmatory.
+2. **No baseline**: early runs compared Bifrost only to itself or chance. The baseline comparison shows STFT magnitude performs comparably or better.
+3. **Single split**: initial results used one random split. The pilot now uses 3-fold cross-validation.
+4. **Underpowered**: 50 samples per class is a pilot only; the pre-registered protocol requires ≥ 100 samples per class for stable estimates.
+5. **Embedding pooling**: mean+std pooling over Bifrost amplitude was chosen post-hoc and not validated against alternatives.
+
+### Calibrated conclusion
+
+The phase-coherence → semantic-similarity hypothesis is **not supported** by the current evidence on real audio. The synthetic results are expected because the task is frequency-defined. The real-data results show that the current Bifrost pipeline does not naturally learn semantically meaningful representations beyond a trivial STFT baseline.
+
+**Confidence**: moderate. The design is still exploratory and the pilot sample size is small. A decisive test requires the pre-registered protocol with larger samples and full cross-validation.
+
+### Revised immediate next steps
+
+1. Run the pre-registered baseline comparison at full scale (10 classes, ≥ 100 samples/class, 5-fold CV).
+2. If Bifrost still underperforms, investigate whether the phase-coherence objective, the pooling strategy, or the model capacity is the bottleneck.
+3. Do not update the paper's claims section until a pre-registered success criterion is met.
+4. Add a "null results and negative evidence" section to the paper outline.
+
+---
+
+## 10. Documents produced in this session
+
+| Document | Location | Purpose |
+|---|---|---|
+| Agent guide + implementation plan | `AGENTS.md` | Working reference for development |
+| Frequency-technique survey | `AGENTS.md` lines 247–388 | Research reference for complementary methods |
+| Research synthesis | `research_dir/BIFROST_RESEARCH_SYNTHESIS.md` | This document |
+| Self-driving research loop | `research_dir/SELF_DRIVING_RESEARCH_LOOP.md` | Methodology for autonomous validation |
+| Paper outline | `research_dir/PAPER_OUTLINE.md` | Draft paper structure |
+| Literature survey | `research_dir/LITERATURE_SURVEY.md` | Peer-reviewed references per layer |
+| Phase-coherence semantic experiment | `research_dir/experiment_phase_coherence_semantic.py` | Untrained correlation experiment |
+| Phase-coherence trained experiment | `research_dir/experiment_phase_coherence_semantic_trained.py` | Trained classification experiment with synthetic + SpeechCommands support |
+| Baseline comparison experiment | `research_dir/experiment_phase_coherence_baseline_comparison.py` | Pre-registered Bifrost vs. STFT baseline with cross-validation |
+| Epistemic audit | `research_dir/EPISTEMIC_AUDIT.md` | Type Ω self-review of the first validation loop |
+
+---
+
+## 11. Key principles for the project going forward
 
 1. **Stay in continuous spectral space** as long as possible.
 2. **Validate every structural signal on real data** before calling it semantic.
@@ -228,3 +286,5 @@ Full survey is in `AGENTS.md` as a research reference.
 4. **Define falsifiable hypotheses** for each new layer.
 5. **Be honest about projections vs. evidence** in all publications and documentation.
 6. **Build small, validated components** before composing the full seven-layer system.
+7. **Pre-register experiments** and include baseline comparisons before claiming support.
+8. **Report null and negative results** as first-class evidence, not as failures.

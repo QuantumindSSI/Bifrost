@@ -3,7 +3,7 @@
 **Working title**: *Bifrost: Learning Multimodal Semantic Structure from Phase-Coherent Frequency Representations*  
 **Target venues**: NeurIPS, ICML, ICLR, Interspeech, IEEE TSP, or multimodal-AI workshop track.  
 **Paper type**: Method + empirical validation  
-**Status**: Outline and experimental design. Results are pending.
+**Status**: Outline with pilot results. The main semantic hypothesis is not yet supported on real audio; the paper now includes a calibrated negative-result narrative.
 
 ---
 
@@ -11,7 +11,7 @@
 
 **Goal**: One paragraph that summarizes the positive contribution.
 
-> We introduce Bifrost, a framework that learns multimodal representations from the structure of continuous signals rather than from discrete tokens. Bifrost converts audio, image, text, and sensor data into complex spectra and builds a hierarchy of structural representations: phase coherence, compositional timescales, directed causal influence, topological fingerprints, qualitative temporal relations, detected symmetries, and disentangled factors. We show that this frequency-level architecture captures semantic structure across multiple benchmarks, including [X], [Y], and [Z]. Our results suggest that continuous spectral representations provide a complementary signal to token-based models for tasks where phase, dynamics, and cross-modal correspondence are essential.
+> We introduce Bifrost, a framework that learns multimodal representations from the structure of continuous signals rather than from discrete tokens. Bifrost converts audio, image, text, and sensor data into complex spectra and builds a hierarchy of structural representations: phase coherence, compositional timescales, directed causal influence, topological fingerprints, qualitative temporal relations, detected symmetries, and disentangled factors. We present the architecture, a self-driving research loop for validating each layer, and the first empirical probe of the core claim: that phase coherence correlates with semantic category structure. On a synthetic audio task the model learns expected frequency-defined categories, but on real speech commands a fine-tuned Bifrost classifier does not outperform a simple STFT-magnitude baseline in a pilot cross-validation study. We report these results transparently, outline the pre-registered protocol needed to test the hypothesis decisively, and discuss which architectural assumptions must be revised before strong semantic claims can be made.
 
 **Notes**:
 - The final abstract will be rewritten once experiments are complete.
@@ -219,21 +219,23 @@ For each experiment, define a strong baseline that isolates the Bifrost contribu
 
 ---
 
-## 6. Proposed results (to be filled after experiments)
+## 6. Results (pilot and pending)
 
 ### 6.1 Main results table
 
-| Layer | Dataset | Metric | Bifrost | Baseline | p-value | Effect size |
-|---|---|---|---|---|---|---|
-| L1 | ESC-50 | Phase-semantic correlation | TBD | TBD | TBD | TBD |
-| L2 | Switchboard | Boundary F1 | TBD | TBD | TBD | TBD |
-| L3 | EEG | Edge precision | TBD | TBD | TBD | TBD |
-| L4 | NSynth | Accuracy | TBD | TBD | TBD | TBD |
-| L5 | TimeBank | Relation accuracy | TBD | TBD | TBD | TBD |
-| L6 | NSynth | Invariance accuracy | TBD | TBD | TBD | TBD |
-| L7 | VCTK | DCI score | TBD | TBD | TBD | TBD |
-| Cross-modal | VGGSound | Recall@10 | TBD | TBD | TBD | TBD |
-| Reasoning | GSM8K | Accuracy gain | TBD | TBD | TBD | TBD |
+| Layer | Dataset | Metric | Bifrost | Baseline | p-value | Effect size | Status |
+|---|---|---|---|---|---|---|---|
+| L1 | Synthetic tones (5 classes) | Test accuracy | 0.98 | chance = 0.20 | < 0.001 | very large | Sanity check; trivial frequency separation |
+| L1 | SpeechCommands (5 classes, pilot) | Test accuracy (3-fold CV) | 0.28 ± 0.08 | STFT mag = 0.35 ± 0.09 | 0.169 | small | **Not supported** |
+| L1 | SpeechCommands (5 classes, frozen) | Test accuracy (3-fold CV) | 0.20 ± 0.01 | chance = 0.20 | — | — | No discriminative structure in untrained Bifrost |
+| L2 | Switchboard | Boundary F1 | TBD | TBD | TBD | TBD | Pending |
+| L3 | EEG | Edge precision | TBD | TBD | TBD | TBD | Pending |
+| L4 | NSynth | Accuracy | TBD | TBD | TBD | TBD | Pending |
+| L5 | TimeBank | Relation accuracy | TBD | TBD | TBD | TBD | Pending |
+| L6 | NSynth | Invariance accuracy | TBD | TBD | TBD | TBD | Pending |
+| L7 | VCTK | DCI score | TBD | TBD | TBD | TBD | Pending |
+| Cross-modal | VGGSound | Recall@10 | TBD | TBD | TBD | TBD | Pending |
+| Reasoning | GSM8K | Accuracy gain | TBD | TBD | TBD | TBD | Pending |
 
 ### 6.2 Ablation studies
 
@@ -261,15 +263,21 @@ If the experiments support the hypotheses:
 - Phase coherence is a meaningful cross-modal signal.
 - Continuous representations complement token-based models.
 
-### 7.2 Limitations
+### 7.2 Null results and negative evidence
+
+The first empirical probe of the L1 hypothesis produced a null result on real audio. A fine-tuned Bifrost classifier did not outperform a simple STFT-magnitude baseline in a 3-fold pilot on SpeechCommands (mean accuracy 0.28 vs. 0.35; p = 0.169). The untrained Bifrost representation was at chance (0.20 ± 0.01), and larger-scale fine-tuning led to severe overfitting (train 0.99, test 0.16). These findings are reported as first-class evidence because they constrain the theory: either the current architecture does not naturally encode semantic category structure, or the chosen pooling, objective, and training regime are not aligned with the target task. The hypothesis remains open but is not supported by the current evidence.
+
+### 7.3 Limitations
 
 - Granger causality is predictive, not intervention-based.
 - TDA is computationally expensive for long sequences.
 - Disentanglement on real audio is difficult without strong supervision.
 - Symmetry detection may be brittle for non-musical signals.
 - The full seven-layer pipeline is large and requires significant compute.
+- The L1 pilot is underpowered (50 samples per class) and uses a single embedding-pooling strategy; a full pre-registered protocol is needed.
+- Early experiments were exploratory and involved post-hoc protocol adjustments (HARKing); the pre-registered baseline comparison is the first rigorous test.
 
-### 7.3 Future work
+### 7.4 Future work
 
 - Scale to the planned 3PB multimodal corpus.
 - Train the full pipeline end-to-end.
@@ -281,10 +289,11 @@ If the experiments support the hypotheses:
 
 ## 8. Conclusion
 
-- Bifrost presents a unified, positive research direction: building semantic representations from continuous signal structure.
+- Bifrost presents a unified research direction: building semantic representations from continuous signal structure.
 - The framework is grounded in physics and mathematics, and each layer is testable.
-- The paper will contribute empirical evidence for which layers successfully capture semantic structure.
-- The broader vision is a multimodal AI system that does not need to tokenize the world to understand it.
+- The first empirical probe of the phase-coherence hypothesis did not support the claim on real audio; we report this null result and the pre-registered protocol needed to test it decisively.
+- The paper contributes a methodology for rigorously validating continuous-spectral representations, an architecture, and a transparent account of where the theory currently stands.
+- The broader vision remains open: a multimodal AI system that does not need to tokenize the world to understand it, but this vision requires empirical validation rather than architectural assertion.
 
 ---
 
