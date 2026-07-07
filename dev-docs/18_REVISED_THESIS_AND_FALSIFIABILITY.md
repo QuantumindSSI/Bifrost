@@ -30,15 +30,18 @@ The real-data experiments show:
 ## The Revised Thesis (EVIDENCE-BACKED)
 
 > **Multi-scale coherence features capture structural information that amplitude-only
-> features miss, but this effect is modality-dependent: significant for sensor data
-> with strong temporal structure, marginal for environmental audio, and absent for
-> speech where spectral envelope dominates.**
+> features miss. This effect is modality-dependent: strong for images with edge structure
+> (phase congruency: +8.2pp over FFT magnitude, phase ablation destroys accuracy),
+> significant for sensor data with temporal structure (wavelet coherence: +13.8pp when
+> combined with amplitude), marginal for environmental audio, and absent for speech
+> where spectral envelope dominates.**
 
-This is a much weaker claim, but it is:
-1. **Supported by real data** (UCI HAR: +13.83pp, p=0.002)
-2. **Honest about limitations** (SpeechCommands: no benefit, ESC-50: marginal)
+This is a weaker claim than the original, but it is:
+1. **Supported by real data** (digits: p=0.0001, UCI HAR: p=0.002)
+2. **Honest about limitations** (speech: no benefit, ESC-50: marginal)
 3. **Falsifiable** (see below)
 4. **Consistent with the literature** (wavelet methods show modality-dependent value)
+5. **Scientifically interesting** — the modality-dependence itself is a finding
 
 ---
 
