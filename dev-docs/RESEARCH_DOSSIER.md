@@ -46,6 +46,7 @@ All documents in this directory are kept in the repository for peer review and r
 | `17_HONEST_ASSESSMENT_REAL_DATA.md` | Real-data experiments: honest negative/mixed results | Complete |
 | `18_REVISED_THESIS_AND_FALSIFIABILITY.md` | Revised thesis matching evidence, falsifiability criteria | Complete |
 | `19_LM_REASONING_EXPERIMENT.md` | Phase coherence vs spectral alpha in LLM hidden states | Complete |
+| `20_SPECTRAL_ALPHA_MONITORING_NEGATIVE.md` | Real-time alpha monitoring: negative results on 0.5B model | Complete |
 
 ---
 

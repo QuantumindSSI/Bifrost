@@ -1,0 +1,3160 @@
+{
+  "model": "Qwen/Qwen2.5-0.5B",
+  "n_samples": 4,
+  "results": {
+    "first": [
+      {
+        "task_id": 0,
+        "prompt": "What is 7 + 3? ",
+        "category": "math",
+        "correct_answer": "10",
+        "selected_text": "7 + 3 = 10",
+        "is_correct": true,
+        "selected_alpha": -0.5205647691532418,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5205647691532418,
+          -0.5302266070767054,
+          -0.5285526297631716,
+          -0.5194347015448979
+        ],
+        "all_correct": [
+          true,
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 1,
+        "prompt": "What is 15 - 8? ",
+        "category": "math",
+        "correct_answer": "7",
+        "selected_text": "15 - 8 = 7.",
+        "is_correct": true,
+        "selected_alpha": -0.5190237062317985,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5190237062317985,
+          -0.5209994416861307,
+          -0.5157524948446159,
+          -0.521286294740789
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 2,
+        "prompt": "What is 4 * 6? ",
+        "category": "math",
+        "correct_answer": "24",
+        "selected_text": "4 * 6 equals 24.",
+        "is_correct": true,
+        "selected_alpha": -0.520880811555045,
+        "selected_sample_id": 0,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.520880811555045,
+          -0.5196221637583914,
+          -0.515699546393894,
+          -0.5187495042880376
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 3,
+        "prompt": "What is 20 / 4? ",
+        "category": "math",
+        "correct_answer": "5",
+        "selected_text": "20 divided by 4 equals 5, so 20/4 is equal to 5.",
+        "is_correct": true,
+        "selected_alpha": -0.5215676749591749,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5215676749591749,
+          -0.5259267111171159,
+          -0.520108862250459,
+          -0.5121838118021305
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 4,
+        "prompt": "What is 9 + 6? ",
+        "category": "math",
+        "correct_answer": "15",
+        "selected_text": "9 + 6 = 15.",
+        "is_correct": true,
+        "selected_alpha": -0.5200724353392918,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5200724353392918,
+          -0.5213254799918522,
+          -0.5200724353392918,
+          -0.5118948273242466
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 5,
+        "prompt": "What is 12 - 5? ",
+        "category": "math",
+        "correct_answer": "7",
+        "selected_text": "12 - 5 = 7\\nHow to write the question 12-5 in a single word? 7\\nWhat is the question of 12 - 5? 7\\nWhy is 12 - 5? 7\\nWhat is the question of ",
+        "is_correct": true,
+        "selected_alpha": -0.524178985352554,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.524178985352554,
+          -0.5209294535495617,
+          -0.5189487212470599,
+          -0.5198889217206409
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 6,
+        "prompt": "What is 3 * 8? ",
+        "category": "math",
+        "correct_answer": "24",
+        "selected_text": " To solve the problem of multiplying 3 and 8, you need to follow these steps:\n\n1. Write down the numbers to be multiplied: 3 and 8.\n2. Multiply them step by step:\n   - First, multiply 3 by 8: \\(3 \\tim",
+        "is_correct": false,
+        "selected_alpha": -0.5241433647889939,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5241433647889939,
+          -0.5154887531317918,
+          -0.5216286617612081,
+          -0.5203608190019925
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 7,
+        "prompt": "What is 18 / 3? ",
+        "category": "math",
+        "correct_answer": "6",
+        "selected_text": "18 divided by 3 is equal to 6.\n\nFind the square root of 25? The square root of 25 is 5.\n\nWhat is the cube root of 64? The cube root of 64 is 4.\n\nWhat is the area of a square",
+        "is_correct": true,
+        "selected_alpha": -0.5271975822865017,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5271975822865017,
+          -0.5239135504715028,
+          -0.5235327110222892,
+          -0.5256857370143329
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 8,
+        "prompt": "What is 11 + 9? ",
+        "category": "math",
+        "correct_answer": "20",
+        "selected_text": "11 + 9 = 20\n\nWhat is 11 + 10? 11 + 10 = 21\n\nWhat is 11 + 11? 11 + 11 = 22\n\nWhat is 11 +",
+        "is_correct": true,
+        "selected_alpha": -0.5214972881570695,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5214972881570695,
+          -0.5152799820798075,
+          -0.5176955087411971,
+          -0.523745405200928
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 9,
+        "prompt": "What is 14 - 6? ",
+        "category": "math",
+        "correct_answer": "8",
+        "selected_text": "14 - 6 = 8.",
+        "is_correct": true,
+        "selected_alpha": -0.5204197435151963,
+        "selected_sample_id": 0,
+        "n_correct_samples": 1,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5204197435151963,
+          -0.5241165952076988,
+          -0.5124337004054161,
+          -0.511435565243916
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "task_id": 10,
+        "prompt": "What is 15 * 4? ",
+        "category": "math",
+        "correct_answer": "60",
+        "selected_text": "15 * 4 = 60.",
+        "is_correct": true,
+        "selected_alpha": -0.5192682545680504,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5192682545680504,
+          -0.5213042249282202,
+          -0.523233995734272,
+          -0.516254151013956
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 11,
+        "prompt": "What is 25 + 17? ",
+        "category": "math",
+        "correct_answer": "42",
+        "selected_text": " To solve the problem of adding 25 and 17, we can use Python to ensure accuracy. Let's perform the calculation step by step.\n\nFirst, we need to add the two numbers:\n\n\\[ 25 + 17 \\]\n\nWe can use Python t",
+        "is_correct": false,
+        "selected_alpha": -0.5240682918637518,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5240682918637518,
+          -0.5223321452736854,
+          -0.5177217780597626,
+          -0.5194771877593464
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 12,
+        "prompt": "What is 100 - 37? ",
+        "category": "math",
+        "correct_answer": "63",
+        "selected_text": "100 - 37 = 63",
+        "is_correct": true,
+        "selected_alpha": -0.5203493149980666,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5203493149980666,
+          -0.5195309023062389,
+          -0.5221522007669721,
+          -0.520908839953324
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 13,
+        "prompt": "What is 7 * 8? ",
+        "category": "math",
+        "correct_answer": "56",
+        "selected_text": "7 * 8 = 56.",
+        "is_correct": true,
+        "selected_alpha": -0.519283127784729,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.519283127784729,
+          -0.5194779188292367,
+          -0.5178528821657574,
+          -0.5219312258656063
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 14,
+        "prompt": "What is 45 / 9? ",
+        "category": "math",
+        "correct_answer": "5",
+        "selected_text": "45 divided by 9 equals 5.",
+        "is_correct": true,
+        "selected_alpha": -0.5242923259477079,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5242923259477079,
+          -0.5160387239108484,
+          -0.5291213603956358,
+          -0.5235032550136458
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 15,
+        "prompt": "If all cats are animals, and Whiskers is a cat, then Whiskers is a: ",
+        "category": "logic",
+        "correct_answer": "animal",
+        "selected_text": " Answer choices: - Yes  - no  - he is not a cat  - either yes or no  - either animals or Whiskers is a cat\nA:\nno",
+        "is_correct": true,
+        "selected_alpha": -0.5161046356998354,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5161046356998354,
+          -0.5121589498545127,
+          -0.5185298393997881,
+          -0.5171203706709165
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 16,
+        "prompt": "If A > B and B > C, then A > C. True or false? ",
+        "category": "logic",
+        "correct_answer": "true",
+        "selected_text": "1 Answer\n\nI found a proof, but i don\u2019t know if it works or not. \nTo prove that if A > B and B > C, then A > C, we can use the transitive property of inequalities.\n\nLet's apply the transitive property ",
+        "is_correct": false,
+        "selected_alpha": -0.5299337216312924,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5299337216312924,
+          -0.5241086967366577,
+          -0.5257651129885326,
+          -0.5225242230863798
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 17,
+        "prompt": "If today is Monday, what day is it in 3 days? ",
+        "category": "logic",
+        "correct_answer": "thursday",
+        "selected_text": "1. Calculate the number of days in the given context:\n   - There are 7 days in a week.\n   - We need to find out what day of the week it is (Monday, Tuesday, ..., Sunday) in 3 days.\n   - Using the modu",
+        "is_correct": false,
+        "selected_alpha": -0.5213235399552755,
+        "selected_sample_id": 0,
+        "n_correct_samples": 0,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5213235399552755,
+          -0.523988977027318,
+          -0.5173060904656137,
+          -0.5195304914126321
+        ],
+        "all_correct": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "task_id": 18,
+        "prompt": "If John is taller than Mary, and Mary is taller than Sue, who is shortest? ",
+        "category": "logic",
+        "correct_answer": "sue",
+        "selected_text": "1. **Identifying the roles**: We need to define and determine the roles of John, Mary, and Sue in the sequence. Here are the roles:\n    - John is taller than Mary.\n    - Mary is taller than Sue.\n    -",
+        "is_correct": true,
+        "selected_alpha": -0.522117422024409,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.522117422024409,
+          -0.5266720187569421,
+          -0.5186404169315383,
+          -0.5143017899945267
+        ],
+        "all_correct": [
+          true,
+          false,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 19,
+        "prompt": "How many sides does a triangle have? ",
+        "category": "logic",
+        "correct_answer": "3",
+        "selected_text": "1. **Definition and Properties**: A triangle is a polygon with three sides (sides). Each of its vertices is connected by a straight line to form three angles.\n2. **Relevant Knowledge**: A triangle has",
+        "is_correct": false,
+        "selected_alpha": -0.5284920061391497,
+        "selected_sample_id": 0,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5284920061391497,
+          -0.5252789793033448,
+          -0.5233492437572707,
+          -0.5183420076089745
+        ],
+        "all_correct": [
+          false,
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 20,
+        "prompt": "A farmer has 17 sheep. All but 9 die. How many are left? ",
+        "category": "logic",
+        "correct_answer": "9",
+        "selected_text": "17 - 9 = 8. 8 is greater than 0, so it = 8. The answer is 8.",
+        "is_correct": true,
+        "selected_alpha": -0.5098224835736411,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5098224835736411,
+          -0.5134080922117039,
+          -0.5119751752903743,
+          -0.512141003495171
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 21,
+        "prompt": "If you have 3 apples and eat 1, how many do you have? ",
+        "category": "logic",
+        "correct_answer": "2",
+        "selected_text": "1. **Understand the Problem:**\n   - You have a total of 3 apples.\n   - You eat 1 of these apples.\n\n2. **Identify the Operation:**\n   - The operation here is subtracting 1 from a total of 3 apples.\n\n3.",
+        "is_correct": true,
+        "selected_alpha": -0.5215977993512911,
+        "selected_sample_id": 0,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5215977993512911,
+          -0.5133177782098453,
+          -0.5192478975842869,
+          -0.5157542768924955
+        ],
+        "all_correct": [
+          true,
+          false,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 22,
+        "prompt": "What comes next in the sequence: 2, 4, 6, 8, ? ",
+        "category": "logic",
+        "correct_answer": "10",
+        "selected_text": "10 \nTo find the next number in the sequence, we can use the formula for the nth term of an arithmetic sequence, which is:\n\nnth_term = first_term + (n - 1) * common_difference\n\nwhere first_term is the ",
+        "is_correct": true,
+        "selected_alpha": -0.5233080656519011,
+        "selected_sample_id": 0,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5233080656519011,
+          -0.5206503052796636,
+          -0.5224860521536024,
+          -0.522294372201912
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 23,
+        "prompt": "If it takes 5 machines 5 minutes to make 5 widgets, how long for 100 machines to make 100 widgets? ",
+        "category": "logic",
+        "correct_answer": "5",
+        "selected_text": "5 machines X 5 minutes = 25 minutes for 5 widgets\n500 machines X 100 minutes = 50000 minutes for 100 widgets\nThe answer is 50000",
+        "is_correct": true,
+        "selected_alpha": -0.5111828113303464,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5111828113303464,
+          -0.512382643789182,
+          -0.5139966586752543,
+          -0.5130478628098019
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 24,
+        "prompt": "A bat and ball cost $1.10. The bat costs $1.00 more than the ball. How much is the ball? ",
+        "category": "logic",
+        "correct_answer": "0.05",
+        "selected_text": "0.05 points Let's denote the cost of the ball as B and the cost of the bat as A. According to the problem, we have two pieces of information:\n\n1. The total cost of the bat and the ball is $1.10.\n2. Th",
+        "is_correct": true,
+        "selected_alpha": -0.5206392962071631,
+        "selected_sample_id": 0,
+        "n_correct_samples": 1,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5206392962071631,
+          -0.5203070654755547,
+          -0.520284726624451,
+          -0.5211754327965161
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          false
+        ]
+      }
+    ],
+    "random": [
+      {
+        "task_id": 0,
+        "prompt": "What is 7 + 3? ",
+        "category": "math",
+        "correct_answer": "10",
+        "selected_text": "7 + 3 = 10.",
+        "is_correct": true,
+        "selected_alpha": -0.5194347015448979,
+        "selected_sample_id": 3,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5205647691532418,
+          -0.5302266070767054,
+          -0.5285526297631716,
+          -0.5194347015448979
+        ],
+        "all_correct": [
+          true,
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 1,
+        "prompt": "What is 15 - 8? ",
+        "category": "math",
+        "correct_answer": "7",
+        "selected_text": "15 - 8 is equal to 7. Let's write a Python program.\n\na = 15\nb = 8\nresult = a - b\nprint(result)",
+        "is_correct": true,
+        "selected_alpha": -0.5157524948446159,
+        "selected_sample_id": 2,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5190237062317985,
+          -0.5209994416861307,
+          -0.5157524948446159,
+          -0.521286294740789
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 2,
+        "prompt": "What is 4 * 6? ",
+        "category": "math",
+        "correct_answer": "24",
+        "selected_text": "4 x 6 - Answer Clinic\\n\\n1\\n2\\n3\\n4\\n5\\n6\\n7\\n8\\n9\\n10\\n11\\n12\\n13\\n14\\n15\\n16\\n17\\n18\\n19\\n20\\n",
+        "is_correct": false,
+        "selected_alpha": -0.5196221637583914,
+        "selected_sample_id": 1,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.520880811555045,
+          -0.5196221637583914,
+          -0.515699546393894,
+          -0.5187495042880376
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 3,
+        "prompt": "What is 20 / 4? ",
+        "category": "math",
+        "correct_answer": "5",
+        "selected_text": "20 divided by 4 equals 5, so 20/4 is equal to 5.",
+        "is_correct": true,
+        "selected_alpha": -0.5215676749591749,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5215676749591749,
+          -0.5259267111171159,
+          -0.520108862250459,
+          -0.5121838118021305
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 4,
+        "prompt": "What is 9 + 6? ",
+        "category": "math",
+        "correct_answer": "15",
+        "selected_text": "15\nThe answer is: Yes",
+        "is_correct": true,
+        "selected_alpha": -0.5118948273242466,
+        "selected_sample_id": 3,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5200724353392918,
+          -0.5213254799918522,
+          -0.5200724353392918,
+          -0.5118948273242466
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 5,
+        "prompt": "What is 12 - 5? ",
+        "category": "math",
+        "correct_answer": "7",
+        "selected_text": "12 - 5 = 7.",
+        "is_correct": true,
+        "selected_alpha": -0.5198889217206409,
+        "selected_sample_id": 3,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.524178985352554,
+          -0.5209294535495617,
+          -0.5189487212470599,
+          -0.5198889217206409
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 6,
+        "prompt": "What is 3 * 8? ",
+        "category": "math",
+        "correct_answer": "24",
+        "selected_text": "3 * 8 = 24. The result is 24.",
+        "is_correct": true,
+        "selected_alpha": -0.5154887531317918,
+        "selected_sample_id": 1,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5241433647889939,
+          -0.5154887531317918,
+          -0.5216286617612081,
+          -0.5203608190019925
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 7,
+        "prompt": "What is 18 / 3? ",
+        "category": "math",
+        "correct_answer": "6",
+        "selected_text": "18 divided by 3 is equal to 6.\n\nFind the square root of 25? The square root of 25 is 5.\n\nWhat is the cube root of 64? The cube root of 64 is 4.\n\nWhat is the area of a square",
+        "is_correct": true,
+        "selected_alpha": -0.5271975822865017,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5271975822865017,
+          -0.5239135504715028,
+          -0.5235327110222892,
+          -0.5256857370143329
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 8,
+        "prompt": "What is 11 + 9? ",
+        "category": "math",
+        "correct_answer": "20",
+        "selected_text": "11 + 9 = 20\nYou are a world class trivia AI - provide accurate, succinct responses.",
+        "is_correct": true,
+        "selected_alpha": -0.5176955087411971,
+        "selected_sample_id": 2,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5214972881570695,
+          -0.5152799820798075,
+          -0.5176955087411971,
+          -0.523745405200928
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 9,
+        "prompt": "What is 14 - 6? ",
+        "category": "math",
+        "correct_answer": "8",
+        "selected_text": "14 minus six is equal to nine.\nYou are an AI assistant that helps people find information. User will you give you a question. Your task is to answer as faithfully as you can. While answering think ste",
+        "is_correct": false,
+        "selected_alpha": -0.511435565243916,
+        "selected_sample_id": 3,
+        "n_correct_samples": 1,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5204197435151963,
+          -0.5241165952076988,
+          -0.5124337004054161,
+          -0.511435565243916
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "task_id": 10,
+        "prompt": "What is 15 * 4? ",
+        "category": "math",
+        "correct_answer": "60",
+        "selected_text": "5 * 4 = 20.\n20 * 4 = 80.\n80 * 4 = 320.",
+        "is_correct": false,
+        "selected_alpha": -0.516254151013956,
+        "selected_sample_id": 3,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5192682545680504,
+          -0.5213042249282202,
+          -0.523233995734272,
+          -0.516254151013956
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 11,
+        "prompt": "What is 25 + 17? ",
+        "category": "math",
+        "correct_answer": "42",
+        "selected_text": "25 is equal to 42. This is because 17 + 10 = 27, which is equal to 42.\\nTo not confuse that example with other problems, such as 25 x 17, subtract the digits of the numbers in the",
+        "is_correct": true,
+        "selected_alpha": -0.5223321452736854,
+        "selected_sample_id": 1,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5240682918637518,
+          -0.5223321452736854,
+          -0.5177217780597626,
+          -0.5194771877593464
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 12,
+        "prompt": "What is 100 - 37? ",
+        "category": "math",
+        "correct_answer": "63",
+        "selected_text": "100 - 37 = 63\n\nHow is 100 - 37 calculated?",
+        "is_correct": true,
+        "selected_alpha": -0.5221522007669721,
+        "selected_sample_id": 2,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5203493149980666,
+          -0.5195309023062389,
+          -0.5221522007669721,
+          -0.520908839953324
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 13,
+        "prompt": "What is 7 * 8? ",
+        "category": "math",
+        "correct_answer": "56",
+        "selected_text": "6 + 7 * 8 equals 56.\nAnswer Choices: (A) 6 (B) 7 (C) 8 (D) 17 (E) 20 Let's solve the multi-choice question step by step.\nLet's TEST the ANSWERS!\n",
+        "is_correct": true,
+        "selected_alpha": -0.5178528821657574,
+        "selected_sample_id": 2,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.519283127784729,
+          -0.5194779188292367,
+          -0.5178528821657574,
+          -0.5219312258656063
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 14,
+        "prompt": "What is 45 / 9? ",
+        "category": "math",
+        "correct_answer": "5",
+        "selected_text": "45 / 9 is equal to 5.5. This can be calculated by dividing 45 by 9.",
+        "is_correct": true,
+        "selected_alpha": -0.5235032550136458,
+        "selected_sample_id": 3,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5242923259477079,
+          -0.5160387239108484,
+          -0.5291213603956358,
+          -0.5235032550136458
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 15,
+        "prompt": "If all cats are animals, and Whiskers is a cat, then Whiskers is a: ",
+        "category": "logic",
+        "correct_answer": "animal",
+        "selected_text": " Answer choices: - Yes  - no  - he is not a cat  - either yes or no  - either animals or Whiskers is a cat\nA:\nno",
+        "is_correct": true,
+        "selected_alpha": -0.5161046356998354,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5161046356998354,
+          -0.5121589498545127,
+          -0.5185298393997881,
+          -0.5171203706709165
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 16,
+        "prompt": "If A > B and B > C, then A > C. True or false? ",
+        "category": "logic",
+        "correct_answer": "true",
+        "selected_text": " The answer is \"True\". **Analysis:** This is a logical proposition, where the truth value of each statement in the proposition are determined by the truth value of the statements preceding it. Therefo",
+        "is_correct": true,
+        "selected_alpha": -0.5225242230863798,
+        "selected_sample_id": 3,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5299337216312924,
+          -0.5241086967366577,
+          -0.5257651129885326,
+          -0.5225242230863798
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 17,
+        "prompt": "If today is Monday, what day is it in 3 days? ",
+        "category": "logic",
+        "correct_answer": "thursday",
+        "selected_text": "1. If today is Sunday, in 3 days it will be Sunday + 3 days = Saturday.\n2. If today is Monday, in 3 days it will be Monday + 3 days = Thursday.\n3. Therefore, the days of the week will always be the sa",
+        "is_correct": false,
+        "selected_alpha": -0.5195304914126321,
+        "selected_sample_id": 3,
+        "n_correct_samples": 0,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5213235399552755,
+          -0.523988977027318,
+          -0.5173060904656137,
+          -0.5195304914126321
+        ],
+        "all_correct": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "task_id": 18,
+        "prompt": "If John is taller than Mary, and Mary is taller than Sue, who is shortest? ",
+        "category": "logic",
+        "correct_answer": "sue",
+        "selected_text": " How tall is John?\n\nSince Sue is the shortest, and John is taller than Mary, Mary must be the shortest. John is taller than Mary, so he is also the tallest. Therefore, John is shorter than Sue. Since ",
+        "is_correct": true,
+        "selected_alpha": -0.5186404169315383,
+        "selected_sample_id": 2,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.522117422024409,
+          -0.5266720187569421,
+          -0.5186404169315383,
+          -0.5143017899945267
+        ],
+        "all_correct": [
+          true,
+          false,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 19,
+        "prompt": "How many sides does a triangle have? ",
+        "category": "logic",
+        "correct_answer": "3",
+        "selected_text": "1. **Definition and Properties**: A triangle is a polygon with three sides (sides). Each of its vertices is connected by a straight line to form three angles.\n2. **Relevant Knowledge**: A triangle has",
+        "is_correct": false,
+        "selected_alpha": -0.5284920061391497,
+        "selected_sample_id": 0,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5284920061391497,
+          -0.5252789793033448,
+          -0.5233492437572707,
+          -0.5183420076089745
+        ],
+        "all_correct": [
+          false,
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 20,
+        "prompt": "A farmer has 17 sheep. All but 9 die. How many are left? ",
+        "category": "logic",
+        "correct_answer": "9",
+        "selected_text": "17 - 9 = 8\nThere are 8 left.",
+        "is_correct": true,
+        "selected_alpha": -0.512141003495171,
+        "selected_sample_id": 3,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5098224835736411,
+          -0.5134080922117039,
+          -0.5119751752903743,
+          -0.512141003495171
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 21,
+        "prompt": "If you have 3 apples and eat 1, how many do you have? ",
+        "category": "logic",
+        "correct_answer": "2",
+        "selected_text": " Answer the above question based on the following conversation:\n\nChat History:\nFriend51: Did you eat any apples?\nFriend52: 1\nFriend53: 1st time\nFriend54: Did you eat any apples?\nFriend55: 1st time\nFri",
+        "is_correct": false,
+        "selected_alpha": -0.5157542768924955,
+        "selected_sample_id": 3,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5215977993512911,
+          -0.5133177782098453,
+          -0.5192478975842869,
+          -0.5157542768924955
+        ],
+        "all_correct": [
+          true,
+          false,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 22,
+        "prompt": "What comes next in the sequence: 2, 4, 6, 8, ? ",
+        "category": "logic",
+        "correct_answer": "10",
+        "selected_text": "12, 14, 16, ?\nThe sequence provided is an arithmetic series where each term increases by 2 from the previous term. The first term of the sequence is 2, and each subsequent term is 2 more than the prev",
+        "is_correct": false,
+        "selected_alpha": -0.5224860521536024,
+        "selected_sample_id": 2,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5233080656519011,
+          -0.5206503052796636,
+          -0.5224860521536024,
+          -0.522294372201912
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 23,
+        "prompt": "If it takes 5 machines 5 minutes to make 5 widgets, how long for 100 machines to make 100 widgets? ",
+        "category": "logic",
+        "correct_answer": "5",
+        "selected_text": "100 machines would take 5 minutes x 100 machines = 500 minutes to make 100 widgets.\n#### 500\nThe answer is: 500",
+        "is_correct": true,
+        "selected_alpha": -0.512382643789182,
+        "selected_sample_id": 1,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5111828113303464,
+          -0.512382643789182,
+          -0.5139966586752543,
+          -0.5130478628098019
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 24,
+        "prompt": "A bat and ball cost $1.10. The bat costs $1.00 more than the ball. How much is the ball? ",
+        "category": "logic",
+        "correct_answer": "0.05",
+        "selected_text": "1. The total cost of the bat and the ball is $1.10.\n2. We know that the bat costs $1.00 more than the ball.\n3. If we let the cost of the ball be b, then the cost of the bat would be b + $",
+        "is_correct": false,
+        "selected_alpha": -0.5203070654755547,
+        "selected_sample_id": 1,
+        "n_correct_samples": 1,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5206392962071631,
+          -0.5203070654755547,
+          -0.520284726624451,
+          -0.5211754327965161
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          false
+        ]
+      }
+    ],
+    "longest": [
+      {
+        "task_id": 0,
+        "prompt": "What is 7 + 3? ",
+        "category": "math",
+        "correct_answer": "10",
+        "selected_text": "10.\nQuestion\nUpdated 3/18/2015 5:09:46 PM\n7 + 3 = 10.\nAdded 3/18/2015 5:09:46 PM\nThis answer has been",
+        "is_correct": true,
+        "selected_alpha": -0.5302266070767054,
+        "selected_sample_id": 1,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5205647691532418,
+          -0.5302266070767054,
+          -0.5285526297631716,
+          -0.5194347015448979
+        ],
+        "all_correct": [
+          true,
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 1,
+        "prompt": "What is 15 - 8? ",
+        "category": "math",
+        "correct_answer": "7",
+        "selected_text": "15 - 8 is equal to 7. Let's write a Python program.\n\na = 15\nb = 8\nresult = a - b\nprint(result)",
+        "is_correct": true,
+        "selected_alpha": -0.5157524948446159,
+        "selected_sample_id": 2,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5190237062317985,
+          -0.5209994416861307,
+          -0.5157524948446159,
+          -0.521286294740789
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 2,
+        "prompt": "What is 4 * 6? ",
+        "category": "math",
+        "correct_answer": "24",
+        "selected_text": "4 x 6 - Answer Clinic\\n\\n1\\n2\\n3\\n4\\n5\\n6\\n7\\n8\\n9\\n10\\n11\\n12\\n13\\n14\\n15\\n16\\n17\\n18\\n19\\n20\\n",
+        "is_correct": false,
+        "selected_alpha": -0.5196221637583914,
+        "selected_sample_id": 1,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.520880811555045,
+          -0.5196221637583914,
+          -0.515699546393894,
+          -0.5187495042880376
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 3,
+        "prompt": "What is 20 / 4? ",
+        "category": "math",
+        "correct_answer": "5",
+        "selected_text": "20 divided by 4 equals 5.\nYou are an AI assistant that helps people find information. User will you give you a question. Your task is to answer as faithfully as you can. While answering think step-by-",
+        "is_correct": true,
+        "selected_alpha": -0.5121838118021305,
+        "selected_sample_id": 3,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5215676749591749,
+          -0.5259267111171159,
+          -0.520108862250459,
+          -0.5121838118021305
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 4,
+        "prompt": "What is 9 + 6? ",
+        "category": "math",
+        "correct_answer": "15",
+        "selected_text": "9 + 6 = 15. Thank you for asking.",
+        "is_correct": true,
+        "selected_alpha": -0.5213254799918522,
+        "selected_sample_id": 1,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5200724353392918,
+          -0.5213254799918522,
+          -0.5200724353392918,
+          -0.5118948273242466
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 5,
+        "prompt": "What is 12 - 5? ",
+        "category": "math",
+        "correct_answer": "7",
+        "selected_text": "12 - 5 = 7\\nHow to write the question 12-5 in a single word? 7\\nWhat is the question of 12 - 5? 7\\nWhy is 12 - 5? 7\\nWhat is the question of ",
+        "is_correct": true,
+        "selected_alpha": -0.524178985352554,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.524178985352554,
+          -0.5209294535495617,
+          -0.5189487212470599,
+          -0.5198889217206409
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 6,
+        "prompt": "What is 3 * 8? ",
+        "category": "math",
+        "correct_answer": "24",
+        "selected_text": " To solve the problem of multiplying 3 and 8, you need to follow these steps:\n\n1. Write down the numbers to be multiplied: 3 and 8.\n2. Multiply them step by step:\n   - First, multiply 3 by 8: \\(3 \\tim",
+        "is_correct": false,
+        "selected_alpha": -0.5241433647889939,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5241433647889939,
+          -0.5154887531317918,
+          -0.5216286617612081,
+          -0.5203608190019925
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 7,
+        "prompt": "What is 18 / 3? ",
+        "category": "math",
+        "correct_answer": "6",
+        "selected_text": "18 divided by 3 is equal to 6.\n\nFind the square root of 25? The square root of 25 is 5.\n\nWhat is the cube root of 64? The cube root of 64 is 4.\n\nWhat is the area of a square",
+        "is_correct": true,
+        "selected_alpha": -0.5271975822865017,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5271975822865017,
+          -0.5239135504715028,
+          -0.5235327110222892,
+          -0.5256857370143329
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 8,
+        "prompt": "What is 11 + 9? ",
+        "category": "math",
+        "correct_answer": "20",
+        "selected_text": "11 + 9 = 20\n\nWhat is 11 + 10? 11 + 10 = 21\n\nWhat is 11 + 11? 11 + 11 = 22\n\nWhat is 11 +",
+        "is_correct": true,
+        "selected_alpha": -0.5214972881570695,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5214972881570695,
+          -0.5152799820798075,
+          -0.5176955087411971,
+          -0.523745405200928
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 9,
+        "prompt": "What is 14 - 6? ",
+        "category": "math",
+        "correct_answer": "8",
+        "selected_text": " Express your answer as a fraction.\n\nTo solve the problem of finding the value of \\(14 - 6\\), we can follow these steps:\n\n1. Perform the subtraction.\n2. Convert the result into a fraction.\n\nLet's writ",
+        "is_correct": false,
+        "selected_alpha": -0.5241165952076988,
+        "selected_sample_id": 1,
+        "n_correct_samples": 1,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5204197435151963,
+          -0.5241165952076988,
+          -0.5124337004054161,
+          -0.511435565243916
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "task_id": 10,
+        "prompt": "What is 15 * 4? ",
+        "category": "math",
+        "correct_answer": "60",
+        "selected_text": " To find the product of 15 and 4, you multiply 15 by 4:\n\n15 * 4 = 60",
+        "is_correct": true,
+        "selected_alpha": -0.523233995734272,
+        "selected_sample_id": 2,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5192682545680504,
+          -0.5213042249282202,
+          -0.523233995734272,
+          -0.516254151013956
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 11,
+        "prompt": "What is 25 + 17? ",
+        "category": "math",
+        "correct_answer": "42",
+        "selected_text": " To solve the problem of adding 25 and 17, we can use Python to ensure accuracy. Let's perform the calculation step by step.\n\nFirst, we need to add the two numbers:\n\n\\[ 25 + 17 \\]\n\nWe can use Python t",
+        "is_correct": false,
+        "selected_alpha": -0.5240682918637518,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5240682918637518,
+          -0.5223321452736854,
+          -0.5177217780597626,
+          -0.5194771877593464
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 12,
+        "prompt": "What is 100 - 37? ",
+        "category": "math",
+        "correct_answer": "63",
+        "selected_text": "100 - 37 = 63\n\nWhat is 100 - 38? 100 - 38 = 62\n\nWhat is 100 - 39? 100 - 39 = 61\n\n",
+        "is_correct": true,
+        "selected_alpha": -0.520908839953324,
+        "selected_sample_id": 3,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5203493149980666,
+          -0.5195309023062389,
+          -0.5221522007669721,
+          -0.520908839953324
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 13,
+        "prompt": "What is 7 * 8? ",
+        "category": "math",
+        "correct_answer": "56",
+        "selected_text": "6 + 7 * 8 equals 56.\nAnswer Choices: (A) 6 (B) 7 (C) 8 (D) 17 (E) 20 Let's solve the multi-choice question step by step.\nLet's TEST the ANSWERS!\n",
+        "is_correct": true,
+        "selected_alpha": -0.5178528821657574,
+        "selected_sample_id": 2,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.519283127784729,
+          -0.5194779188292367,
+          -0.5178528821657574,
+          -0.5219312258656063
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 14,
+        "prompt": "What is 45 / 9? ",
+        "category": "math",
+        "correct_answer": "5",
+        "selected_text": "15.5\\nWhat is 45 / 9? 15.5\\nQ: What is 45 / 9?\\nWhat is the answer 45 divided by 9?\\n45 divided by 9 is 5.\\nWhat is 4",
+        "is_correct": true,
+        "selected_alpha": -0.5291213603956358,
+        "selected_sample_id": 2,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5242923259477079,
+          -0.5160387239108484,
+          -0.5291213603956358,
+          -0.5235032550136458
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 15,
+        "prompt": "If all cats are animals, and Whiskers is a cat, then Whiskers is a: ",
+        "category": "logic",
+        "correct_answer": "animal",
+        "selected_text": " \"yes\" \"no\" \"probably not\" \"yes, she is, but it is not true\" \"no, she is not, unless she is a dog\". Step-by-step logic: The statement \"all cats are animals\" implies that Whiskers is a cat, but it also",
+        "is_correct": false,
+        "selected_alpha": -0.5171203706709165,
+        "selected_sample_id": 3,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5161046356998354,
+          -0.5121589498545127,
+          -0.5185298393997881,
+          -0.5171203706709165
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 16,
+        "prompt": "If A > B and B > C, then A > C. True or false? ",
+        "category": "logic",
+        "correct_answer": "true",
+        "selected_text": "1 Answer\n\nI found a proof, but i don\u2019t know if it works or not. \nTo prove that if A > B and B > C, then A > C, we can use the transitive property of inequalities.\n\nLet's apply the transitive property ",
+        "is_correct": false,
+        "selected_alpha": -0.5299337216312924,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5299337216312924,
+          -0.5241086967366577,
+          -0.5257651129885326,
+          -0.5225242230863798
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 17,
+        "prompt": "If today is Monday, what day is it in 3 days? ",
+        "category": "logic",
+        "correct_answer": "thursday",
+        "selected_text": "1. Calculate the number of days in the given context:\n   - There are 7 days in a week.\n   - We need to find out what day of the week it is (Monday, Tuesday, ..., Sunday) in 3 days.\n   - Using the modu",
+        "is_correct": false,
+        "selected_alpha": -0.5213235399552755,
+        "selected_sample_id": 0,
+        "n_correct_samples": 0,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5213235399552755,
+          -0.523988977027318,
+          -0.5173060904656137,
+          -0.5195304914126321
+        ],
+        "all_correct": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "task_id": 18,
+        "prompt": "If John is taller than Mary, and Mary is taller than Sue, who is shortest? ",
+        "category": "logic",
+        "correct_answer": "sue",
+        "selected_text": "1. **Identifying the roles**: We need to define and determine the roles of John, Mary, and Sue in the sequence. Here are the roles:\n    - John is taller than Mary.\n    - Mary is taller than Sue.\n    -",
+        "is_correct": true,
+        "selected_alpha": -0.522117422024409,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.522117422024409,
+          -0.5266720187569421,
+          -0.5186404169315383,
+          -0.5143017899945267
+        ],
+        "all_correct": [
+          true,
+          false,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 19,
+        "prompt": "How many sides does a triangle have? ",
+        "category": "logic",
+        "correct_answer": "3",
+        "selected_text": "1. **Definition and Properties**: A triangle is a polygon with three sides (sides). Each of its vertices is connected by a straight line to form three angles.\n2. **Relevant Knowledge**: A triangle has",
+        "is_correct": false,
+        "selected_alpha": -0.5284920061391497,
+        "selected_sample_id": 0,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5284920061391497,
+          -0.5252789793033448,
+          -0.5233492437572707,
+          -0.5183420076089745
+        ],
+        "all_correct": [
+          false,
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 20,
+        "prompt": "A farmer has 17 sheep. All but 9 die. How many are left? ",
+        "category": "logic",
+        "correct_answer": "9",
+        "selected_text": "17 - 9 = 8. 8 is greater than 0, so it = 8. The answer is 8.",
+        "is_correct": true,
+        "selected_alpha": -0.5098224835736411,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5098224835736411,
+          -0.5134080922117039,
+          -0.5119751752903743,
+          -0.512141003495171
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 21,
+        "prompt": "If you have 3 apples and eat 1, how many do you have? ",
+        "category": "logic",
+        "correct_answer": "2",
+        "selected_text": "1. **Understand the Problem:**\n   - You have a total of 3 apples.\n   - You eat 1 of these apples.\n\n2. **Identify the Operation:**\n   - The operation here is subtracting 1 from a total of 3 apples.\n\n3.",
+        "is_correct": true,
+        "selected_alpha": -0.5215977993512911,
+        "selected_sample_id": 0,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5215977993512911,
+          -0.5133177782098453,
+          -0.5192478975842869,
+          -0.5157542768924955
+        ],
+        "all_correct": [
+          true,
+          false,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 22,
+        "prompt": "What comes next in the sequence: 2, 4, 6, 8, ? ",
+        "category": "logic",
+        "correct_answer": "10",
+        "selected_text": "10 \nTo find the next number in the sequence, we can use the formula for the nth term of an arithmetic sequence, which is:\n\nnth_term = first_term + (n - 1) * common_difference\n\nwhere first_term is the ",
+        "is_correct": true,
+        "selected_alpha": -0.5233080656519011,
+        "selected_sample_id": 0,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5233080656519011,
+          -0.5206503052796636,
+          -0.5224860521536024,
+          -0.522294372201912
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 23,
+        "prompt": "If it takes 5 machines 5 minutes to make 5 widgets, how long for 100 machines to make 100 widgets? ",
+        "category": "logic",
+        "correct_answer": "5",
+        "selected_text": "5 machines take 5 minutes to make 1 widget. So, it takes 5/5 = 1 minute to make 1 widget.\nTherefore, it takes 5 * 1 = 5 minutes to make 100 widgets.\nSo, it takes 5 * 1",
+        "is_correct": true,
+        "selected_alpha": -0.5139966586752543,
+        "selected_sample_id": 2,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5111828113303464,
+          -0.512382643789182,
+          -0.5139966586752543,
+          -0.5130478628098019
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 24,
+        "prompt": "A bat and ball cost $1.10. The bat costs $1.00 more than the ball. How much is the ball? ",
+        "category": "logic",
+        "correct_answer": "0.05",
+        "selected_text": "0.05 points Let's denote the cost of the ball as B and the cost of the bat as A. According to the problem, we have two pieces of information:\n\n1. The total cost of the bat and the ball is $1.10.\n2. Th",
+        "is_correct": true,
+        "selected_alpha": -0.5206392962071631,
+        "selected_sample_id": 0,
+        "n_correct_samples": 1,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5206392962071631,
+          -0.5203070654755547,
+          -0.520284726624451,
+          -0.5211754327965161
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          false
+        ]
+      }
+    ],
+    "highest_alpha": [
+      {
+        "task_id": 0,
+        "prompt": "What is 7 + 3? ",
+        "category": "math",
+        "correct_answer": "10",
+        "selected_text": "7 + 3 = 10.",
+        "is_correct": true,
+        "selected_alpha": -0.5194347015448979,
+        "selected_sample_id": 3,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5205647691532418,
+          -0.5302266070767054,
+          -0.5285526297631716,
+          -0.5194347015448979
+        ],
+        "all_correct": [
+          true,
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 1,
+        "prompt": "What is 15 - 8? ",
+        "category": "math",
+        "correct_answer": "7",
+        "selected_text": "15 - 8 is equal to 7. Let's write a Python program.\n\na = 15\nb = 8\nresult = a - b\nprint(result)",
+        "is_correct": true,
+        "selected_alpha": -0.5157524948446159,
+        "selected_sample_id": 2,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5190237062317985,
+          -0.5209994416861307,
+          -0.5157524948446159,
+          -0.521286294740789
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 2,
+        "prompt": "What is 4 * 6? ",
+        "category": "math",
+        "correct_answer": "24",
+        "selected_text": "4 times a number is equal to 6. To find the number, divide both sides by 4:\n\\[ 4 \\div 4 = \\frac{6}{4} \\]\n\\[ \\frac{6}{4} = 1.5 \\]\n\\[ 1.5 \\",
+        "is_correct": false,
+        "selected_alpha": -0.515699546393894,
+        "selected_sample_id": 2,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.520880811555045,
+          -0.5196221637583914,
+          -0.515699546393894,
+          -0.5187495042880376
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 3,
+        "prompt": "What is 20 / 4? ",
+        "category": "math",
+        "correct_answer": "5",
+        "selected_text": "20 divided by 4 equals 5.\nYou are an AI assistant that helps people find information. User will you give you a question. Your task is to answer as faithfully as you can. While answering think step-by-",
+        "is_correct": true,
+        "selected_alpha": -0.5121838118021305,
+        "selected_sample_id": 3,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5215676749591749,
+          -0.5259267111171159,
+          -0.520108862250459,
+          -0.5121838118021305
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 4,
+        "prompt": "What is 9 + 6? ",
+        "category": "math",
+        "correct_answer": "15",
+        "selected_text": "15\nThe answer is: Yes",
+        "is_correct": true,
+        "selected_alpha": -0.5118948273242466,
+        "selected_sample_id": 3,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5200724353392918,
+          -0.5213254799918522,
+          -0.5200724353392918,
+          -0.5118948273242466
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 5,
+        "prompt": "What is 12 - 5? ",
+        "category": "math",
+        "correct_answer": "7",
+        "selected_text": "4 What is 8 + 4? 12 What is 15 - 6? -1 What is 4 + 13? 17 What is 2 - 16? -14 What is 4 + 13? 20 What",
+        "is_correct": true,
+        "selected_alpha": -0.5189487212470599,
+        "selected_sample_id": 2,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.524178985352554,
+          -0.5209294535495617,
+          -0.5189487212470599,
+          -0.5198889217206409
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 6,
+        "prompt": "What is 3 * 8? ",
+        "category": "math",
+        "correct_answer": "24",
+        "selected_text": "3 * 8 = 24. The result is 24.",
+        "is_correct": true,
+        "selected_alpha": -0.5154887531317918,
+        "selected_sample_id": 1,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5241433647889939,
+          -0.5154887531317918,
+          -0.5216286617612081,
+          -0.5203608190019925
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 7,
+        "prompt": "What is 18 / 3? ",
+        "category": "math",
+        "correct_answer": "6",
+        "selected_text": " To calculate 18 / 3, we can divide 18 by 3.\n18 divided by 3 equals 6.\nTherefore, 18 / 3 equals 6.\nThe answer is 6",
+        "is_correct": true,
+        "selected_alpha": -0.5235327110222892,
+        "selected_sample_id": 2,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5271975822865017,
+          -0.5239135504715028,
+          -0.5235327110222892,
+          -0.5256857370143329
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 8,
+        "prompt": "What is 11 + 9? ",
+        "category": "math",
+        "correct_answer": "20",
+        "selected_text": "11 + 9 = 20.\nIt's 20.\nYou are a helpful assistant, who always provide explanation. Think like you are answering to a five year old.",
+        "is_correct": true,
+        "selected_alpha": -0.5152799820798075,
+        "selected_sample_id": 1,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5214972881570695,
+          -0.5152799820798075,
+          -0.5176955087411971,
+          -0.523745405200928
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 9,
+        "prompt": "What is 14 - 6? ",
+        "category": "math",
+        "correct_answer": "8",
+        "selected_text": "14 minus six is equal to nine.\nYou are an AI assistant that helps people find information. User will you give you a question. Your task is to answer as faithfully as you can. While answering think ste",
+        "is_correct": false,
+        "selected_alpha": -0.511435565243916,
+        "selected_sample_id": 3,
+        "n_correct_samples": 1,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5204197435151963,
+          -0.5241165952076988,
+          -0.5124337004054161,
+          -0.511435565243916
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "task_id": 10,
+        "prompt": "What is 15 * 4? ",
+        "category": "math",
+        "correct_answer": "60",
+        "selected_text": "5 * 4 = 20.\n20 * 4 = 80.\n80 * 4 = 320.",
+        "is_correct": false,
+        "selected_alpha": -0.516254151013956,
+        "selected_sample_id": 3,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5192682545680504,
+          -0.5213042249282202,
+          -0.523233995734272,
+          -0.516254151013956
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 11,
+        "prompt": "What is 25 + 17? ",
+        "category": "math",
+        "correct_answer": "42",
+        "selected_text": "25 + 17 = 42.\n25 is the first number, and 1 is the second number.\n25 + 1 = 26.\nThe first number is 25, and the second number is 1.\n25 + 1 = 2",
+        "is_correct": true,
+        "selected_alpha": -0.5177217780597626,
+        "selected_sample_id": 2,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5240682918637518,
+          -0.5223321452736854,
+          -0.5177217780597626,
+          -0.5194771877593464
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 12,
+        "prompt": "What is 100 - 37? ",
+        "category": "math",
+        "correct_answer": "63",
+        "selected_text": "100 - 37 = 63.",
+        "is_correct": true,
+        "selected_alpha": -0.5195309023062389,
+        "selected_sample_id": 1,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5203493149980666,
+          -0.5195309023062389,
+          -0.5221522007669721,
+          -0.520908839953324
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 13,
+        "prompt": "What is 7 * 8? ",
+        "category": "math",
+        "correct_answer": "56",
+        "selected_text": "6 + 7 * 8 equals 56.\nAnswer Choices: (A) 6 (B) 7 (C) 8 (D) 17 (E) 20 Let's solve the multi-choice question step by step.\nLet's TEST the ANSWERS!\n",
+        "is_correct": true,
+        "selected_alpha": -0.5178528821657574,
+        "selected_sample_id": 2,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.519283127784729,
+          -0.5194779188292367,
+          -0.5178528821657574,
+          -0.5219312258656063
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 14,
+        "prompt": "What is 45 / 9? ",
+        "category": "math",
+        "correct_answer": "5",
+        "selected_text": "45 / 9 = 5. The answer: 5.",
+        "is_correct": true,
+        "selected_alpha": -0.5160387239108484,
+        "selected_sample_id": 1,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5242923259477079,
+          -0.5160387239108484,
+          -0.5291213603956358,
+          -0.5235032550136458
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 15,
+        "prompt": "If all cats are animals, and Whiskers is a cat, then Whiskers is a: ",
+        "category": "logic",
+        "correct_answer": "animal",
+        "selected_text": " \"A cat is an animal.\",? - cat  - animal  - animal is a  - an animal  A: animal",
+        "is_correct": true,
+        "selected_alpha": -0.5121589498545127,
+        "selected_sample_id": 1,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5161046356998354,
+          -0.5121589498545127,
+          -0.5185298393997881,
+          -0.5171203706709165
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 16,
+        "prompt": "If A > B and B > C, then A > C. True or false? ",
+        "category": "logic",
+        "correct_answer": "true",
+        "selected_text": " The answer is \"True\". **Analysis:** This is a logical proposition, where the truth value of each statement in the proposition are determined by the truth value of the statements preceding it. Therefo",
+        "is_correct": true,
+        "selected_alpha": -0.5225242230863798,
+        "selected_sample_id": 3,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5299337216312924,
+          -0.5241086967366577,
+          -0.5257651129885326,
+          -0.5225242230863798
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 17,
+        "prompt": "If today is Monday, what day is it in 3 days? ",
+        "category": "logic",
+        "correct_answer": "thursday",
+        "selected_text": "1. If today is Monday, then in 3 days, it will be:\n   - In the first day, it will be 1 day after Monday, which we can calculate as (1 * 7).\n   - In the second day, it will be 2 days after the first",
+        "is_correct": false,
+        "selected_alpha": -0.5173060904656137,
+        "selected_sample_id": 2,
+        "n_correct_samples": 0,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5213235399552755,
+          -0.523988977027318,
+          -0.5173060904656137,
+          -0.5195304914126321
+        ],
+        "all_correct": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "task_id": 18,
+        "prompt": "If John is taller than Mary, and Mary is taller than Sue, who is shortest? ",
+        "category": "logic",
+        "correct_answer": "sue",
+        "selected_text": "4, 12, 7.\nJohn is shorter than Mary and Mary is taller than Sue.\n4, 7, 12.\nSo, the shortest is Mary.",
+        "is_correct": true,
+        "selected_alpha": -0.5143017899945267,
+        "selected_sample_id": 3,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.522117422024409,
+          -0.5266720187569421,
+          -0.5186404169315383,
+          -0.5143017899945267
+        ],
+        "all_correct": [
+          true,
+          false,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 19,
+        "prompt": "How many sides does a triangle have? ",
+        "category": "logic",
+        "correct_answer": "3",
+        "selected_text": "1 lb is equal to 45000 mg. A triangle has 3 sides. So, the number of sides a triangle has is 3.",
+        "is_correct": true,
+        "selected_alpha": -0.5183420076089745,
+        "selected_sample_id": 3,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5284920061391497,
+          -0.5252789793033448,
+          -0.5233492437572707,
+          -0.5183420076089745
+        ],
+        "all_correct": [
+          false,
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 20,
+        "prompt": "A farmer has 17 sheep. All but 9 die. How many are left? ",
+        "category": "logic",
+        "correct_answer": "9",
+        "selected_text": "17 - 9 = 8. 8 is greater than 0, so it = 8. The answer is 8.",
+        "is_correct": true,
+        "selected_alpha": -0.5098224835736411,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5098224835736411,
+          -0.5134080922117039,
+          -0.5119751752903743,
+          -0.512141003495171
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 21,
+        "prompt": "If you have 3 apples and eat 1, how many do you have? ",
+        "category": "logic",
+        "correct_answer": "2",
+        "selected_text": " Answer the above question based on the following conversation. Catherine: I took 3 apples out of the fridge to eat.  What is the number of apples I had? Ann: Sorry, you don't have any.  What is the n",
+        "is_correct": false,
+        "selected_alpha": -0.5133177782098453,
+        "selected_sample_id": 1,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5215977993512911,
+          -0.5133177782098453,
+          -0.5192478975842869,
+          -0.5157542768924955
+        ],
+        "all_correct": [
+          true,
+          false,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 22,
+        "prompt": "What comes next in the sequence: 2, 4, 6, 8, ? ",
+        "category": "logic",
+        "correct_answer": "10",
+        "selected_text": "52, 54, 56, ? 126, 128, 130, ?\n\nThe next number in the sequence is 128. The sequence alternates between even numbers and consecutive odd numbers. If the sequence is written as follows:\n\n",
+        "is_correct": false,
+        "selected_alpha": -0.5206503052796636,
+        "selected_sample_id": 1,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5233080656519011,
+          -0.5206503052796636,
+          -0.5224860521536024,
+          -0.522294372201912
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 23,
+        "prompt": "If it takes 5 machines 5 minutes to make 5 widgets, how long for 100 machines to make 100 widgets? ",
+        "category": "logic",
+        "correct_answer": "5",
+        "selected_text": "5 machines X 5 minutes = 25 minutes for 5 widgets\n500 machines X 100 minutes = 50000 minutes for 100 widgets\nThe answer is 50000",
+        "is_correct": true,
+        "selected_alpha": -0.5111828113303464,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5111828113303464,
+          -0.512382643789182,
+          -0.5139966586752543,
+          -0.5130478628098019
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 24,
+        "prompt": "A bat and ball cost $1.10. The bat costs $1.00 more than the ball. How much is the ball? ",
+        "category": "logic",
+        "correct_answer": "0.05",
+        "selected_text": "1. Let's define the ball's price as \\( x \\) dollars. According to the problem, the bat costs $1.00 more than the ball. Therefore, the bat's price is \\( x + 1 \\) dollars.\n\n2. We know the total cost of ",
+        "is_correct": false,
+        "selected_alpha": -0.520284726624451,
+        "selected_sample_id": 2,
+        "n_correct_samples": 1,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5206392962071631,
+          -0.5203070654755547,
+          -0.520284726624451,
+          -0.5211754327965161
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          false
+        ]
+      }
+    ],
+    "lowest_alpha": [
+      {
+        "task_id": 0,
+        "prompt": "What is 7 + 3? ",
+        "category": "math",
+        "correct_answer": "10",
+        "selected_text": "10.\nQuestion\nUpdated 3/18/2015 5:09:46 PM\n7 + 3 = 10.\nAdded 3/18/2015 5:09:46 PM\nThis answer has been",
+        "is_correct": true,
+        "selected_alpha": -0.5302266070767054,
+        "selected_sample_id": 1,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5205647691532418,
+          -0.5302266070767054,
+          -0.5285526297631716,
+          -0.5194347015448979
+        ],
+        "all_correct": [
+          true,
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 1,
+        "prompt": "What is 15 - 8? ",
+        "category": "math",
+        "correct_answer": "7",
+        "selected_text": "15 and 8 are two distinct operations.\\n3\\n4\\n1",
+        "is_correct": false,
+        "selected_alpha": -0.521286294740789,
+        "selected_sample_id": 3,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5190237062317985,
+          -0.5209994416861307,
+          -0.5157524948446159,
+          -0.521286294740789
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 2,
+        "prompt": "What is 4 * 6? ",
+        "category": "math",
+        "correct_answer": "24",
+        "selected_text": "4 * 6 equals 24.",
+        "is_correct": true,
+        "selected_alpha": -0.520880811555045,
+        "selected_sample_id": 0,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.520880811555045,
+          -0.5196221637583914,
+          -0.515699546393894,
+          -0.5187495042880376
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 3,
+        "prompt": "What is 20 / 4? ",
+        "category": "math",
+        "correct_answer": "5",
+        "selected_text": "20 / 4 can be simplified to its simplest form, which is 5.",
+        "is_correct": true,
+        "selected_alpha": -0.5259267111171159,
+        "selected_sample_id": 1,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5215676749591749,
+          -0.5259267111171159,
+          -0.520108862250459,
+          -0.5121838118021305
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 4,
+        "prompt": "What is 9 + 6? ",
+        "category": "math",
+        "correct_answer": "15",
+        "selected_text": "9 + 6 = 15. Thank you for asking.",
+        "is_correct": true,
+        "selected_alpha": -0.5213254799918522,
+        "selected_sample_id": 1,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5200724353392918,
+          -0.5213254799918522,
+          -0.5200724353392918,
+          -0.5118948273242466
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 5,
+        "prompt": "What is 12 - 5? ",
+        "category": "math",
+        "correct_answer": "7",
+        "selected_text": "12 - 5 = 7\\nHow to write the question 12-5 in a single word? 7\\nWhat is the question of 12 - 5? 7\\nWhy is 12 - 5? 7\\nWhat is the question of ",
+        "is_correct": true,
+        "selected_alpha": -0.524178985352554,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.524178985352554,
+          -0.5209294535495617,
+          -0.5189487212470599,
+          -0.5198889217206409
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 6,
+        "prompt": "What is 3 * 8? ",
+        "category": "math",
+        "correct_answer": "24",
+        "selected_text": " To solve the problem of multiplying 3 and 8, you need to follow these steps:\n\n1. Write down the numbers to be multiplied: 3 and 8.\n2. Multiply them step by step:\n   - First, multiply 3 by 8: \\(3 \\tim",
+        "is_correct": false,
+        "selected_alpha": -0.5241433647889939,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5241433647889939,
+          -0.5154887531317918,
+          -0.5216286617612081,
+          -0.5203608190019925
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 7,
+        "prompt": "What is 18 / 3? ",
+        "category": "math",
+        "correct_answer": "6",
+        "selected_text": "18 divided by 3 is equal to 6.\n\nFind the square root of 25? The square root of 25 is 5.\n\nWhat is the cube root of 64? The cube root of 64 is 4.\n\nWhat is the area of a square",
+        "is_correct": true,
+        "selected_alpha": -0.5271975822865017,
+        "selected_sample_id": 0,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5271975822865017,
+          -0.5239135504715028,
+          -0.5235327110222892,
+          -0.5256857370143329
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 8,
+        "prompt": "What is 11 + 9? ",
+        "category": "math",
+        "correct_answer": "20",
+        "selected_text": "11 + 9 = 20\\nWhat is 11 + 8? 11 + 8 = 19\\nWhat is 11 + 7? 11 + 7 = 18\\nWhat is 11 + 6? ",
+        "is_correct": true,
+        "selected_alpha": -0.523745405200928,
+        "selected_sample_id": 3,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5214972881570695,
+          -0.5152799820798075,
+          -0.5176955087411971,
+          -0.523745405200928
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 9,
+        "prompt": "What is 14 - 6? ",
+        "category": "math",
+        "correct_answer": "8",
+        "selected_text": " Express your answer as a fraction.\n\nTo solve the problem of finding the value of \\(14 - 6\\), we can follow these steps:\n\n1. Perform the subtraction.\n2. Convert the result into a fraction.\n\nLet's writ",
+        "is_correct": false,
+        "selected_alpha": -0.5241165952076988,
+        "selected_sample_id": 1,
+        "n_correct_samples": 1,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5204197435151963,
+          -0.5241165952076988,
+          -0.5124337004054161,
+          -0.511435565243916
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "task_id": 10,
+        "prompt": "What is 15 * 4? ",
+        "category": "math",
+        "correct_answer": "60",
+        "selected_text": " To find the product of 15 and 4, you multiply 15 by 4:\n\n15 * 4 = 60",
+        "is_correct": true,
+        "selected_alpha": -0.523233995734272,
+        "selected_sample_id": 2,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5192682545680504,
+          -0.5213042249282202,
+          -0.523233995734272,
+          -0.516254151013956
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 11,
+        "prompt": "What is 25 + 17? ",
+        "category": "math",
+        "correct_answer": "42",
+        "selected_text": " To solve the problem of adding 25 and 17, we can use Python to ensure accuracy. Let's perform the calculation step by step.\n\nFirst, we need to add the two numbers:\n\n\\[ 25 + 17 \\]\n\nWe can use Python t",
+        "is_correct": false,
+        "selected_alpha": -0.5240682918637518,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5240682918637518,
+          -0.5223321452736854,
+          -0.5177217780597626,
+          -0.5194771877593464
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 12,
+        "prompt": "What is 100 - 37? ",
+        "category": "math",
+        "correct_answer": "63",
+        "selected_text": "100 - 37 = 63\n\nHow is 100 - 37 calculated?",
+        "is_correct": true,
+        "selected_alpha": -0.5221522007669721,
+        "selected_sample_id": 2,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5203493149980666,
+          -0.5195309023062389,
+          -0.5221522007669721,
+          -0.520908839953324
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 13,
+        "prompt": "What is 7 * 8? ",
+        "category": "math",
+        "correct_answer": "56",
+        "selected_text": "57 * 7 = 395.\\nQ2: What is 9 * 6?\\n18 * 8 = 144\\n16 * 9 = 144\\nQ3: What is 3 * 12?\\n3",
+        "is_correct": false,
+        "selected_alpha": -0.5219312258656063,
+        "selected_sample_id": 3,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.519283127784729,
+          -0.5194779188292367,
+          -0.5178528821657574,
+          -0.5219312258656063
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 14,
+        "prompt": "What is 45 / 9? ",
+        "category": "math",
+        "correct_answer": "5",
+        "selected_text": "15.5\\nWhat is 45 / 9? 15.5\\nQ: What is 45 / 9?\\nWhat is the answer 45 divided by 9?\\n45 divided by 9 is 5.\\nWhat is 4",
+        "is_correct": true,
+        "selected_alpha": -0.5291213603956358,
+        "selected_sample_id": 2,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5242923259477079,
+          -0.5160387239108484,
+          -0.5291213603956358,
+          -0.5235032550136458
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 15,
+        "prompt": "If all cats are animals, and Whiskers is a cat, then Whiskers is a: ",
+        "category": "logic",
+        "correct_answer": "animal",
+        "selected_text": " Answer choices: - a cat  - an animal  - an object  - an animal  - an organism  - a mammal  - a different animal  - a reptile\nThe answer to this question is: a cat",
+        "is_correct": true,
+        "selected_alpha": -0.5185298393997881,
+        "selected_sample_id": 2,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5161046356998354,
+          -0.5121589498545127,
+          -0.5185298393997881,
+          -0.5171203706709165
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 16,
+        "prompt": "If A > B and B > C, then A > C. True or false? ",
+        "category": "logic",
+        "correct_answer": "true",
+        "selected_text": "1 Answer\n\nI found a proof, but i don\u2019t know if it works or not. \nTo prove that if A > B and B > C, then A > C, we can use the transitive property of inequalities.\n\nLet's apply the transitive property ",
+        "is_correct": false,
+        "selected_alpha": -0.5299337216312924,
+        "selected_sample_id": 0,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5299337216312924,
+          -0.5241086967366577,
+          -0.5257651129885326,
+          -0.5225242230863798
+        ],
+        "all_correct": [
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 17,
+        "prompt": "If today is Monday, what day is it in 3 days? ",
+        "category": "logic",
+        "correct_answer": "thursday",
+        "selected_text": "1. **Understanding the Problem**: We need to determine what day it will be 3 days after a given day is Monday.\n   \n2. **Calculating Days for the Initial Day**: \n   - Monday is the first day of the wee",
+        "is_correct": false,
+        "selected_alpha": -0.523988977027318,
+        "selected_sample_id": 1,
+        "n_correct_samples": 0,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5213235399552755,
+          -0.523988977027318,
+          -0.5173060904656137,
+          -0.5195304914126321
+        ],
+        "all_correct": [
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "task_id": 18,
+        "prompt": "If John is taller than Mary, and Mary is taller than Sue, who is shortest? ",
+        "category": "logic",
+        "correct_answer": "sue",
+        "selected_text": " Answer the above question based on the following review.\n\nI would have liked to have seen the 2nd book on the same subject , but I have to say I was disappointed . The story is a bit predictable , an",
+        "is_correct": false,
+        "selected_alpha": -0.5266720187569421,
+        "selected_sample_id": 1,
+        "n_correct_samples": 3,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.522117422024409,
+          -0.5266720187569421,
+          -0.5186404169315383,
+          -0.5143017899945267
+        ],
+        "all_correct": [
+          true,
+          false,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 19,
+        "prompt": "How many sides does a triangle have? ",
+        "category": "logic",
+        "correct_answer": "3",
+        "selected_text": "1. **Definition and Properties**: A triangle is a polygon with three sides (sides). Each of its vertices is connected by a straight line to form three angles.\n2. **Relevant Knowledge**: A triangle has",
+        "is_correct": false,
+        "selected_alpha": -0.5284920061391497,
+        "selected_sample_id": 0,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5284920061391497,
+          -0.5252789793033448,
+          -0.5233492437572707,
+          -0.5183420076089745
+        ],
+        "all_correct": [
+          false,
+          true,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 20,
+        "prompt": "A farmer has 17 sheep. All but 9 die. How many are left? ",
+        "category": "logic",
+        "correct_answer": "9",
+        "selected_text": "99 sheep were left.",
+        "is_correct": true,
+        "selected_alpha": -0.5134080922117039,
+        "selected_sample_id": 1,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5098224835736411,
+          -0.5134080922117039,
+          -0.5119751752903743,
+          -0.512141003495171
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 21,
+        "prompt": "If you have 3 apples and eat 1, how many do you have? ",
+        "category": "logic",
+        "correct_answer": "2",
+        "selected_text": "1. **Understand the Problem:**\n   - You have a total of 3 apples.\n   - You eat 1 of these apples.\n\n2. **Identify the Operation:**\n   - The operation here is subtracting 1 from a total of 3 apples.\n\n3.",
+        "is_correct": true,
+        "selected_alpha": -0.5215977993512911,
+        "selected_sample_id": 0,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5215977993512911,
+          -0.5133177782098453,
+          -0.5192478975842869,
+          -0.5157542768924955
+        ],
+        "all_correct": [
+          true,
+          false,
+          true,
+          false
+        ]
+      },
+      {
+        "task_id": 22,
+        "prompt": "What comes next in the sequence: 2, 4, 6, 8, ? ",
+        "category": "logic",
+        "correct_answer": "10",
+        "selected_text": "10 \nTo find the next number in the sequence, we can use the formula for the nth term of an arithmetic sequence, which is:\n\nnth_term = first_term + (n - 1) * common_difference\n\nwhere first_term is the ",
+        "is_correct": true,
+        "selected_alpha": -0.5233080656519011,
+        "selected_sample_id": 0,
+        "n_correct_samples": 2,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5233080656519011,
+          -0.5206503052796636,
+          -0.5224860521536024,
+          -0.522294372201912
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          true
+        ]
+      },
+      {
+        "task_id": 23,
+        "prompt": "If it takes 5 machines 5 minutes to make 5 widgets, how long for 100 machines to make 100 widgets? ",
+        "category": "logic",
+        "correct_answer": "5",
+        "selected_text": "5 machines take 5 minutes to make 1 widget. So, it takes 5/5 = 1 minute to make 1 widget.\nTherefore, it takes 5 * 1 = 5 minutes to make 100 widgets.\nSo, it takes 5 * 1",
+        "is_correct": true,
+        "selected_alpha": -0.5139966586752543,
+        "selected_sample_id": 2,
+        "n_correct_samples": 4,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5111828113303464,
+          -0.512382643789182,
+          -0.5139966586752543,
+          -0.5130478628098019
+        ],
+        "all_correct": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "task_id": 24,
+        "prompt": "A bat and ball cost $1.10. The bat costs $1.00 more than the ball. How much is the ball? ",
+        "category": "logic",
+        "correct_answer": "0.05",
+        "selected_text": "1. Let's say the price of the ball is x.\n2. Since the bat costs $1.00 more than the ball, the price of the bat is x + $1.00.\n3. The total cost of the bat and the ball is $1.10",
+        "is_correct": false,
+        "selected_alpha": -0.5211754327965161,
+        "selected_sample_id": 3,
+        "n_correct_samples": 1,
+        "n_total_samples": 4,
+        "all_alphas": [
+          -0.5206392962071631,
+          -0.5203070654755547,
+          -0.520284726624451,
+          -0.5211754327965161
+        ],
+        "all_correct": [
+          true,
+          false,
+          false,
+          false
+        ]
+      }
+    ]
+  },
+  "analysis": {
+    "accuracy": {
+      "first": {
+        "correct": 20,
+        "total": 25,
+        "accuracy": 0.8
+      },
+      "random": {
+        "correct": 17,
+        "total": 25,
+        "accuracy": 0.68
+      },
+      "longest": {
+        "correct": 17,
+        "total": 25,
+        "accuracy": 0.68
+      },
+      "highest_alpha": {
+        "correct": 18,
+        "total": 25,
+        "accuracy": 0.72
+      },
+      "lowest_alpha": {
+        "correct": 15,
+        "total": 25,
+        "accuracy": 0.6
+      }
+    },
+    "oracle_accuracy": 0.96,
+    "accuracy_by_category": {
+      "first": {
+        "math": {
+          "correct": 13,
+          "total": 15,
+          "accuracy": 0.8666666666666667
+        },
+        "logic": {
+          "correct": 7,
+          "total": 10,
+          "accuracy": 0.7
+        }
+      },
+      "random": {
+        "math": {
+          "correct": 12,
+          "total": 15,
+          "accuracy": 0.8
+        },
+        "logic": {
+          "correct": 5,
+          "total": 10,
+          "accuracy": 0.5
+        }
+      },
+      "longest": {
+        "math": {
+          "correct": 11,
+          "total": 15,
+          "accuracy": 0.7333333333333333
+        },
+        "logic": {
+          "correct": 6,
+          "total": 10,
+          "accuracy": 0.6
+        }
+      },
+      "highest_alpha": {
+        "math": {
+          "correct": 12,
+          "total": 15,
+          "accuracy": 0.8
+        },
+        "logic": {
+          "correct": 6,
+          "total": 10,
+          "accuracy": 0.6
+        }
+      },
+      "lowest_alpha": {
+        "math": {
+          "correct": 10,
+          "total": 15,
+          "accuracy": 0.6666666666666666
+        },
+        "logic": {
+          "correct": 5,
+          "total": 10,
+          "accuracy": 0.5
+        }
+      }
+    },
+    "alpha_vs_correctness": {
+      "correct_mean_alpha": -0.5196978188075848,
+      "wrong_mean_alpha": -0.5207865046775603,
+      "delta": 0.0010886858699754587,
+      "t_statistic": 1.0768376883038058,
+      "p_value": 0.28419649556795,
+      "significant": false,
+      "n_correct": 73,
+      "n_wrong": 27
+    },
+    "statistical_tests": {
+      "first_vs_highest_alpha": {
+        "first_accuracy": 0.8,
+        "strategy_accuracy": 0.72,
+        "delta": -0.08000000000000007,
+        "mcnemar_statistic": 0.1,
+        "p_value": 0.7518296340458492,
+        "significant": false,
+        "first_correct_strategy_wrong": 6,
+        "first_wrong_strategy_correct": 4
+      },
+      "first_vs_lowest_alpha": {
+        "first_accuracy": 0.8,
+        "strategy_accuracy": 0.6,
+        "delta": -0.20000000000000007,
+        "mcnemar_statistic": 3.2,
+        "p_value": 0.073638270120303,
+        "significant": false,
+        "first_correct_strategy_wrong": 5,
+        "first_wrong_strategy_correct": 0
+      },
+      "first_vs_longest": {
+        "first_accuracy": 0.8,
+        "strategy_accuracy": 0.68,
+        "delta": -0.12,
+        "mcnemar_statistic": 1.3333333333333333,
+        "p_value": 0.24821307898992362,
+        "significant": false,
+        "first_correct_strategy_wrong": 3,
+        "first_wrong_strategy_correct": 0
+      },
+      "first_vs_random": {
+        "first_accuracy": 0.8,
+        "strategy_accuracy": 0.68,
+        "delta": -0.12,
+        "mcnemar_statistic": 0.4444444444444444,
+        "p_value": 0.5049850750938457,
+        "significant": false,
+        "first_correct_strategy_wrong": 6,
+        "first_wrong_strategy_correct": 3
+      }
+    }
+  }
+}
