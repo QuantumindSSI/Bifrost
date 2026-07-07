@@ -179,6 +179,8 @@ class SpectralCanonicalizer(nn.Module):
         sample_rate = metadata.get("sample_rate", 1.0)
         n_freq = amplitude.shape[-1]
         scale = torch.linspace(0.0, sample_rate / 2.0, n_freq, device=amplitude.device)
+        # DC bin starts at 0, but SpectralTensor validation requires scale > 0.
+        scale = scale.clamp(min=1e-6)
         scale = scale.expand_as(amplitude)
 
         # --- initial uniform uncertainty -------------------------------------

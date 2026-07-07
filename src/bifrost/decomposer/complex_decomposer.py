@@ -443,6 +443,8 @@ class ComplexSpectralDecomposer(nn.Module):
 
         # Scale and uncertainty (use d_model for scale dimension)
         scale = torch.linspace(0.0, 1.0, self.d_model, device=amplitude.device)
+        # First bin is 0, but SpectralTensor validation requires scale > 0.
+        scale = scale.clamp(min=1e-6)
         scale = scale.view(1, 1, -1).expand(B, self.n_frames, -1)
         uncertainty = torch.full_like(amplitude, 0.5)
 

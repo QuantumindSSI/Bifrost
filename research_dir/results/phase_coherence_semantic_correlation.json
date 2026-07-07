@@ -1,0 +1,34 @@
+{
+  "experiment_id": "phase_coherence_semantic_correlation",
+  "dataset": "synthetic",
+  "n_samples": 200,
+  "n_classes": 5,
+  "n_pairs": 5000,
+  "pearson_r": 0.13739891350269318,
+  "p_value": 1.6804917094382989e-22,
+  "target_r": 0.3,
+  "target_p": 0.05,
+  "verdict": "inconclusive",
+  "class_names": [
+    "low_tone",
+    "mid_tone",
+    "high_tone",
+    "harmonic_stack",
+    "noisy"
+  ],
+  "intra_class_similarities": {
+    "low_tone": 0.9999862909317017,
+    "mid_tone": 0.9999706745147705,
+    "high_tone": 0.9999697208404541,
+    "harmonic_stack": 0.9999885559082031,
+    "noisy": 0.9999977350234985
+  },
+  "config": {
+    "sample_rate": 16000,
+    "duration_seconds": 1.0,
+    "n_fft": 1024,
+    "d_model": 64,
+    "n_heads": 4,
+    "n_bands": 8
+  }
+}

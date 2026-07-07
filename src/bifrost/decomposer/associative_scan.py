@@ -170,7 +170,7 @@ def _sequential_scan(
         ys.append(y_t)
     
     y = torch.stack(ys, dim=1)
-    y = y + D.unsqueeze(0).unssqueeze(1) * x
+    y = y + D.unsqueeze(0).unsqueeze(1) * x
     
     return y, h
 
