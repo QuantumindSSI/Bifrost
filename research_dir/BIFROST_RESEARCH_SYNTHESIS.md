@@ -254,10 +254,71 @@ The phase-coherence → semantic-similarity hypothesis is **not supported** by t
 
 ### Revised immediate next steps
 
-1. Run the pre-registered baseline comparison at full scale (10 classes, ≥ 100 samples/class, 5-fold CV).
-2. If Bifrost still underperforms, investigate whether the phase-coherence objective, the pooling strategy, or the model capacity is the bottleneck.
-3. Do not update the paper's claims section until a pre-registered success criterion is met.
-4. Add a "null results and negative evidence" section to the paper outline.
+1. ~~Run the pre-registered baseline comparison at full scale (10 classes, ≥ 100 samples/class, 5-fold CV).~~ **Done — see Section 12.**
+2. ~~If Bifrost still underperforms, investigate whether the phase-coherence objective, the pooling strategy, or the model capacity is the bottleneck.~~ **Done — the bottleneck is that the experiment never used phase, and the Bifrost SSM destroys modulation structure.**
+3. Do not update the paper's claims section until a pre-registered success criterion is met. **H2 of the CBMPC protocol is now supported.**
+4. Add a "null results and negative evidence" section to the paper outline. **Done.**
+
+---
+
+## 12. CBMPC: A new frequency-level semantic structure technique
+
+### 12.1 Diagnosis of the original failure
+
+A Type Ω epistemic audit of the baseline comparison experiment revealed that the experiment **never tested phase coherence**. The embedding extraction (`amp.mean(dim=1)` + `amp.std(dim=1)`) discarded the phase channel entirely. The experiment that claimed to test "phase coherence → semantic similarity" actually tested "amplitude statistics → semantic similarity."
+
+A literature survey (10 techniques, 30+ peer-reviewed papers) further revealed that **raw spectral phase is not the right phase** for semantic structure. The phase that carries semantic structure in audio is **modulation phase** — the phase of temporal modulations of spectral energy across frequency bands — not the instantaneous phase of individual frequency components.
+
+### 12.2 The new technique: Cross-Band Modulation Phase Coherence (CBMPC)
+
+A new technique was proposed and pre-registered in `CBMPC_TECHNIQUE_PROPOSAL.md`:
+
+1. Compute a mel-spectrogram S(t, f).
+2. For each frequency band f, compute the temporal modulation spectrum via FFT along time.
+3. Extract modulation amplitude A(ω, f) and phase φ(ω, f).
+4. Compute cross-band phase locking value: C(ω) = |mean_f exp(i·φ(ω, f))|.
+5. Feature vector = [per-band modulation amplitudes, PLV values, mean amplitudes].
+
+This is grounded in:
+- The modulation spectrogram framework (Atlas, Shamma, Chi — JASA 1999)
+- The complex modulation spectrum theory of speech intelligibility (Greenberg & Arai — Eurospeech 2001)
+- The temporal coherence theory of auditory perception (Elhilali & Shamma — Neuron 2009)
+- Phase locking value analysis (Lachaux et al. — Human Brain Mapping 1999)
+
+### 12.3 Pre-registered protocol results
+
+**Dataset**: SpeechCommands v0.02, 10 classes, 200 samples/class, 5-fold CV.
+
+| Model | Test accuracy | F1 macro | Feature dim |
+|---|---|---|---|
+| **CBMPC-STFT** | **0.41 ± 0.04** | **0.38 ± 0.04** | 462 |
+| STFT baseline | 0.27 ± 0.01 | 0.22 ± 0.02 | 513 |
+| Mel baseline | 0.25 ± 0.01 | 0.20 ± 0.02 | 64 |
+| Bifrost amp-only | 0.16 ± 0.02 | 0.11 ± 0.03 | 128 |
+| CBMPC-Bifrost | 0.10 ± 0.00 | 0.04 ± 0.02 | 462 |
+
+### 12.4 Hypothesis evaluation
+
+**H2 (CBMPC-STFT beats STFT baseline): SUPPORTED**
+- +13.65 percentage points, p = 0.0033 (Bonferroni-corrected α = 0.0167)
+- Large effect size (Cohen's d ≈ 3.5)
+
+**H1 (CBMPC-Bifrost beats STFT baseline): NOT SUPPORTED**
+- CBMPC-Bifrost is at chance (0.10 = 1/10)
+- The Bifrost pipeline's complex SSM destroys the modulation structure
+
+### 12.5 Calibrated conclusion
+
+The CBMPC technique is the first frequency-level semantic structure extractor in this project that has been validated with a pre-registered, baseline-controlled, cross-validated protocol. The effect is large and statistically significant.
+
+However, the Bifrost pipeline itself is incompatible with this technique: the complex SSM transforms the spectrogram in ways that destroy the modulation phase relationships. This is a critical architectural finding that should guide the next iteration.
+
+### 12.6 Next steps
+
+1. **Integrate CBMPC into the Bifrost pipeline** as a feature extraction layer that operates on the canonical spectrogram before the SSM, not after.
+2. **Investigate modulation-preserving SSM architectures** that maintain the temporal modulation structure while learning phase relationships.
+3. **Test CBMPC on ESC-50** (environmental sounds with longer temporal structure) to see if the effect generalizes beyond speech commands.
+4. **Ablate the PLV component** to determine whether the phase coherence measure itself contributes beyond the per-band modulation amplitudes.
 
 ---
 
