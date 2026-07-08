@@ -48,6 +48,7 @@ All documents in this directory are kept in the repository for peer review and r
 | `19_LM_REASONING_EXPERIMENT.md` | Phase coherence vs spectral alpha in LLM hidden states | Complete |
 | `20_SPECTRAL_ALPHA_MONITORING_NEGATIVE.md` | Real-time alpha monitoring: negative results on 0.5B model | Complete |
 | `21_WAVELET_AUGMENTATION_NEGATIVE.md` | Wavelet augmentation fine-tuning: negative result | Complete |
+| `22_FINAL_RESEARCH_SUMMARY.md` | Consolidation of all findings + literature roadmap | Complete |
 
 ---
 
