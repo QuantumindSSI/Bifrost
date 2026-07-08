@@ -49,6 +49,7 @@ All documents in this directory are kept in the repository for peer review and r
 | `20_SPECTRAL_ALPHA_MONITORING_NEGATIVE.md` | Real-time alpha monitoring: negative results on 0.5B model | Complete |
 | `21_WAVELET_AUGMENTATION_NEGATIVE.md` | Wavelet augmentation fine-tuning: negative result | Complete |
 | `22_FINAL_RESEARCH_SUMMARY.md` | Consolidation of all findings + literature roadmap | Complete |
+| `23_SPECTRAL_AGENTIC_ROADMAP.md` | Agentic implementation plan + SRA architecture proposal | Complete |
 
 ---
 
