@@ -1,0 +1,681 @@
+{
+  "model": "Qwen/Qwen2.5-0.5B",
+  "n_train": 30,
+  "n_test": 25,
+  "analysis": {
+    "pre_ft": {
+      "accuracy": 0.8,
+      "correct": 20,
+      "total": 25
+    },
+    "baseline_ft": {
+      "accuracy": 0.96,
+      "correct": 24,
+      "total": 25,
+      "ft_time": 54.76149606704712,
+      "final_loss": 0.034097100350209075,
+      "trainable_params": 240.730112,
+      "by_category": {
+        "math": {
+          "correct": 15,
+          "total": 15,
+          "accuracy": 1.0
+        },
+        "logic": {
+          "correct": 9,
+          "total": 10,
+          "accuracy": 0.9
+        }
+      }
+    },
+    "wavelet_ft": {
+      "accuracy": 0.84,
+      "correct": 21,
+      "total": 25,
+      "ft_time": 57.15965270996094,
+      "final_loss": 0.07219154726863053,
+      "trainable_params": 259.997768,
+      "by_category": {
+        "math": {
+          "correct": 13,
+          "total": 15,
+          "accuracy": 0.8666666666666667
+        },
+        "logic": {
+          "correct": 8,
+          "total": 10,
+          "accuracy": 0.8
+        }
+      }
+    },
+    "delta": -0.12,
+    "mcnemar": {
+      "statistic": 1.3333333333333333,
+      "p_value": 0.24821307898992362,
+      "significant": false,
+      "baseline_correct_wavelet_wrong": 3,
+      "baseline_wrong_wavelet_correct": 0
+    }
+  },
+  "baseline_results": {
+    "accuracy": 0.96,
+    "correct": 24,
+    "total": 25,
+    "results": [
+      {
+        "task_id": 0,
+        "prompt": "What is 8 + 5? ",
+        "category": "math",
+        "correct_answer": "13",
+        "generated_text": " 8 + 5 = 13. The answer is 13. The answer is 13. The answer is 13. The answer is 13. The answer is 13. The answer is 13. The answer is 13. The",
+        "is_correct": true
+      },
+      {
+        "task_id": 1,
+        "prompt": "What is 16 - 9? ",
+        "category": "math",
+        "correct_answer": "7",
+        "generated_text": " 16 - 9 = 7. The answer is 7. The answer is 7. The answer is 7. The answer is 7. The answer is 7. The answer is 7. The answer is 7. The answer is 7. The answer",
+        "is_correct": true
+      },
+      {
+        "task_id": 2,
+        "prompt": "What is 5 * 7? ",
+        "category": "math",
+        "correct_answer": "35",
+        "generated_text": " 5 * 7 = 35. The answer is 35. The answer is 35. The answer is 5.0.",
+        "is_correct": true
+      },
+      {
+        "task_id": 3,
+        "prompt": "What is 24 / 6? ",
+        "category": "math",
+        "correct_answer": "4",
+        "generated_text": " 24 / 6 = 4. The answer is 4. The answer is 4. The answer is 4. The answer is 4. The answer is 4. The answer is 4. The answer is 4. The answer is 4. The answer",
+        "is_correct": true
+      },
+      {
+        "task_id": 4,
+        "prompt": "What is 13 + 8? ",
+        "category": "math",
+        "correct_answer": "21",
+        "generated_text": " 13 + 8 = 21. The answer is 21. The answer is 21. The answer is 21. The answer is 21. The answer is 21. The answer is 21. The answer is 21.",
+        "is_correct": true
+      },
+      {
+        "task_id": 5,
+        "prompt": "What is 20 - 12? ",
+        "category": "math",
+        "correct_answer": "8",
+        "generated_text": " 20 - 12 = 8. The answer is 8. The answer is 8. The answer is 8. The answer is 8. The answer is 8. The answer is 8. The answer is 8. The answer is 8. The",
+        "is_correct": true
+      },
+      {
+        "task_id": 6,
+        "prompt": "What is 6 * 9? ",
+        "category": "math",
+        "correct_answer": "54",
+        "generated_text": " 6 * 9 = 54. The answer is 54. The answer is 54. The answer is 6.0.",
+        "is_correct": true
+      },
+      {
+        "task_id": 7,
+        "prompt": "What is 36 / 4? ",
+        "category": "math",
+        "correct_answer": "9",
+        "generated_text": " 36 / 4 = 9. The answer is 9. The answer is 9. The answer is 9. The answer is 9. The answer is 9. The answer is 9. The answer is 9. The answer is 9. The answer",
+        "is_correct": true
+      },
+      {
+        "task_id": 8,
+        "prompt": "What is 19 + 14? ",
+        "category": "math",
+        "correct_answer": "33",
+        "generated_text": " 19 + 14 = 33. The answer is 33. The answer is 33. The answer is 33. The answer is 33. The answer is 33. The answer is 33. The answer is 33",
+        "is_correct": true
+      },
+      {
+        "task_id": 9,
+        "prompt": "What is 50 - 23? ",
+        "category": "math",
+        "correct_answer": "27",
+        "generated_text": " 50 - 23 = 27. The answer is 27. The answer is 27. The answer is 27. The answer is 27. The answer is 27. The answer is 27. The answer is 27",
+        "is_correct": true
+      },
+      {
+        "task_id": 10,
+        "prompt": "What is 8 * 7? ",
+        "category": "math",
+        "correct_answer": "56",
+        "generated_text": " 8 * 7 = 56. The answer is 56. The answer is 56. The answer is 8.0.",
+        "is_correct": true
+      },
+      {
+        "task_id": 11,
+        "prompt": "What is 42 / 7? ",
+        "category": "math",
+        "correct_answer": "6",
+        "generated_text": " 42 / 7 = 6. The answer is 6. The answer is 6. The answer is 6. The answer is 6. The answer is 6. The answer is 6. The answer is 6. The answer is 6. The answer",
+        "is_correct": true
+      },
+      {
+        "task_id": 12,
+        "prompt": "What is 22 + 19? ",
+        "category": "math",
+        "correct_answer": "41",
+        "generated_text": " 22 + 19 = 41. The answer is 41. The answer is 41. The answer is 41. The answer is 41. The answer is 41. The answer is 41. The answer is 41",
+        "is_correct": true
+      },
+      {
+        "task_id": 13,
+        "prompt": "What is 75 - 38? ",
+        "category": "math",
+        "correct_answer": "37",
+        "generated_text": " 75 - 38 = 37. The answer is 37. The answer is 37. The answer is 37. The answer is 37. The answer is 37. The answer is 37. The answer is 37",
+        "is_correct": true
+      },
+      {
+        "task_id": 14,
+        "prompt": "What is 9 * 6? ",
+        "category": "math",
+        "correct_answer": "54",
+        "generated_text": " 9 * 6 = 54. The answer is 54. The answer is 54. The answer is 9.0.",
+        "is_correct": true
+      },
+      {
+        "task_id": 15,
+        "prompt": "If all birds can fly, and a penguin is a bird, can a penguin fly? ",
+        "category": "logic",
+        "correct_answer": "yes",
+        "generated_text": " The answer is yes.  A penguin is a bird. The answer is yes. The answer is yes. The answer is yes. The answer is yes. The answer is yes. The answer is yes. The answer is yes. The answer is yes. The an",
+        "is_correct": true
+      },
+      {
+        "task_id": 16,
+        "prompt": "If X > Y and Y > Z, is X > Z? ",
+        "category": "logic",
+        "correct_answer": "yes",
+        "generated_text": " If X > Y and Y > Z, then by transitivity X > Z. The answer is True. The answer is True. The answer is True. The answer is True. The answer is True. The answer is True. The answer is True. The answer ",
+        "is_correct": false
+      },
+      {
+        "task_id": 17,
+        "prompt": "If today is Wednesday, what day is it in 4 days? ",
+        "category": "logic",
+        "correct_answer": "sunday",
+        "generated_text": " Wednesday + 1 = Thursday, + 2 = Friday, + 3 = Saturday, + 4 = Sunday. The answer is Sunday. The answer is Sunday. The answer is Sunday. The answer is Sunday. The answer is Sunday. The answer is Sunda",
+        "is_correct": true
+      },
+      {
+        "task_id": 18,
+        "prompt": "If Alice is older than Bob, and Bob is older than Carol, who is youngest? ",
+        "category": "logic",
+        "correct_answer": "carol",
+        "generated_text": " If Alice > Bob > Carol, then Carol is the youngest. The answer is Carol. The answer is Carol. The answer is Carol. The answer is Carol. The answer is Carol. The answer is Carol. The answer is Carol. ",
+        "is_correct": true
+      },
+      {
+        "task_id": 19,
+        "prompt": "How many corners does a square have? ",
+        "category": "logic",
+        "correct_answer": "4",
+        "generated_text": " A square has 4 corners by definition. The answer is 4. The answer is 4. The answer is 4. The answer is 4. The answer is 4. The answer is 4. The answer is 4. The answer is 4. The answer is",
+        "is_correct": true
+      },
+      {
+        "task_id": 20,
+        "prompt": "A baker has 12 loaves. All but 5 are sold. How many remain? ",
+        "category": "logic",
+        "correct_answer": "5",
+        "generated_text": " All but 5 are sold means 5 are left. The answer is 5. The answer is 5. The answer is 5. The answer is 5. The answer is 5. The answer is 5. The answer is 5. The answer is 5.",
+        "is_correct": true
+      },
+      {
+        "task_id": 21,
+        "prompt": "If you have 5 oranges and give away 2, how many do you have? ",
+        "category": "logic",
+        "correct_answer": "3",
+        "generated_text": " 5 - 2 = 3. The answer is 3. The answer is 3. The answer is 3. The answer is 3. The answer is 3. The answer is 3. The answer is 3. The answer is 3. The answer is",
+        "is_correct": true
+      },
+      {
+        "task_id": 22,
+        "prompt": "What comes next: 3, 6, 9, 12, ? ",
+        "category": "logic",
+        "correct_answer": "15",
+        "generated_text": " The sequence increases by 3. 12 + 3 = 15. The answer is 15. The answer is 15. The answer is 15. The answer is 15. The answer is 15. The answer is 15.",
+        "is_correct": true
+      },
+      {
+        "task_id": 23,
+        "prompt": "If 3 workers take 3 hours to build 3 walls, how long for 6 workers to build 6 walls? ",
+        "category": "logic",
+        "correct_answer": "3",
+        "generated_text": " Each worker builds 1 wall in 3 hours. 6 workers build 6 walls in 3 hours. The answer is 3. The answer is 3. The answer is 3. The answer is 3. The answer is 3. The answer is 3. The",
+        "is_correct": true
+      },
+      {
+        "task_id": 24,
+        "prompt": "A book and pen cost $2.50. The book costs $2.00 more than the pen. How much is the pen? ",
+        "category": "logic",
+        "correct_answer": "0.25",
+        "generated_text": " Let the book cost x. Then the pen costs x + 2.00. Total: x + x + 2.00 = 2.50. So 2x = 0.50, x = 0.25. The answer is 0",
+        "is_correct": true
+      }
+    ]
+  },
+  "wavelet_results": {
+    "accuracy": 0.84,
+    "correct": 21,
+    "total": 25,
+    "results": [
+      {
+        "task_id": 0,
+        "prompt": "What is 8 + 5? ",
+        "category": "math",
+        "correct_answer": "13",
+        "generated_text": " 8 + 5 = 13. The answer is 13. The answer is 13.",
+        "is_correct": true
+      },
+      {
+        "task_id": 1,
+        "prompt": "What is 16 - 9? ",
+        "category": "math",
+        "correct_answer": "7",
+        "generated_text": " 16 - 9 = 7. The answer is 7. The answer is 7.",
+        "is_correct": true
+      },
+      {
+        "task_id": 2,
+        "prompt": "What is 5 * 7? ",
+        "category": "math",
+        "correct_answer": "35",
+        "generated_text": " 5 * 7 = 35. The answer is 35. The answer is 35.",
+        "is_correct": true
+      },
+      {
+        "task_id": 3,
+        "prompt": "What is 24 / 6? ",
+        "category": "math",
+        "correct_answer": "4",
+        "generated_text": " 24 / 6 = 4. The answer is 4. The answer is 4.",
+        "is_correct": true
+      },
+      {
+        "task_id": 4,
+        "prompt": "What is 13 + 8? ",
+        "category": "math",
+        "correct_answer": "21",
+        "generated_text": " 13 + 8 = 21. The answer is 21. The answer is 21.",
+        "is_correct": true
+      },
+      {
+        "task_id": 5,
+        "prompt": "What is 20 - 12? ",
+        "category": "math",
+        "correct_answer": "8",
+        "generated_text": " 20 - 12 = 8. The answer is 8. The answer is 8.",
+        "is_correct": true
+      },
+      {
+        "task_id": 6,
+        "prompt": "What is 6 * 9? ",
+        "category": "math",
+        "correct_answer": "54",
+        "generated_text": " 6 * 9 = 54. The answer is 54. The answer is 54.",
+        "is_correct": true
+      },
+      {
+        "task_id": 7,
+        "prompt": "What is 36 / 4? ",
+        "category": "math",
+        "correct_answer": "9",
+        "generated_text": " 36 / 4 = 9. The answer is 9. The answer is 9.",
+        "is_correct": true
+      },
+      {
+        "task_id": 8,
+        "prompt": "What is 19 + 14? ",
+        "category": "math",
+        "correct_answer": "33",
+        "generated_text": " 19 + 14 = 103. The answer is 103. The answer is 103.",
+        "is_correct": false
+      },
+      {
+        "task_id": 9,
+        "prompt": "What is 50 - 23? ",
+        "category": "math",
+        "correct_answer": "27",
+        "generated_text": " 50 - 23 = 27. The answer is 27. The answer is 27.",
+        "is_correct": true
+      },
+      {
+        "task_id": 10,
+        "prompt": "What is 8 * 7? ",
+        "category": "math",
+        "correct_answer": "56",
+        "generated_text": " 8 * 7 = 56. The answer is 56. The answer is 56.",
+        "is_correct": true
+      },
+      {
+        "task_id": 11,
+        "prompt": "What is 42 / 7? ",
+        "category": "math",
+        "correct_answer": "6",
+        "generated_text": " 42 / 7 = 6. The answer is 6. The answer is 6.",
+        "is_correct": true
+      },
+      {
+        "task_id": 12,
+        "prompt": "What is 22 + 19? ",
+        "category": "math",
+        "correct_answer": "41",
+        "generated_text": " 22 + 19 = 21. The answer is 21. The answer is 21.",
+        "is_correct": false
+      },
+      {
+        "task_id": 13,
+        "prompt": "What is 75 - 38? ",
+        "category": "math",
+        "correct_answer": "37",
+        "generated_text": " 75 - 38 = 37. The answer is 37. The answer is 37.",
+        "is_correct": true
+      },
+      {
+        "task_id": 14,
+        "prompt": "What is 9 * 6? ",
+        "category": "math",
+        "correct_answer": "54",
+        "generated_text": " 9 * 6 = 54. The answer is 54. The answer is 54.",
+        "is_correct": true
+      },
+      {
+        "task_id": 15,
+        "prompt": "If all birds can fly, and a penguin is a bird, can a penguin fly? ",
+        "category": "logic",
+        "correct_answer": "yes",
+        "generated_text": " Since all birds can fly, and a penguin is a bird, a penguin can fly. The answer is True.",
+        "is_correct": false
+      },
+      {
+        "task_id": 16,
+        "prompt": "If X > Y and Y > Z, is X > Z? ",
+        "category": "logic",
+        "correct_answer": "yes",
+        "generated_text": " Since X > Y and Y > Z, and by transitivity X > Z. The answer is True. The answer is True.",
+        "is_correct": false
+      },
+      {
+        "task_id": 17,
+        "prompt": "If today is Wednesday, what day is it in 4 days? ",
+        "category": "logic",
+        "correct_answer": "sunday",
+        "generated_text": " Wednesday + 1 = Thursday, + 2 = Friday, + 3 = Saturday, + 4 = Sunday. The answer is Sunday. The answer is Sunday. The answer is: Sunday.",
+        "is_correct": true
+      },
+      {
+        "task_id": 18,
+        "prompt": "If Alice is older than Bob, and Bob is older than Carol, who is youngest? ",
+        "category": "logic",
+        "correct_answer": "carol",
+        "generated_text": " Alice > Bob > Carol. The answer is Carol. The answer is Carol. The answer is 1. The answer is 1. The answer is 1. The answer is 1. The answer is 1. The answer is 1. The answer is 1. The answer",
+        "is_correct": true
+      },
+      {
+        "task_id": 19,
+        "prompt": "How many corners does a square have? ",
+        "category": "logic",
+        "correct_answer": "4",
+        "generated_text": " A square has 4 corners by definition. The answer is 4. The answer is 4.",
+        "is_correct": true
+      },
+      {
+        "task_id": 20,
+        "prompt": "A baker has 12 loaves. All but 5 are sold. How many remain? ",
+        "category": "logic",
+        "correct_answer": "5",
+        "generated_text": " All but 5 are sold means 5 are left. The answer is 5. The answer is 5.",
+        "is_correct": true
+      },
+      {
+        "task_id": 21,
+        "prompt": "If you have 5 oranges and give away 2, how many do you have? ",
+        "category": "logic",
+        "correct_answer": "3",
+        "generated_text": " 5 - 2 = 3. The answer is 3. The answer is 3.",
+        "is_correct": true
+      },
+      {
+        "task_id": 22,
+        "prompt": "What comes next: 3, 6, 9, 12, ? ",
+        "category": "logic",
+        "correct_answer": "15",
+        "generated_text": " The sequence increases by 3. 12 + 3 = 15. The answer is 15. The answer is 15. The answer is 15. The answer is \\boxed{15}.",
+        "is_correct": true
+      },
+      {
+        "task_id": 23,
+        "prompt": "If 3 workers take 3 hours to build 3 walls, how long for 6 workers to build 6 walls? ",
+        "category": "logic",
+        "correct_answer": "3",
+        "generated_text": " Each worker builds 1 wall in 3 hours. 6 workers build 6 walls in 3 hours. The answer is 3. The answer is 3.",
+        "is_correct": true
+      },
+      {
+        "task_id": 24,
+        "prompt": "A book and pen cost $2.50. The book costs $2.00 more than the pen. How much is the pen? ",
+        "category": "logic",
+        "correct_answer": "0.25",
+        "generated_text": " Let the pen cost x. Then the book costs x + 2.00. Total: x + x + 2.00 = 2.50. So 2x = 0.50, x = 0.25. The answer is 0",
+        "is_correct": true
+      }
+    ]
+  },
+  "pre_ft_results": {
+    "accuracy": 0.8,
+    "correct": 20,
+    "total": 25,
+    "results": [
+      {
+        "task_id": 0,
+        "prompt": "What is 8 + 5? ",
+        "category": "math",
+        "correct_answer": "13",
+        "generated_text": "8 + 5 = 13.",
+        "is_correct": true
+      },
+      {
+        "task_id": 1,
+        "prompt": "What is 16 - 9? ",
+        "category": "math",
+        "correct_answer": "7",
+        "generated_text": "16 - 9 = 7.",
+        "is_correct": true
+      },
+      {
+        "task_id": 2,
+        "prompt": "What is 5 * 7? ",
+        "category": "math",
+        "correct_answer": "35",
+        "generated_text": "5 * 7 = 35.",
+        "is_correct": true
+      },
+      {
+        "task_id": 3,
+        "prompt": "What is 24 / 6? ",
+        "category": "math",
+        "correct_answer": "4",
+        "generated_text": "24 divided by 6 equals 4.",
+        "is_correct": true
+      },
+      {
+        "task_id": 4,
+        "prompt": "What is 13 + 8? ",
+        "category": "math",
+        "correct_answer": "21",
+        "generated_text": "13 + 8 = 21.",
+        "is_correct": true
+      },
+      {
+        "task_id": 5,
+        "prompt": "What is 20 - 12? ",
+        "category": "math",
+        "correct_answer": "8",
+        "generated_text": "20 - 12 = 8.",
+        "is_correct": true
+      },
+      {
+        "task_id": 6,
+        "prompt": "What is 6 * 9? ",
+        "category": "math",
+        "correct_answer": "54",
+        "generated_text": "6 * 9 = 54.",
+        "is_correct": true
+      },
+      {
+        "task_id": 7,
+        "prompt": "What is 36 / 4? ",
+        "category": "math",
+        "correct_answer": "9",
+        "generated_text": "36 divided by 4 equals 9.",
+        "is_correct": true
+      },
+      {
+        "task_id": 8,
+        "prompt": "What is 19 + 14? ",
+        "category": "math",
+        "correct_answer": "33",
+        "generated_text": "19 + 14 = 33.",
+        "is_correct": true
+      },
+      {
+        "task_id": 9,
+        "prompt": "What is 50 - 23? ",
+        "category": "math",
+        "correct_answer": "27",
+        "generated_text": "50 - 23 = 27.",
+        "is_correct": true
+      },
+      {
+        "task_id": 10,
+        "prompt": "What is 8 * 7? ",
+        "category": "math",
+        "correct_answer": "56",
+        "generated_text": "8 * 7 = 56.",
+        "is_correct": true
+      },
+      {
+        "task_id": 11,
+        "prompt": "What is 42 / 7? ",
+        "category": "math",
+        "correct_answer": "6",
+        "generated_text": "42 divided by 7 equals 6.",
+        "is_correct": true
+      },
+      {
+        "task_id": 12,
+        "prompt": "What is 22 + 19? ",
+        "category": "math",
+        "correct_answer": "41",
+        "generated_text": "22 + 19 = 41.",
+        "is_correct": true
+      },
+      {
+        "task_id": 13,
+        "prompt": "What is 75 - 38? ",
+        "category": "math",
+        "correct_answer": "37",
+        "generated_text": "75 - 38 = 37.",
+        "is_correct": true
+      },
+      {
+        "task_id": 14,
+        "prompt": "What is 9 * 6? ",
+        "category": "math",
+        "correct_answer": "54",
+        "generated_text": "9 * 6 = 54.",
+        "is_correct": true
+      },
+      {
+        "task_id": 15,
+        "prompt": "If all birds can fly, and a penguin is a bird, can a penguin fly? ",
+        "category": "logic",
+        "correct_answer": "yes",
+        "generated_text": " Answer the above question based on the following review: I have to say that this movie is a bit of a disappointment. I was expecting a lot more from this movie. I was expecting a movie that was a bit",
+        "is_correct": false
+      },
+      {
+        "task_id": 16,
+        "prompt": "If X > Y and Y > Z, is X > Z? ",
+        "category": "logic",
+        "correct_answer": "yes",
+        "generated_text": "1. If X > Y and Y > Z, is X > Z? 2. If X > Y and Y > Z, is X > Z? 3. If X > Y and Y > Z, is X > Z? 4. If X > Y and Y >",
+        "is_correct": false
+      },
+      {
+        "task_id": 17,
+        "prompt": "If today is Wednesday, what day is it in 4 days? ",
+        "category": "logic",
+        "correct_answer": "sunday",
+        "generated_text": "1. **Identify the number of days in the given period**: The problem states that today is Wednesday. We need to determine the day 4 days from Wednesday.\n2. **Calculate the number of days in 4 days**: S",
+        "is_correct": false
+      },
+      {
+        "task_id": 18,
+        "prompt": "If Alice is older than Bob, and Bob is older than Carol, who is youngest? ",
+        "category": "logic",
+        "correct_answer": "carol",
+        "generated_text": "1. **Identify the given information:**\n   - Alice is older than Bob.\n   - Bob is older than Carol.\n\n2. **Translate the given information into mathematical statements:**\n   - Let \\( A \\) represent Alic",
+        "is_correct": true
+      },
+      {
+        "task_id": 19,
+        "prompt": "How many corners does a square have? ",
+        "category": "logic",
+        "correct_answer": "4",
+        "generated_text": "1. **Understanding the Problem:**\n   - We need to determine the number of corners (vertices) of a square.\n   - A square is a quadrilateral with four equal sides and four right angles.\n\n2. **Visualizin",
+        "is_correct": false
+      },
+      {
+        "task_id": 20,
+        "prompt": "A baker has 12 loaves. All but 5 are sold. How many remain? ",
+        "category": "logic",
+        "correct_answer": "5",
+        "generated_text": "12 - 5 = 7\nThe baker has 7 remaining.\nThe answer is 7",
+        "is_correct": true
+      },
+      {
+        "task_id": 21,
+        "prompt": "If you have 5 oranges and give away 2, how many do you have? ",
+        "category": "logic",
+        "correct_answer": "3",
+        "generated_text": "5 - 2 = 3.",
+        "is_correct": true
+      },
+      {
+        "task_id": 22,
+        "prompt": "What comes next: 3, 6, 9, 12, ? ",
+        "category": "logic",
+        "correct_answer": "15",
+        "generated_text": "15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, ",
+        "is_correct": true
+      },
+      {
+        "task_id": 23,
+        "prompt": "If 3 workers take 3 hours to build 3 walls, how long for 6 workers to build 6 walls? ",
+        "category": "logic",
+        "correct_answer": "3",
+        "generated_text": "3 workers take 3 hours to build 3 walls, so each worker takes 3/3 = 1 hour to build 1 wall.\nTherefore, 6 workers will take 6 * 1 = 6 hours to build 6 walls.\n#### 6\nThe answer is:",
+        "is_correct": true
+      },
+      {
+        "task_id": 24,
+        "prompt": "A book and pen cost $2.50. The book costs $2.00 more than the pen. How much is the pen? ",
+        "category": "logic",
+        "correct_answer": "0.25",
+        "generated_text": "1. Let's denote the cost of the pen as ( p ) and the cost of the book as ( b ).\n2. According to the problem, the book costs ( p + 2 ) dollars more than the pen.\n3. The total cost of the book and the p",
+        "is_correct": false
+      }
+    ]
+  }
+}
