@@ -52,7 +52,6 @@ env/
 .venv
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -87,3 +86,7 @@ uv.lock
 demos/results_*.json
 benchmarks/results_*.json
 output/
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore
